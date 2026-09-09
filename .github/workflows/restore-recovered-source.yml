@@ -31,7 +31,15 @@ jobs:
           import stat
           import zipfile
 
-          expected_parts = [Path(f'.recovery/part-{i:02d}.b64') for i in range(6)]
+          expected_parts = [
+              Path('.recovery/part-00.b64'),
+              Path('.recovery/part-01.b64'),
+              Path('.recovery/part-02.b64'),
+              Path('.recovery/part-03.b64'),
+              Path('.recovery/part-04a.b64'),
+              Path('.recovery/part-04b.b64'),
+              Path('.recovery/part-05.b64'),
+          ]
           missing = [str(p) for p in expected_parts if not p.is_file()]
           if missing:
               raise SystemExit(f'missing recovery parts: {missing}')
