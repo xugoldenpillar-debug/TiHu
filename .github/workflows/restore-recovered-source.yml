@@ -36,8 +36,10 @@ jobs:
               Path('.recovery/part-01.b64'),
               Path('.recovery/part-02.b64'),
               Path('.recovery/part-03.b64'),
-              Path('.recovery/part-04a.b64'),
-              Path('.recovery/part-04b.b64'),
+              Path('.recovery/part-04c0.b64'),
+              Path('.recovery/part-04c1.b64'),
+              Path('.recovery/part-04c2.b64'),
+              Path('.recovery/part-04c3.b64'),
               Path('.recovery/part-05.b64'),
           ]
           missing = [str(p) for p in expected_parts if not p.is_file()]
