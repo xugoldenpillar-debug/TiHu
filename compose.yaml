@@ -1,0 +1,87 @@
+name: tihu
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tihu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: tihu
+    volumes: ["tihu-db:/var/lib/postgresql/data"]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U tihu"], interval: 5s, timeout: 3s, retries: 20}
+    restart: unless-stopped
+  api:
+    build: .
+    environment:
+      TIHU_ENV: ${TIHU_ENV:-development}
+      TIHU_ROLE: api
+      DATABASE_URL: postgresql+psycopg://tihu:${POSTGRES_PASSWORD}@db:5432/tihu
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080}
+      PREVIEW_ORIGIN: ${PREVIEW_ORIGIN:-http://127.0.0.1:8001}
+      MASTER_KEYS: ${MASTER_KEYS:?set MASTER_KEYS}
+      ACTIVE_KEY_ID: ${ACTIVE_KEY_ID:-v1}
+      SIGNING_KEY: ${SIGNING_KEY:?set SIGNING_KEY}
+      SANDBOX_RUNTIME: ${SANDBOX_RUNTIME:-runsc}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-TiHu <noreply@example.com>}
+      REGISTRATION_OPEN: ${REGISTRATION_OPEN:-true}
+    depends_on: {db: {condition: service_healthy}}
+    command: ["sh","-c","python -m tihu.cli init && python -m tihu.cli seed && exec uvicorn tihu.api:app --host 0.0.0.0 --port 8000 --no-access-log"]
+    restart: unless-stopped
+  preview:
+    build: .
+    environment:
+      TIHU_ENV: ${TIHU_ENV:-development}
+      TIHU_ROLE: preview
+      DATABASE_URL: postgresql+psycopg://tihu:${POSTGRES_PASSWORD}@db:5432/tihu
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080}
+      PREVIEW_ORIGIN: ${PREVIEW_ORIGIN:-http://127.0.0.1:8001}
+      SIGNING_KEY: ${SIGNING_KEY:?set SIGNING_KEY}
+    depends_on: {db: {condition: service_healthy}}
+    command: ["uvicorn","tihu.preview:app","--host","0.0.0.0","--port","8001","--no-access-log"]
+    ports: ["8001:8001"]
+    read_only: true
+    tmpfs: ["/tmp"]
+    restart: unless-stopped
+  worker:
+    build: .
+    # Trusted control-plane process. Docker socket access is already root-equivalent; dedicate this host.
+    user: "0:0"
+    environment:
+      TIHU_ENV: ${TIHU_ENV:-development}
+      TIHU_ROLE: worker
+      DATABASE_URL: postgresql+psycopg://tihu:${POSTGRES_PASSWORD}@db:5432/tihu
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080}
+      PREVIEW_ORIGIN: ${PREVIEW_ORIGIN:-http://127.0.0.1:8001}
+      MASTER_KEYS: ${MASTER_KEYS:?set MASTER_KEYS}
+      ACTIVE_KEY_ID: ${ACTIVE_KEY_ID:-v1}
+      SIGNING_KEY: ${SIGNING_KEY:?set SIGNING_KEY}
+      SANDBOX_IMAGE: ${SANDBOX_IMAGE:-tihu-sandbox:0.1}
+      SANDBOX_RUNTIME: ${SANDBOX_RUNTIME:-runsc}
+      BROKER_ROOT: /var/lib/tihu/brokers
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
+    depends_on: {db: {condition: service_healthy}}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/tihu/brokers:/var/lib/tihu/brokers
+    command: ["python","-m","tihu.worker"]
+    restart: unless-stopped
+  web:
+    image: caddy:2.10-alpine
+    environment:
+      PREVIEW_ORIGIN: ${PREVIEW_ORIGIN:-http://127.0.0.1:8001}
+    volumes:
+      - ./web:/srv:ro
+      - ./web/Caddyfile:/etc/caddy/Caddyfile:ro
+    ports: ["8080:8080"]
+    depends_on: [api]
+    restart: unless-stopped
+  sandbox-image:
+    profiles: ["build-only"]
+    build: ./sandbox
+    image: ${SANDBOX_IMAGE:-tihu-sandbox:0.1}
+    command: ["true"]
+volumes:
+  tihu-db:
