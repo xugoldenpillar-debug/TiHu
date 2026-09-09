@@ -55,5 +55,10 @@ def test_production_refuses_unsafe_defaults(kwargs):
 def test_preview_never_needs_decryption_keys():
     value=production_settings(role='preview',master_keys={},smtp_host='').validate();assert not value.master_keys
     with pytest.raises(ValueError):production_settings(role='preview').validate()
+def test_development_preview_does_not_generate_local_secrets(tmp_path,monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    value=Settings(role='preview',production=False,database_url='sqlite:///unused.db',app_origin='http://localhost:8080',preview_origin='http://127.0.0.1:8001',master_keys={},signing_key=base64.b64encode(b'3'*32).decode()).validate()
+    assert value.master_keys=={} and value.allowed_bases==[]
+    assert not (tmp_path/'.local').exists()
 def test_body_size_limit(client):
     r=client.post('/api/auth/login',content=b'x'*(512*1024+1),headers={'Content-Type':'application/json'});assert r.status_code==413
