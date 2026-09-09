@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" role="img" aria-labelledby="title desc">
+  <title id="title">不太正经的时钟</title><desc id="desc">一只漂浮在暖色空间中的俏皮时钟</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f7efe2"/><stop offset="1" stop-color="#eadbc6"/></linearGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fffdf8"/><stop offset="1" stop-color="#fbf5ea"/></linearGradient>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="14" dy="20" stdDeviation="6" flood-color="#b28d61" flood-opacity=".24"/></filter>
+  </defs>
+  <rect width="720" height="420" fill="url(#bg)"/>
+  <path d="M0 77c145 24 252 12 362-28 119-43 219-36 358 3V0H0Z" fill="#fbf5ea" opacity=".55"/>
+  <g opacity=".55" fill="none" stroke="#c6a67f" stroke-linecap="round"><path d="M71 313c45 30 84 30 120 0"/><path d="M548 101c33-22 64-24 98-7"/><path d="m93 123 16-9m-3 28 19-2m492 183 18 10m-33 4 19 1" stroke-width="4"/></g>
+  <g filter="url(#shadow)" transform="rotate(8 360 218)">
+    <circle cx="360" cy="218" r="132" fill="#dfc3a0" opacity=".45"/>
+    <circle cx="348" cy="202" r="132" fill="url(#face)" stroke="#b99366" stroke-width="7"/>
+    <circle cx="348" cy="202" r="108" fill="none" stroke="#dfc8aa" stroke-width="2" stroke-dasharray="2 12"/>
+    <g stroke="#8d6b47" stroke-width="6" stroke-linecap="round">
+      <path d="M348 92v13M348 299v13M238 202h13M445 202h13"/>
+      <path d="m270 124 9 10m138 136 9 10m-156 0 9-10m138-136 9-10" stroke-width="4"/>
+    </g>
+    <circle cx="348" cy="202" r="10" fill="#9d7143"/>
+    <path d="m348 202 10-74" stroke="#9d7143" stroke-width="9" stroke-linecap="round"/>
+    <path d="m348 202 67 42" stroke="#9d7143" stroke-width="7" stroke-linecap="round"/>
+    <path d="m348 202-45 23" stroke="#d69a56" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <g fill="#ae8558"><circle cx="151" cy="93" r="7"/><path d="m153 64 5 14 15 1-12 9 4 15-12-9-12 9 4-15-12-9 15-1Z" opacity=".62"/><circle cx="592" cy="284" r="6"/></g>
+  <text x="38" y="47" font-family="ui-monospace,monospace" font-size="14" font-weight="700" letter-spacing="3" fill="#9a744d">CREATIVE TIMEPIECE</text>
+</svg>

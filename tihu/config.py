@@ -70,11 +70,14 @@ class Settings:
                 raise ValueError('Production requires the gVisor runsc runtime')
             if self.role == 'api' and self.registration and not self.smtp_host:
                 raise ValueError('Open production registration requires SMTP verification')
-        if self.production and self.role == 'preview':
+        if self.role == 'preview':
             if not self.signing_key or len(base64.b64decode(self.signing_key, validate=True)) != 32:
                 raise ValueError('Preview requires a 32-byte SIGNING_KEY')
-            if self.master_keys:
+            if self.production and self.master_keys:
                 raise ValueError('Never give decryption keys to the preview service')
+            # The preview service only verifies signed artifact links. It must not
+            # generate or require provider-encryption keys, including in development.
+            self.master_keys = {}
             self.allowed_bases = []
             return self
         if not self.master_keys or not self.signing_key:

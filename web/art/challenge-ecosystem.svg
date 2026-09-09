@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" role="img" aria-labelledby="title desc">
+  <title id="title">掌心里的小世界</title><desc id="desc">一个被轨道和微小生命环绕的绿色生态星球</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#edf3ec"/><stop offset="1" stop-color="#dce8df"/></linearGradient>
+    <radialGradient id="planet" cx="35%" cy="25%"><stop stop-color="#91b39a"/><stop offset=".7" stop-color="#527a66"/><stop offset="1" stop-color="#365c4e"/></radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="16" stdDeviation="13" flood-color="#395b4c" flood-opacity=".18"/></filter>
+  </defs>
+  <rect width="720" height="420" fill="url(#bg)"/>
+  <path d="M0 305c106-44 194-34 286 0 101 38 204 45 434-16v131H0Z" fill="#d2e2d4" opacity=".72"/>
+  <g filter="url(#shadow)">
+    <circle cx="360" cy="213" r="116" fill="url(#planet)"/>
+    <path d="M271 150c26-38 65-57 105-52-4 41-25 67-65 78-20 5-33-4-40-26Z" fill="#dce9bd" opacity=".95"/>
+    <path d="M396 227c30-27 72-27 86 9 11 29-12 58-52 71-24 8-48-4-54-29-5-20 2-37 20-51Z" fill="#a9c38e"/>
+    <path d="M322 292c-24-16-38-39-39-67 29-1 50 10 64 33 12 20 4 33-25 34Z" fill="#dce9bd" opacity=".86"/>
+    <circle cx="419" cy="147" r="17" fill="#cfdfad"/>
+  </g>
+  <g fill="none" stroke-linecap="round">
+    <ellipse cx="360" cy="213" rx="208" ry="70" transform="rotate(-18 360 213)" stroke="#9bb8a4" stroke-width="5" opacity=".7"/>
+    <ellipse cx="360" cy="213" rx="245" ry="101" transform="rotate(21 360 213)" stroke="#bdcfbf" stroke-width="3" stroke-dasharray="8 14"/>
+  </g>
+  <circle cx="548" cy="143" r="13" fill="#f1c875"/><circle cx="180" cy="271" r="9" fill="#d78963"/><circle cx="573" cy="304" r="6" fill="#527a66"/>
+  <g stroke="#527a66" stroke-width="6" stroke-linecap="round" fill="none">
+    <path d="M126 319v-44m0 19c-22 0-34-12-37-31 22-1 36 8 37 31Zm0-7c20-3 31-15 31-33-20 1-31 12-31 33Z"/>
+    <path d="M609 93V55m0 17c-18-1-28-11-30-27 19 0 29 8 30 27Zm0-5c17-3 26-13 26-28-17 1-26 10-26 28Z"/>
+  </g>
+  <g fill="#486b58"><circle cx="95" cy="106" r="4"/><circle cx="111" cy="91" r="3"/><circle cx="632" cy="342" r="4"/><circle cx="652" cy="329" r="2.5"/></g>
+  <text x="38" y="47" font-family="ui-monospace,monospace" font-size="14" font-weight="700" letter-spacing="3" fill="#5d7765">INTERACTIVE ECOSYSTEM</text>
+</svg>
