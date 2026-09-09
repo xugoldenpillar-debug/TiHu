@@ -1,0 +1,156 @@
+name: Materialize TiHu platform
+
+on:
+  push:
+    branches: [feat/tihu-platform]
+    paths: [.github/workflows/materialize-tihu.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.ref == 'refs/heads/feat/tihu-platform'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore verified repository-owned source objects
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json, os, urllib.request
+          from pathlib import Path, PurePosixPath
+          repo = os.environ['GITHUB_REPOSITORY']
+          tree = '7841792cd9459d5a4ed405bb24ebaa91b2f05f509'
+          def get(path):
+              request = urllib.request.Request('https://api.github.com/repos/' + repo + '/git/' + path,
+                  headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                           'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'})
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+          result = get('trees/' + tree + '?recursive=1')
+          if result.get('truncated'):
+              raise SystemExit('Source tree is truncated; refusing partial restoration')
+          root = Path.cwd().resolve()
+          for item in result['tree']:
+              if item['type'] != 'blob':
+                  continue
+              relative = PurePosixPath(item['path'])
+              if relative.is_absolute() or '..' in relative.parts or '.git' in relative.parts or item['mode'] != '100644':
+                  raise SystemExit('Invalid source path or file mode')
+              path = root.joinpath(*relative.parts)
+              if not path.resolve().is_relative_to(root):
+                  raise SystemExit('Source path escapes checkout')
+              blob = get('blobs/' + item['sha'])
+              raw = base64.b64decode(blob['content'])
+              actual = hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest()
+              if actual != item['sha']:
+                  raise SystemExit('Source object hash mismatch')
+              if path.exists():
+                  existing = path.read_bytes()
+                  if existing == raw:
+                      continue
+                  if item['path'] == 'README.md':
+                      continue
+                  raise SystemExit('Existing changed source will not be overwritten: ' + item['path'])
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_bytes(raw)
+          PY
+      - name: Enforce exact preview origin and document deployment gates
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('web/Caddyfile')
+          p.write_text(p.read_text().replace('frame-src http://127.0.0.1:8001 https:;', 'frame-src {$PREVIEW_ORIGIN:http://127.0.0.1:8001};'))
+          p = Path('compose.yaml')
+          s = p.read_text()
+          needle = '  web:\n    image: caddy:2.11-alpine\n'
+          if 'PREVIEW_ORIGIN: ${PREVIEW_ORIGIN:-http://127.0.0.1:8001}' not in s:
+              s = s.replace(needle, needle + '    environment:\n      PREVIEW_ORIGIN: ${PREVIEW_ORIGIN:-http://127.0.0.1:8001}\n')
+          p.write_text(s)
+          p = Path('tihu/config.py')
+          s = p.read_text()
+          needle = '        if not app.hostname or not preview.hostname:\n            raise ValueError("APP_ORIGIN and PREVIEW_ORIGIN must be absolute origins")'
+          if 'without credentials or fragments' not in s:
+              s = s.replace(needle, needle + '\n        for origin in (app, preview):\n            if origin.scheme not in {"http", "https"} or origin.username or origin.password or origin.fragment:\n                raise ValueError("Origins must be HTTP(S), without credentials or fragments")')
+          p.write_text(s)
+          Path('docs').mkdir(exist_ok=True)
+          p = Path('docs/PUBLIC-LAUNCH.md')
+          p.write_text('''# Public launch gate
+
+          This is a first implementation, not a completed production security certification.
+
+          - Install a compatible gVisor/runsc runtime on dedicated worker hosts. The broker transport is a mounted host-created Unix-domain socket. Configure and verify the runsc host-UDS policy for this socket; never expose the Docker socket or unrelated host sockets to task containers. A runtime name in docker info is not an end-to-end check.
+          - Use PostgreSQL, TLS, independent application and preview hostnames, random 32-byte encryption keys, and provider-side spending caps. Prefer separate registrable domains for previews. APP_ORIGIN, PREVIEW_ORIGIN and Caddy must agree.
+          - The parent frame-src must allow only PREVIEW_ORIGIN, not every HTTPS destination. Test frame self-navigation as well as fetch, forms, popups and parent access.
+          - The worker owns a high-privilege Docker control socket. Keep it on isolated worker machines. No database credentials or actual provider keys are put into task containers.
+          - Build and scan the pi image, pin its digest, and change AGENT_ENVIRONMENT_ID after changing the image or evaluation policy.
+          - Validate real pi/model tool calls, cancellation, timeouts, resource limits, lost workers and artifact revocation. No real API charge or production load benchmark is implied by unit tests.
+          - Registration currently uses passwords and sessions. Add an operational email-verification/captcha/anti-Sybil layer before opening community voting. Upvotes measure community preference, not scientific intelligence.
+          - Implement backup/restore, retention, incident response and monitoring. Set PUBLIC_LAUNCH_CONFIRMED only after completing actual acceptance checks.
+          ''')
+          p = Path('README.md')
+          marker = '\n## Platform implementation\n'
+          if marker not in p.read_text():
+              p.write_text(p.read_text() + '''
+
+          ## Platform implementation
+
+          TiHu is a BYOK community HTML challenge playground. Users register, save encrypted API connections, discover models, create versioned challenges, upload bounded Skill archives and save prompt templates. Runs use a persistent PostgreSQL queue and a separate pi worker. Results start private and can be previewed on an isolated origin and published into a gallery. Ability and Funny votes, per-work and deduplicated per-model rankings, version/track/environment filters, reporting and moderation are implemented.
+
+          Stack: FastAPI, SQLAlchemy 2, PostgreSQL, static JavaScript/CSS served by Caddy, and pi 0.85.1 in per-run gVisor containers. SQLite is development-only. Real provider keys remain in the trusted broker; task containers see only run-scoped capability tokens.
+
+          Local development:
+
+          ```sh
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -e '.[dev]'
+          python -m tihu.cli init-dev
+          docker compose --profile build-only build sandbox-image
+          docker compose up --build -d
+          ```
+
+          Open the application at http://localhost:8080. The preview host is http://127.0.0.1:8001. Configure gVisor first. A local-only ordinary-container fallback requires ALLOW_INSECURE_DEV_SANDBOX=1 and SANDBOX_RUNTIME=runc and must never be publicly exposed. Production mode refuses that fallback.
+
+          See docs/PUBLIC-LAUNCH.md before public deployment. Real provider compatibility, gVisor transport and production concurrency must be accepted on your infrastructure; these are not certified by source generation. The initial schema is version 1; future schema changes require explicit migrations. The source-object restoration job uses only objects already stored in this private repository, verifies blob hashes, and refuses to overwrite changed source files.
+          ''')
+          PY
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install and validate restored code
+        run: |
+          pip install -e '.[dev]'
+          ruff check tihu
+          python -m compileall -q tihu runner
+          node --input-type=module --check < web/app.js
+          python - <<'PY'
+          import tempfile
+          from pathlib import Path
+          from fastapi.testclient import TestClient
+          from tihu.config import Settings
+          from tihu.api import create_app
+          with tempfile.TemporaryDirectory() as directory:
+              cfg = Settings(_env_file=None, database_url='sqlite:///' + directory + '/smoke.db',
+                  artifact_root=Path(directory)/'artifacts', runner_root=Path(directory)/'runs')
+              client = TestClient(create_app(cfg))
+              assert client.get('/healthz').status_code == 200
+              assert client.get('/api/challenges').json()['items']
+              assert client.get('/api/config').json()['agent'] == 'pi'
+              assert client.get('/api/keys').status_code == 401
+              assert client.post('/api/auth/register', json={'email':'bad'}).status_code == 403
+              assert 'frame-src {$PREVIEW_ORIGIN:' in Path('web/Caddyfile').read_text()
+          PY
+      - name: Commit normal source files to the feature branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m 'feat: implement TiHu BYOK pi challenge platform with isolated previews'
+            git push origin HEAD:feat/tihu-platform
+          fi
