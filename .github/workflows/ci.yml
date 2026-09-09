@@ -1,0 +1,15 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: pip install -r requirements.txt
+      - run: npm install -g typescript@5.8.3
+      - run: tsc && node --check sandbox/entry.mjs && python -m compileall -q tihu scripts && pytest -q --disable-warnings
+      - run: docker build -t tihu-sandbox:ci sandbox
