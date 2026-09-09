@@ -1,0 +1,7 @@
+.git
+.env
+.local
+__pycache__
+.pytest_cache
+node_modules
+home-*.png

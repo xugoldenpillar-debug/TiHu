@@ -1,0 +1,10 @@
+{
+  "recovery_kind": "functional reconstruction from preserved source history; not byte-identical",
+  "tests": "94 passed",
+  "typescript": "PASS",
+  "sandbox_js_syntax": "PASS",
+  "python_compile": "PASS",
+  "static_api_smoke": "PASS",
+  "docker_gvisor_e2e": "NOT RUN - Docker/gVisor unavailable in this execution environment",
+  "real_paid_provider_e2e": "NOT RUN - no user test key used during recovery"
+}

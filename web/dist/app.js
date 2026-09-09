@@ -1,0 +1,245 @@
+"use strict";
+let me = null, csrf = null, config = null;
+const app = document.querySelector('#app'), modal = document.querySelector('#modal');
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+async function api(path, init = {}) { const h = new Headers(init.headers); if (init.body && typeof init.body === 'string')
+    h.set('content-type', 'application/json'); if (csrf)
+    h.set('x-csrf-token', csrf); const r = await fetch('/api' + path, { ...init, headers: h }); if (!r.ok) {
+    let msg = `HTTP ${r.status}`;
+    try {
+        const x = await r.json();
+        msg = x.detail ?? msg;
+    }
+    catch { }
+    throw new Error(msg);
+} return r.status === 204 ? null : await r.json(); }
+const mutate = (p, m, b, h) => api(p, { method: m, body: b === undefined ? undefined : JSON.stringify(b), headers: h });
+function toast(x, err = false) { const e = document.createElement('div'); e.className = 'toast' + (err ? ' err' : ''); e.textContent = x; document.body.append(e); setTimeout(() => e.remove(), 2800); }
+function route() { return (location.hash.slice(1) || '/explore').split('?')[0]; }
+function qs() { return new URLSearchParams((location.hash.split('?')[1] || '')); }
+function go(p) { location.hash = '#' + p; }
+const fmt = (n) => new Intl.NumberFormat('zh-CN').format(n || 0);
+const date = (n) => new Date(n * 1000).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+function shell() { const r = route(); const nav = (p, t) => `<a class="${r === p ? 'active' : ''}" href="#${p}"><span class="dot"></span>${t}</a>`; app.innerHTML = `<div class="shell"><aside class="sidebar" id="side"><a class="brand" href="#/explore"><img src="/assets/art/favicon.svg"><span>TiHu<small>PLAYGROUND</small></span></a><div class="nav-label">发现</div><nav class="nav">${nav('/explore', '探索题目')}${nav('/gallery', '作品画廊')}${nav('/leaderboard', '排行榜')}</nav><div class="nav-label">你的实验室</div><nav class="nav">${nav('/studio', '新实验')}${nav('/my-runs', '我的实验')}${nav('/connections', 'API 连接')}${nav('/skills', 'Skill 库')}${nav('/prompts', '提示词库')}${me?.role === 'admin' ? nav('/admin', '管理') : ''}</nav><div class="sidebar-foot"><a class="btn outline full" href="#/new-challenge">＋ 创建新题目</a><div class="security-note">🔒 API Key 加密保存，真实 Key 不进入模型沙箱。公开部署要求独立 Worker + gVisor。</div></div></aside><div class="body"><header class="topbar"><button class="btn ghost mobile-menu" data-act="menu">☰</button><div class="crumb">TiHu / <strong>${esc(titleFor(r))}</strong></div><div class="topuser">${me ? `<span class="avatar">${esc(me.username.slice(0, 2).toUpperCase())}</span><span class="username">${esc(me.username)}</span><button class="btn ghost small" data-act="logout">退出</button>` : `<button class="btn ghost small" data-act="auth">登录</button><button class="btn primary small" data-act="auth" data-mode="register">注册</button>`}</div></header><main class="main" id="main"></main></div></div>`; }
+function titleFor(r) { return r === '/explore' ? '探索' : r === '/gallery' ? '画廊' : r === '/leaderboard' ? '排行榜' : r === '/studio' ? '实验室' : r === '/connections' ? 'API 连接' : r === '/skills' ? 'Skill 库' : r === '/prompts' ? '提示词库' : r === '/new-challenge' ? '创建题目' : r === '/verify' ? '验证邮箱' : r === '/reset' ? '重置密码' : r.startsWith('/run/') ? '实验结果' : r.startsWith('/challenge/') ? '题目' : r === '/my-runs' ? '我的实验' : r === '/admin' ? '管理' : 'TiHu'; }
+const head = (t, p, action = '') => `<div class="page-head"><div><h1>${esc(t)}</h1><p>${esc(p)}</p></div>${action}</div>`;
+const empty = (t, p) => `<div class="empty"><h3>${esc(t)}</h3><p>${esc(p)}</p></div>`;
+const badge = (x) => `<span class="badge ${esc(x)}">${esc(x)}</span>`;
+const field = (l, h) => `<div class="field"><label>${esc(l)}</label>${h}</div>`;
+const footer = () => `<footer class="footer"><span>TiHu © 2026 / community model playground</span><span>榜单是社区偏好，不是客观智力分数。</span></footer>`;
+function taskCard(x, i) { return `<article class="card challenge-card"><a href="#/challenge/${x.id}"><div class="cover">${i === 0 ? '<img src="/assets/art/pelican.svg" alt="鹈鹕骑自行车编辑插画">' : `<div style="font-size:54px;color:#78925f">${i % 2 ? '◌' : '✦'}</div>`}<span class="cover-num">CHALLENGE ${String(i + 1).padStart(2, '0')}</span></div><div class="card-body"><h3>${esc(x.title)}</h3><p>${esc(x.description)}</p><div class="meta"><span>${badge(x.category)}</span><span>v${x.current_version} →</span></div></div></a></article>`; }
+async function explore() { const [tasks, stats] = await Promise.all([api('/challenges'), api('/stats')]); return `<section class="hero"><div class="hero-copy"><div class="eyebrow">ONE SHARED TESTING GROUND</div><h1>把模型放到同一起跑线。</h1><p>选择题目、接入自己的 API Key，让 pi Agent 在隔离环境里完成一次真实构建。先私下预览，再决定是否公开给社区投票。</p><div class="hero-actions"><a class="btn primary" href="#/studio">开始一次实验 →</a><a class="btn light" href="#/leaderboard">看看排行榜</a></div></div><div class="hero-art"><img src="/assets/art/pelican.svg" alt="Pelican riding a bicycle editorial illustration"></div></section><div class="stats"><div class="stat"><span>开放题目</span><strong>${fmt(stats.challenges)}</strong></div><div class="stat"><span>公开作品</span><strong>${fmt(stats.works)}</strong></div><div class="stat"><span>参与模型</span><strong>${fmt(stats.models)}</strong></div></div><div class="section-head"><div><h2>现在可以挑战</h2><p>题目版本固定；不同执行环境不会混榜。</p></div><a class="btn outline small" href="#/new-challenge">创建题目</a></div><div class="grid">${tasks.map(taskCard).join('')}</div>${footer()}`; }
+function workCard(x) { return `<article class="card card-body"><div class="row between">${badge(x.track)}<span class="muted">${date(x.created)}</span></div><h3 style="margin-top:14px">${esc(x.model)}</h3><p>${esc(x.title || 'Model experiment')} · @${esc(x.username || '')}</p><div class="meta"><span>能力 ♥ ${x.capability || 0}</span><span>Funny ☺ ${x.funny || 0}</span><a href="#/run/${x.id}">查看 →</a></div></article>`; }
+async function gallery(mine = false) { if (mine && !me)
+    return authGate(); const rows = await api('/runs?' + new URLSearchParams({ mine: String(mine), limit: '60' })); return `${head(mine ? '我的实验' : '作品画廊', mine ? '私有、排队、运行中和已发布的实验都在这里。' : '只有作者主动发布的成功作品才会出现。', mine ? '<a class="btn primary" href="#/studio">新实验</a>' : '')}<div class="grid">${rows.length ? rows.map(workCard).join('') : empty('还没有作品', '完成一次实验并发布后，这里就会出现。')}</div>${footer()}`; }
+async function leaderboard() { const q = qs(), group = q.get('group') || 'works', kind = q.get('kind') || 'capability', track = q.get('track') || 'standard'; const data = await api('/leaderboard?' + new URLSearchParams({ group, kind, track, days: q.get('days') || '0', limit: '50' })); const tabs = `<div class="tabs"><a class="${group === 'works' ? 'active' : ''}" href="#/leaderboard?group=works&kind=${kind}&track=${track}">作品榜</a><a class="${group === 'models' ? 'active' : ''}" href="#/leaderboard?group=models&kind=${kind}&track=${track}">模型榜</a><a class="${kind === 'capability' ? 'active' : ''}" href="#/leaderboard?group=${group}&kind=capability&track=${track}">能力</a><a class="${kind === 'funny' ? 'active' : ''}" href="#/leaderboard?group=${group}&kind=funny&track=${track}">Funny</a><a class="${track === 'standard' ? 'active' : ''}" href="#/leaderboard?group=${group}&kind=${kind}&track=standard">标准赛道</a><a class="${track === 'open' ? 'active' : ''}" href="#/leaderboard?group=${group}&kind=${kind}&track=open">开放赛道</a></div>`; let rows = ''; if (group === 'works')
+    rows = data.items.map((x, i) => `<tr><td class="rank">#${i + 1}</td><td><a href="#/run/${x.id}"><strong>${esc(x.model)}</strong></a><br><span class="muted">${esc(x.title)} · @${esc(x.username)}</span></td><td>${esc(x.track)}</td><td class="score">${x[kind] || 0}</td><td>${date(x.created)}</td></tr>`).join('');
+else
+    rows = data.items.map((x, i) => `<tr><td class="rank">#${i + 1}</td><td><strong>${esc(x.model)}</strong><br><span class="muted">${esc(x.provider)}</span></td><td>${esc(x.track)}</td><td class="score">${x.score || 0}</td><td>${x.authors} 位支持者 / ${x.challenges} 题</td></tr>`).join(''); return `${head('排行榜', '社区点赞形成能力榜和 Funny 榜；模型榜按每位作者在同题同版本的最佳作品去重。')}${tabs}<div class="table"><table><thead><tr><th>排名</th><th>${group === 'works' ? '作品' : '模型'}</th><th>赛道</th><th>得分</th><th>${group === 'works' ? '时间' : '覆盖'}</th></tr></thead><tbody>${rows || `<tr><td colspan="5">暂时还没有公开结果。</td></tr>`}</tbody></table></div>${footer()}`; }
+function authGate() { return `${head('需要登录', '创建账号后才能保存 API Key、Skill 和私有实验。')}<div class="empty"><h3>你的下一次实验从这里开始。</h3><p>API Key 不会返回给浏览器，也不会进入 guest sandbox。</p><button class="btn primary" data-act="auth" data-mode="register">创建账号</button> <button class="btn outline" data-act="auth">登录</button></div>`; }
+async function connections() { if (!me)
+    return authGate(); const xs = await api('/keys'); return `${head('API 连接', '保存自己的测试 Key，并从服务商获取模型列表。')}<div class="two"><section class="panel"><h3>已保存连接</h3><div class="stack">${xs.length ? xs.map(x => `<div class="item"><div class="item-main"><h3>${esc(x.label)} · ••••${esc(x.last4)}</h3><p>${esc(x.base_url)} · ${esc(x.protocol)} · ${x.models.length} models</p></div><button class="btn outline small" data-act="discover" data-id="${x.id}">刷新模型</button><button class="btn danger small" data-act="delete-key" data-id="${x.id}">撤销</button></div>`).join('') : empty('还没有连接', '先添加一个低额度测试 Key。')}</div></section><form class="panel" data-form="key"><h3>添加连接</h3><p class="notice warn">建议使用专门的低额度 Key，并在服务商侧设置消费上限。</p>${field('名称', '<input name="label" required maxlength="60" placeholder="My OpenAI test key">')}${field('API Base URL', `<select name="base_url">${config.providers.map((x) => `<option>${esc(x)}</option>`).join('')}</select>`)}${field('协议', '<select name="protocol"><option value="openai">OpenAI Chat Completions</option><option value="responses">OpenAI Responses</option><option value="anthropic">Anthropic Messages</option></select>')}${field('API Key', '<input name="api_key" type="password" required autocomplete="off">')}<button class="btn primary full">安全保存</button></form></div>${footer()}`; }
+async function skills() { if (!me)
+    return authGate(); const xs = await api('/skills'); return `${head('Skill 库', '上传 SKILL.md 或受限 ZIP；每次运行会冻结文件哈希和内容快照。')}<div class="two"><section class="panel">${xs.length ? xs.map(x => `<div class="item"><div class="item-main"><h3>${esc(x.name)}</h3><p class="mono">${esc(x.sha256.slice(0, 20))}…</p></div><button class="btn danger small" data-act="delete-skill" data-id="${x.id}">删除</button></div>`).join('') : empty('还没有 Skill', '可以教 Agent 一种工作流、画法或构建习惯。')}</section><form class="panel" data-form="skill"><h3>上传 Skill</h3>${field('名称', '<input name="name" required maxlength="80">')}${field('文件', '<input name="file" type="file" accept=".md,.zip" required>')}<div class="notice">最多 256 KB；ZIP 最多 30 个文本文件，拒绝符号链接和路径穿越。</div><button class="btn primary full" style="margin-top:14px">上传</button></form></div>${footer()}`; }
+async function prompts() { if (!me)
+    return authGate(); const xs = await api('/prompts'); return `${head('提示词库', '保存私有可复用提示词；选用后会复制到新实验快照里。')}<div class="two"><section class="stack">${xs.length ? xs.map(x => `<article class="panel"><div class="row between"><h3>${esc(x.name)}</h3><button class="btn danger small" data-act="delete-prompt" data-id="${x.id}">删除</button></div><pre class="code">${esc(x.body)}</pre></article>`).join('') : empty('还没有模板', '把下一条好提示词留在这里。')}</section><form class="panel" data-form="prompt"><h3>保存模板</h3>${field('名称', '<input name="name" required maxlength="80">')}${field('附加提示词', '<textarea name="body" required rows="8" maxlength="5000"></textarea>')}<button class="btn primary full">保存</button></form></div>${footer()}`; }
+async function newChallenge() { if (!me)
+    return authGate(); return `${head('创建新题目', '每次修改提示词会创建不可变新版本，旧作品继续留在旧版本里。')}<form class="panel" data-form="challenge" style="max-width:850px">${field('题目名称', '<input name="title" required maxlength="100">')}<div class="form-grid">${field('分类', '<select name="category"><option>Creative</option><option>Interactive</option><option>SVG</option><option>UI</option></select>')}${field('简介', '<input name="description" required minlength="10" maxlength="1500">')}</div>${field('固定任务提示词', '<textarea name="prompt" rows="8" required maxlength="6000"></textarea>')}${field('评价参考', '<textarea name="rubric" rows="5" required maxlength="3000"></textarea>')}<button class="btn primary">发布题目</button></form>${footer()}`; }
+async function challengePage(id) { const x = await api('/challenges/' + id), v = x.versions[0]; const runs = await api('/runs?' + new URLSearchParams({ challenge: id, version: v.id, limit: '24' })); return `${head(x.title, x.description, `<a class="btn primary" href="#/studio?challenge=${x.id}&version=${v.id}">挑战这道题</a>`)}<section class="panel"><div class="row between"><div>${badge(x.category)} ${badge('v' + v.number)}</div><span class="mono muted">${esc(v.sha256.slice(0, 16))}…</span></div><h3>题目说明</h3><pre class="code">${esc(v.prompt)}</pre><h3>评价参考</h3><p class="muted">${esc(v.rubric)}</p></section><div class="section-head"><div><h2>公开作品</h2><p>仅展示当前版本。</p></div></div><div class="grid">${runs.length ? runs.map(workCard).join('') : empty('还没有公开作品', '成为第一个完成挑战的人。')}</div>${footer()}`; }
+async function studio() { if (!me)
+    return authGate(); const [tasks, keys, skills, prompts] = await Promise.all([api('/challenges?limit=100'), api('/keys'), api('/skills'), api('/prompts')]); const q = qs(), cid = q.get('challenge') || tasks[0]?.id; if (!cid)
+    return empty('还没有题目', '先创建一道题。'); const task = await api('/challenges/' + cid), vid = q.get('version') || task.versions[0].id, key = keys[0]; return `${head('新实验', '一次提交 = 一次全新的 pi Agent 沙箱。')}${!keys.length ? '<div class="notice warn">先去 API 连接页保存 Key 并刷新模型列表。</div>' : ''}<div class="two"><form class="panel" data-form="run" data-idem="${crypto.randomUUID().replaceAll('-', '')}"><div class="eyebrow">01 / CHALLENGE</div>${field('题目', `<select name="challenge" data-change="challenge">${tasks.map(x => `<option value="${x.id}" ${x.id === cid ? 'selected' : ''}>${esc(x.title)}</option>`).join('')}</select>`)}${field('版本', `<select name="version_id">${task.versions.map((x) => `<option value="${x.id}" ${x.id === vid ? 'selected' : ''}>v${x.number}</option>`).join('')}</select>`)}<pre class="code">${esc(task.versions.find((x) => x.id === vid)?.prompt || task.versions[0].prompt)}</pre><div class="eyebrow" style="margin-top:24px">02 / MODEL</div>${field('API 连接', `<select name="key_id" data-change="key">${keys.map(x => `<option value="${x.id}">${esc(x.label)}</option>`).join('')}</select>`)}${field('模型', `<select name="model" id="models">${(key?.models || []).map((x) => `<option>${esc(x)}</option>`).join('')}</select>`)}<div class="eyebrow" style="margin-top:24px">03 / OPTIONAL CUSTOMIZATION</div>${prompts.length ? field('提示词模板', `<select data-change="prompt"><option value="">自己写</option>${prompts.map(x => `<option value="${x.id}" data-body="${esc(x.body)}">${esc(x.name)}</option>`).join('')}</select>`) : ''}${field('附加提示词', '<textarea name="prompt" rows="4" maxlength="5000" placeholder="留空 = 标准赛道"></textarea>')}${field('思考级别', '<select name="thinking"><option>off</option><option>low</option><option>medium</option><option>high</option><option>xhigh</option></select>')}${skills.length ? `<div class="field"><label>Skills（选择后进入 open track）</label><div class="checkboxes">${skills.map(x => `<label class="check"><input type="checkbox" name="skill" value="${x.id}">${esc(x.name)}</label>`).join('')}</div></div>` : ''}<label class="check"><input type="checkbox" name="consent" required>我了解 API 服务商可能产生费用，取消任务无法退回已接受的请求。</label><button class="btn primary full" style="margin-top:16px" ${!key?.models?.length ? 'disabled' : ''}>开始一次性测试</button></form><aside class="panel"><div class="eyebrow">EXPERIMENT CONTRACT</div><h3>同一起跑线。</h3>${[['Agent', 'pi / ' + config.harness.version], ['Runtime', config.harness.runtime], ['CPU / memory', `${config.harness.cpu} CPU / ${config.harness.memory_mb} MB`], ['最长运行', config.harness.seconds + 's'], ['模型请求', config.harness.calls + ' max'], ['网络', 'disabled'], ['Tools', config.harness.tools.join(', ')]].map(([a, b]) => `<div class="item"><div class="item-main"><p>${a}</p><h3>${esc(b)}</h3></div></div>`).join('')}<p class="notice warn">这些是资源/请求限制，不是金额上限。建议在服务商侧设置消费限额。</p></aside></div>${footer()}`; }
+async function runPage(id) { const x = await api('/runs/' + id); let center = ''; if (['queued', 'running'].includes(x.status))
+    center = empty(x.status === 'queued' ? '正在排队' : '模型正在构建', '页面可安全刷新；任务不会因为断开页面而重试。');
+else if (x.status !== 'succeeded')
+    center = empty('这次没有完成', x.error || 'runner_failure');
+else {
+    const pv = await api('/runs/' + id + '/preview');
+    center = `<div class="preview"><div class="preview-toolbar"><span>隔离 HTML 预览 · 5 分钟链接</span><button class="btn outline small" data-act="reload-preview" data-id="${id}">刷新</button></div><div class="preview-stage"><iframe id="preview" sandbox="allow-scripts" referrerpolicy="no-referrer" src="${esc(pv.url)}"></iframe></div></div>`;
+} return `${head(x.model, `${x.title} · v${x.version} · @${x.username} · ${date(x.created)}`, x.status === 'succeeded' && !x.hidden ? `<button class="btn ${x.published ? 'outline' : 'primary'}" data-act="publish" data-id="${id}" data-on="${x.published}">${x.published ? '撤下公开' : '发布作品'}</button>` : '')}<div class="run-layout"><div>${center}<section class="panel" style="margin-top:16px"><h3>不可变配置快照</h3><div class="row">${badge(x.track)} ${badge(x.status)}</div><pre class="code">${esc(JSON.stringify(x.snapshot, null, 2))}</pre></section></div><aside><section class="panel"><h3>社区投票</h3><p class="muted" style="font-size:9px">能力与 Funny 可以同时投；作者不能自投。</p>${['capability', 'funny'].map(k => `<button class="vote ${x.my_votes?.includes(k) ? 'on' : ''}" data-act="vote" data-id="${id}" data-kind="${k}" data-on="${x.my_votes?.includes(k)}" ${!x.published ? 'disabled' : ''}><span>${k === 'capability' ? '♥ 能力' : '☺ Funny'}</span><strong>${x[k] || 0}</strong></button>`).join('')}</section><section class="panel" style="margin-top:12px"><h3>Under the hood</h3><div class="item"><div class="item-main"><p>Provider</p><h3>${esc(new URL(x.provider).host)}</h3></div></div><div class="item"><div class="item-main"><p>Calls</p><h3>${x.metrics?.calls ?? '--'}</h3></div></div><div class="item"><div class="item-main"><p>Environment</p><h3 class="mono">${esc(x.environment.slice(0, 12))}…</h3></div></div></section></aside></div>${footer()}`; }
+async function tokenPage(kind) { const token = qs().get('token') || ''; if (kind === 'verify')
+    return `${head('验证邮箱', '确认这个一次性链接。')}<form class="panel" data-form="verify" style="max-width:520px"><input type="hidden" name="token" value="${esc(token)}"><p class="notice">验证链接 30 分钟后失效，且只能使用一次。</p><button class="btn primary full">验证邮箱</button></form>${footer()}`; return `${head('重置密码', '设置一条新的独立密码。')}<form class="panel" data-form="reset" style="max-width:520px"><input type="hidden" name="token" value="${esc(token)}">${field('新密码', '<input name="password" type="password" minlength="12" required>')}<button class="btn primary full">更新密码</button></form>${footer()}`; }
+async function adminPage() { if (!me || me.role !== 'admin')
+    return authGate(); const [reports, m] = await Promise.all([api('/admin/reports'), api('/admin/metrics')]); return `${head('管理', '举报处理和不含秘密的审计事件。')}<div class="two"><section class="panel"><h3>举报</h3>${reports.length ? reports.map(x => `<div class="item"><div class="item-main"><p>${esc(x.reason)}</p><h3 class="mono">${x.run_id}</h3></div><button class="btn danger small" data-act="moderate" data-action="hide_run" data-id="${x.run_id}">隐藏作品</button></div>`).join('') : empty('没有待处理举报', '')} </section><section class="panel"><h3>队列状态</h3>${m.queue.map((x) => `<div class="item"><div class="item-main"><p>${esc(x.status)}</p><h3>${x.count}</h3></div></div>`).join('')}</section></div>${footer()}`; }
+async function render() { shell(); const m = document.querySelector('#main'); try {
+    const r = route();
+    if (r === '/explore')
+        m.innerHTML = await explore();
+    else if (r === '/gallery')
+        m.innerHTML = await gallery();
+    else if (r === '/my-runs')
+        m.innerHTML = await gallery(true);
+    else if (r === '/leaderboard')
+        m.innerHTML = await leaderboard();
+    else if (r === '/connections')
+        m.innerHTML = await connections();
+    else if (r === '/skills')
+        m.innerHTML = await skills();
+    else if (r === '/prompts')
+        m.innerHTML = await prompts();
+    else if (r === '/new-challenge')
+        m.innerHTML = await newChallenge();
+    else if (r === '/studio')
+        m.innerHTML = await studio();
+    else if (r === '/admin')
+        m.innerHTML = await adminPage();
+    else if (r === '/verify')
+        m.innerHTML = await tokenPage('verify');
+    else if (r === '/reset')
+        m.innerHTML = await tokenPage('reset');
+    else if (r.startsWith('/challenge/'))
+        m.innerHTML = await challengePage(r.split('/')[2]);
+    else if (r.startsWith('/run/'))
+        m.innerHTML = await runPage(r.split('/')[2]);
+    else
+        m.innerHTML = await explore();
+    window.scrollTo({ top: 0 });
+}
+catch (e) {
+    m.innerHTML = empty('页面需要一点处理', e instanceof Error ? e.message : 'unknown_error');
+} }
+function showAuth(mode = 'login') { modal.innerHTML = `<div class="modal"><button class="btn ghost close" data-act="close">✕</button><h2>${mode === 'register' ? '创建账号' : '欢迎回来'}</h2><p>${mode === 'register' ? '开始保存自己的模型连接和实验。' : '继续你的模型实验。'}</p><form data-form="${mode}">${mode === 'register' ? field('用户名', '<input name="username" required pattern="[A-Za-z0-9_-]+" minlength="2">') : ''}${field('邮箱', '<input name="email" type="email" required>')}${field('密码', '<input name="password" type="password" required minlength="12">')}<button class="btn primary full">${mode === 'register' ? '注册' : '登录'}</button></form><div style="margin-top:13px"><button class="btn ghost small" data-act="auth" data-mode="${mode === 'register' ? 'login' : 'register'}">${mode === 'register' ? '已有账号？登录' : '第一次来？注册'}</button>${mode === 'login' ? '<button class="btn ghost small" data-act="forgot">忘记密码？</button>' : ''}</div></div>`; modal.showModal(); }
+async function refreshMe() { const x = await api('/me'); me = x.user; csrf = x.csrf; }
+document.addEventListener('click', async (ev) => { const b = ev.target.closest('[data-act]'); if (!b)
+    return; const a = b.dataset.act; try {
+    if (a === 'menu')
+        document.querySelector('#side')?.classList.toggle('open');
+    else if (a === 'auth')
+        showAuth(b.dataset.mode || 'login');
+    else if (a === 'forgot') {
+        modal.innerHTML = `<div class="modal"><button class="btn ghost close" data-act="close">✕</button><h2>重置密码</h2><p>如果邮箱属于账号，我们会发送一次性链接。</p><form data-form="forgot">${field('邮箱', '<input name="email" type="email" required>')}<button class="btn primary full">发送链接</button></form></div>`;
+    }
+    else if (a === 'close')
+        modal.close();
+    else if (a === 'logout') {
+        await mutate('/auth/logout', 'POST');
+        me = null;
+        csrf = null;
+        await render();
+    }
+    else if (a === 'discover') {
+        await mutate('/keys/' + b.dataset.id + '/models', 'POST');
+        toast('模型列表已刷新');
+        await render();
+    }
+    else if (a === 'delete-key') {
+        if (confirm('撤销此 Key，并取消相关排队/运行任务？')) {
+            await mutate('/keys/' + b.dataset.id, 'DELETE');
+            await render();
+        }
+    }
+    else if (a === 'delete-skill') {
+        await mutate('/skills/' + b.dataset.id, 'DELETE');
+        await render();
+    }
+    else if (a === 'delete-prompt') {
+        await mutate('/prompts/' + b.dataset.id, 'DELETE');
+        await render();
+    }
+    else if (a === 'publish') {
+        await mutate('/runs/' + b.dataset.id + '/publish', 'PUT', { published: b.dataset.on !== 'true' });
+        await render();
+    }
+    else if (a === 'vote') {
+        await mutate('/runs/' + b.dataset.id + '/vote', 'PUT', { kind: b.dataset.kind, active: b.dataset.on !== 'true' });
+        await render();
+    }
+    else if (a === 'reload-preview') {
+        const x = await api('/runs/' + b.dataset.id + '/preview'), f = document.querySelector('#preview');
+        if (f)
+            f.src = x.url;
+    }
+    else if (a === 'moderate') {
+        await mutate('/admin/moderate', 'POST', { action: b.dataset.action, target: b.dataset.id });
+        await render();
+    }
+}
+catch (e) {
+    toast(e instanceof Error ? e.message : 'error', true);
+} });
+document.addEventListener('change', async (ev) => { const el = ev.target; if (el.dataset.change === 'challenge')
+    go('/studio?challenge=' + encodeURIComponent(el.value)); if (el.dataset.change === 'prompt') {
+    const opt = el.selectedOptions[0], ta = document.querySelector('[name=prompt]');
+    if (ta)
+        ta.value = opt?.dataset.body || '';
+} if (el.dataset.change === 'key') {
+    try {
+        const keys = await api('/keys'), k = keys.find(x => x.id === el.value), models = document.querySelector('#models');
+        if (models)
+            models.innerHTML = (k?.models || []).map((x) => `<option>${esc(x)}</option>`).join('');
+    }
+    catch { }
+} });
+document.addEventListener('submit', async (ev) => { const form = ev.target; if (!form.dataset.form)
+    return; ev.preventDefault(); const d = new FormData(form), val = (k) => String(d.get(k) || ''); try {
+    if (form.dataset.form === 'register' || form.dataset.form === 'login') {
+        const mode = form.dataset.form;
+        const body = { email: val('email'), password: val('password') };
+        if (mode === 'register')
+            body.username = val('username');
+        const x = await mutate('/auth/' + mode, 'POST', body);
+        me = x.user;
+        csrf = x.csrf;
+        modal.close();
+        toast(mode === 'register' ? '注册成功' : '登录成功');
+        await render();
+    }
+    else if (form.dataset.form === 'forgot') {
+        await mutate('/auth/forgot', 'POST', { email: val('email') });
+        modal.close();
+        toast('如果该邮箱已注册，我们会发送重置链接。');
+    }
+    else if (form.dataset.form === 'verify') {
+        await mutate('/auth/verify', 'POST', { token: val('token') });
+        toast('邮箱已验证');
+        await refreshMe();
+        go('/explore');
+    }
+    else if (form.dataset.form === 'reset') {
+        await mutate('/auth/reset', 'POST', { token: val('token'), password: val('password') });
+        me = null;
+        csrf = null;
+        toast('密码已更新，请重新登录');
+        go('/explore');
+    }
+    else if (form.dataset.form === 'key') {
+        await mutate('/keys', 'POST', { label: val('label'), base_url: val('base_url'), protocol: val('protocol'), api_key: val('api_key') });
+        toast('连接已安全保存');
+        form.reset();
+        await render();
+    }
+    else if (form.dataset.form === 'skill') {
+        const f = d.get('file');
+        if (!(f instanceof File))
+            throw new Error('请选择文件');
+        const h = { 'content-type': 'application/octet-stream', 'x-file-name': encodeURIComponent(f.name), 'x-skill-name': encodeURIComponent(val('name')) };
+        await api('/skills', { method: 'POST', body: await f.arrayBuffer(), headers: h });
+        toast('Skill 已保存');
+        await render();
+    }
+    else if (form.dataset.form === 'prompt') {
+        await mutate('/prompts', 'POST', { name: val('name'), body: val('body') });
+        await render();
+    }
+    else if (form.dataset.form === 'challenge') {
+        const x = await mutate('/challenges', 'POST', { title: val('title'), description: val('description'), category: val('category'), prompt: val('prompt'), rubric: val('rubric') });
+        go('/challenge/' + x.id);
+    }
+    else if (form.dataset.form === 'run') {
+        const body = { key_id: val('key_id'), version_id: val('version_id'), model: val('model'), prompt: val('prompt'), thinking: val('thinking'), skill_ids: d.getAll('skill').map(String), consent: d.has('consent') };
+        const x = await mutate('/runs', 'POST', body, { 'idempotency-key': form.dataset.idem });
+        go('/run/' + x.id);
+    }
+}
+catch (e) {
+    toast(e instanceof Error ? e.message : 'error', true);
+} });
+window.addEventListener('hashchange', () => { modal.close(); void render(); });
+(async () => { try {
+    config = await api('/config');
+    await refreshMe();
+    await render();
+}
+catch (e) {
+    app.innerHTML = `<div class="boot">TiHu <span>${esc(e instanceof Error ? e.message : 'API unavailable')}</span></div>`;
+} })();
