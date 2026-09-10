@@ -87,7 +87,7 @@ async def discover(base: str, protocol: str, key: str) -> list[str]:
                 data = bytearray()
                 async for chunk in response.content.iter_chunked(16384):
                     data.extend(chunk)
-                    if len(data) > 1024 * 1024: raise HTTPException(502, 'provider_response_too_large')
+                    if len(data) > 16 * 1024 * 1024: raise HTTPException(502, 'provider_response_too_large')
                 payload = json.loads(data)
                 if not isinstance(payload, dict): raise ValueError('invalid model response')
                 values = payload.get('data', payload.get('models', []))

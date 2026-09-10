@@ -19,7 +19,7 @@ from .security import auth_headers, outbound_session, safe_path, unseal, stable_
 logger=logging.getLogger('tihu.runner')
 TERMINAL=('succeeded','failed','canceled')
 LEASE_SECONDS=60
-RESPONSE_LIMIT=4*1024*1024
+RESPONSE_LIMIT=int(os.getenv('PROVIDER_RESPONSE_LIMIT',str(64*1024*1024)))
 TOKEN_FIELDS=('input','output','reasoning','cache_read','cache_write')
 ERROR_CODES={
     'json_object_required','model_switch_denied','tool_denied','hosted_tool_denied','remote_tool_denied',
