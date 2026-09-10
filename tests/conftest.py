@@ -25,7 +25,7 @@ def connection(client):
     with db.engine.begin() as c:c.execute(update(db.credentials).where(db.credentials.c.id==ident).values(models=[MODEL]))
     return ident
 def version(client):
-    task=client.get('/api/challenges').json()[0];return client.get('/api/challenges/'+task['id']).json()['versions'][0]['id']
+    task=client.get('/api/challenges').json()['items'][0];return client.get('/api/challenges/'+task['id']).json()['versions'][0]['id']
 def submit(client,key,vid=None,idempotency=None,**kwargs):
     return client.post('/api/runs',headers={'Idempotency-Key':idempotency or db.uid()},json={'key_id':key,'version_id':vid or version(client),'model':MODEL,'consent':True,**kwargs})
 def complete(ident,published=False,html='<!doctype html><title>TEST FIXTURE</title><h1>Fixture, not a model result</h1>'):

@@ -1,10 +1,70 @@
 {
   "recovery_kind": "functional reconstruction from preserved source history; not byte-identical",
-  "tests": "94 passed",
-  "typescript": "PASS",
+  "verified_date": "2026-09-10",
+  "tests": "140 passed, 5 warnings on both Python 3.12.3 and Python 3.13.15",
+  "typescript": "PASS - TypeScript 5.8.3 noEmit check and TypeScript 5.9.3 full module build",
   "sandbox_js_syntax": "PASS",
-  "python_compile": "PASS",
-  "static_api_smoke": "PASS",
-  "docker_gvisor_e2e": "NOT RUN - Docker/gVisor unavailable in this execution environment",
-  "real_paid_provider_e2e": "NOT RUN - no user test key used during recovery"
+  "python_compile": "PASS - tihu, scripts and thumbnail on Python 3.12.3",
+  "compose_config": "PASS",
+  "container_builds": {
+    "application": "PASS - final image runs Python 3.13.15",
+    "sandbox": "PASS - real pi 0.85.1 guest exercised under runsc",
+    "thumbnail": "PASS - Playwright 1.51.0 / Chromium guest exercised under runsc"
+  },
+  "static_api_smoke": "PASS - real HTTP API, static frontend and separate preview service using isolated fixture data",
+  "postgresql_smoke": "PASS - concurrent challenge/Skill revision allocation, immutable historical Skill, single queue claim, pagination, versioned leaderboard and idempotent initialization",
+  "docker_gvisor_e2e": {
+    "status": "PASS",
+    "provider": "Local, non-billable OpenAI-compatible SSE protocol fixture; outbound guard override exists only in the throwaway controller",
+    "execution": "Real runsc + pi + per-run Unix broker produced index.html and a real thumbnail",
+    "usage": {
+      "calls": 2,
+      "input_tokens": 240,
+      "output_tokens": 48,
+      "usage_complete": true,
+      "cost": null
+    },
+    "cancellation": "Active guest removed in 2.35 seconds after cancellation; no automatic retry"
+  },
+  "thumbnail_smoke": {
+    "status": "PASS",
+    "format": "960 x 600 RGB JPEG, 16399 bytes",
+    "local_css_pixel": [15, 77, 64],
+    "source": "Actual screenshot of an explicitly labelled multi-file fixture, not a fabricated model output"
+  },
+  "browser_smoke": {
+    "viewports": ["1440 x 1000 desktop", "390 x 844 mobile"],
+    "status": "PASS",
+    "flows": [
+      "Login, logout confirmation, unverified-account restrictions and unavailable verification-mail guidance",
+      "Task/model/template linkage, billing consent, real queue submission, SSE progress and cancellation",
+      "Multi-file CSS, ES modules, SVG/PNG preview and interactive state retained across publication/comments",
+      "Publication disclosure, withdrawal, non-owner voting, comments, reports and moderation dashboard",
+      "Source inspection and byte-identical 99-byte PNG download",
+      "Prompt editing, Skill revision upload and historical file inspection",
+      "Challenge creation, new immutable version and historical version selection",
+      "Gallery pagination from 12 to 14 items, real thumbnail loading and same-condition comparison",
+      "Model aggregation, seven-day leaderboard filter, mobile navigation focus restoration and keyboard table scrolling"
+    ]
+  },
+  "accessibility": {
+    "engine": "axe-core 4.12.1, WCAG 2 A/AA",
+    "checked_pages": [
+      "explore",
+      "studio",
+      "prompts",
+      "skills",
+      "my-runs",
+      "gallery",
+      "leaderboard",
+      "run",
+      "challenge",
+      "admin"
+    ],
+    "automated_violations": 0,
+    "manual_note": "Homepage image-overlay badges require manual contrast assessment; minimum contrast computed as 4.795:1 using the darkest possible composited background. This is not a full accessibility certification."
+  },
+  "real_paid_provider_e2e": "NOT RUN - no real user provider key or paid model request used",
+  "smtp_delivery": "NOT RUN - only unavailable-service and rate-limit/error behavior verified",
+  "production_readiness": "NOT ESTABLISHED - target-host HTTPS origin isolation, paid providers, SMTP, secret management, abuse controls, image scanning and load/security testing remain deployment gates"
 }

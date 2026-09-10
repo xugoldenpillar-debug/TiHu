@@ -2,7 +2,7 @@
 import time
 import uuid
 from pathlib import Path
-from sqlalchemy import Boolean, Column as C, Float, ForeignKey as FK, Index, Integer, JSON, MetaData, String, Table, Text, UniqueConstraint, create_engine, event, insert, select
+from sqlalchemy import Boolean, Column as C, Float, ForeignKey as FK, Index, Integer, JSON, LargeBinary, MetaData, String, Table, Text, UniqueConstraint, create_engine, event, insert, select
 from .config import settings
 
 metadata = MetaData()
@@ -17,6 +17,7 @@ sessions = Table('sessions', metadata, C('digest', String(64), primary_key=True)
 tokens = Table('tokens', metadata, C('digest', String(64), primary_key=True), owner(), C('purpose', String(16), nullable=False), C('expires', Float, nullable=False))
 credentials = Table('credentials', metadata, col_id(), owner(), C('label', String(60), nullable=False), C('base_url', String(300), nullable=False), C('protocol', String(24), nullable=False), C('sealed', Text, nullable=False), C('last4', String(4), nullable=False), C('models', JSON, nullable=False, default=list), C('created', Float, nullable=False))
 skills = Table('skills', metadata, col_id(), owner(), C('name', String(80), nullable=False), C('files', JSON, nullable=False), C('sha256', String(64), nullable=False), C('created', Float, nullable=False))
+skill_versions = Table('skill_versions', metadata, C('skill_id', String(32), FK('skills.id'), primary_key=True), C('number', Integer, primary_key=True), C('files', JSON, nullable=False), C('sha256', String(64), nullable=False), C('created', Float, nullable=False))
 prompt_templates = Table('prompt_templates', metadata, col_id(), owner(), C('name', String(80), nullable=False), C('body', Text, nullable=False), C('created', Float, nullable=False))
 challenges = Table('challenges', metadata, col_id(), owner(), C('title', String(100), nullable=False), C('description', Text, nullable=False), C('category', String(30), nullable=False), C('current_version', Integer, nullable=False), C('archived', Boolean, nullable=False, default=False), C('created', Float, nullable=False))
 versions = Table('versions', metadata, col_id(), C('challenge_id', String(32), FK('challenges.id'), nullable=False, index=True), C('number', Integer, nullable=False), C('prompt', Text, nullable=False), C('rubric', Text, nullable=False), C('sha256', String(64), nullable=False), C('created', Float, nullable=False), UniqueConstraint('challenge_id', 'number'))
@@ -26,6 +27,7 @@ Index('runs_gallery', runs.c.published, runs.c.hidden, runs.c.challenge_id, runs
 Index('runs_environment', runs.c.environment, runs.c.track, runs.c.published)
 Index('runs_owner_status', runs.c.owner_id, runs.c.status, runs.c.created)
 artifacts = Table('artifacts', metadata, C('run_id', String(32), FK('runs.id'), primary_key=True), C('files', JSON, nullable=False), C('sha256', String(64), nullable=False), C('size', Integer, nullable=False))
+thumbnails = Table('thumbnails', metadata, C('run_id', String(32), FK('runs.id'), primary_key=True), C('data', LargeBinary, nullable=False), C('created', Float, nullable=False))
 events = Table('events', metadata, C('id', Integer, primary_key=True, autoincrement=True), C('run_id', String(32), FK('runs.id'), nullable=False, index=True), C('kind', String(40), nullable=False), C('message', String(400), nullable=False), C('created', Float, nullable=False))
 votes = Table('votes', metadata, C('run_id', String(32), FK('runs.id'), primary_key=True), C('user_id', String(32), FK('users.id'), primary_key=True), C('kind', String(12), primary_key=True), C('created', Float, nullable=False))
 Index('votes_kind_run', votes.c.kind, votes.c.run_id)
@@ -53,8 +55,18 @@ engine = make_engine(settings.database_url)
 def init():
     metadata.create_all(engine)
     with engine.begin() as c:
+        # Startup and revision writers share the same serialization boundary.
+        if c.dialect.name == 'sqlite':
+            from sqlalchemy.dialects.sqlite import insert as upsert
+            c.exec_driver_sql('BEGIN IMMEDIATE')
+        else:
+            from sqlalchemy.dialects.postgresql import insert as upsert
+        c.execute(upsert(locks).values(id=1).on_conflict_do_nothing())
+        if c.dialect.name != 'sqlite': c.execute(select(locks.c.id).where(locks.c.id == 1).with_for_update())
         if c.execute(select(schema.c.version)).scalar_one_or_none() is None: c.execute(insert(schema).values(version=1))
-        if c.execute(select(locks.c.id)).scalar_one_or_none() is None: c.execute(insert(locks).values(id=1))
+        missing = rows(c, select(skills).where(~select(skill_versions.c.skill_id).where(skill_versions.c.skill_id == skills.c.id).exists()))
+        for skill in missing:
+            c.execute(insert(skill_versions).values(skill_id=skill['id'], number=1, files=skill['files'], sha256=skill['sha256'], created=skill['created']))
 
 def check_schema():
     with engine.connect() as c:

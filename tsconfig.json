@@ -1,9 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES2022", "module": "ES2022", "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"], "strict": true,
-    "noUncheckedIndexedAccess": false, "outDir": "web/dist", "rootDir": "web",
-    "sourceMap": false, "skipLibCheck": true, "noEmitOnError": true
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "outDir": "web/dist",
+    "rootDir": "web",
+    "sourceMap": false,
+    "skipLibCheck": true,
+    "noEmitOnError": true
   },
   "include": ["web/*.ts"]
 }

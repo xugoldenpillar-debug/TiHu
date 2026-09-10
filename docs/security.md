@@ -20,11 +20,21 @@ The worker needs access to the host Docker daemon, so **do not colocate it with 
 
 Skill archives are small, text-only and normalized. TiHu rejects path traversal, dotfiles, drive/absolute paths, symlinks/special files, encrypted members, excessive expansion ratios, duplicate paths and oversized files. A root `SKILL.md` is mandatory.
 
+Skill updates create immutable revisions. Experiments retain their own frozen content when a Skill is edited or deleted. Public experiment summaries and non-owner detail responses expose only Skill metadata, never the private Skill file bodies; owners must still inspect generated artifacts and prompts before publishing them.
+
 ## HTML previews
 
 Preview artifacts are served from a separate origin by a service that has the database signing key but **no provider-key decryption keys**. Signed links expire after five minutes. The preview CSP includes `sandbox allow-scripts` without `allow-same-origin`, blocks connect/forms/objects/frames/workers, and restricts embedding to the configured main application origin. The parent iframe also sets `sandbox="allow-scripts"` and no referrer.
 
-A browser sandbox is not a complete network firewall: top-level/self navigation behavior varies among browsers. Never put secrets in generated artifacts. For higher assurance, render screenshots in a separate networkless browser service instead of executing arbitrary artifacts in visitors' browsers.
+Opaque-origin previews authorize only the current signed bundle URL prefix for local scripts, styles, fonts, media and images. Noncredentialed CORS permits local ES-module imports without granting the preview access to application cookies or allowing arbitrary external resources. A withdrawal or moderation change invalidates previously public preview capabilities.
+
+A browser sandbox is not a complete network firewall: top-level/self navigation behavior varies among browsers. Never put secrets in generated artifacts. Interactive preview is a separate, explicit action; gallery cards display JPEGs or a labelled missing-thumbnail state rather than execute artifact HTML.
+
+## Thumbnail isolation
+
+The worker renders a saved artifact in a separate networkless gVisor guest with no host mounts, credentials, database access or broker socket. Chromium runs without its own OS sandbox inside this outer isolation boundary. All allowed requests are fulfilled from the bounded in-memory artifact bundle; external traffic, popups, downloads, WebSockets and further navigation are blocked. CPU, memory, PID, input/output and wall-clock limits contain failed or hung renders.
+
+The worker accepts only a fully decoded, bounded 960 × 600 RGB JPEG. Thumbnail endpoints use the same public/private visibility boundary as the artifact and disable caching. Rendering failure does not change a successful run to failure or trigger another model request.
 
 ## Abuse / rankings
 

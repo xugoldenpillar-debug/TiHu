@@ -6,14 +6,14 @@ import secrets
 import smtplib
 from email.message import EmailMessage
 from typing import Literal
-from urllib.parse import quote
+from urllib.parse import unquote
 
 from fastapi import Body, Cookie, Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from sqlalchemy import and_, delete, func, insert, select, update
+from sqlalchemy import and_, delete, func, insert, or_, select, update
 
 from . import db, domain
 from .config import settings
@@ -139,7 +139,8 @@ def user(request: Request):
 def optional_user(request: Request): return session_row(request)
 
 def verified_user(who=Depends(user)):
-    if not who['verified'] or who['suspended']: raise HTTPException(403,'account_not_eligible')
+    if who['suspended']: raise HTTPException(403,'account_suspended')
+    if not who['verified']: raise HTTPException(403,'verification_required')
     return who
 
 def admin(who=Depends(user)):
@@ -181,14 +182,17 @@ def startup():
 
 @app.get('/api/config')
 def config():
-    return {'app_origin':settings.app_origin,'preview_origin':settings.preview_origin,'providers':settings.allowed_bases,'harness':domain.harness(),'registration':settings.registration}
+    with db.engine.connect() as c:
+        categories=list(c.execute(select(db.challenges.c.category).where(db.challenges.c.archived.is_(False)).distinct().order_by(db.challenges.c.category)).scalars())
+    return {'app_origin':settings.app_origin,'preview_origin':settings.preview_origin,'providers':settings.allowed_bases,'harness':domain.harness(),'registration':settings.registration,'vote_min_age_seconds':settings.vote_age,'categories':categories,'limits':{'skill_bytes':256*1024,'skill_files':30,'skills_per_run':4,'prompts':30,'skills':30}}
 
 @app.get('/api/me')
 def me(request:Request):
     who=session_row(request)
-    if not who:return {'user':None,'csrf':None}
+    if not who:return {'user':None,'csrf':None,'quota':None,'vote_eligible_at':None}
     raw=request.cookies.get(settings.cookie)
-    return {'user':safe_user(who),'csrf':sign('csrf:'+raw)}
+    with db.engine.connect() as c: quota=domain.quota(c,who['id'])
+    return {'user':safe_user(who),'csrf':sign('csrf:'+raw),'quota':quota,'vote_eligible_at':who['created']+settings.vote_age}
 
 @app.post('/api/auth/register',status_code=201)
 def register(body:Register,response:Response):
@@ -229,11 +233,15 @@ def logout(request:Request,response:Response):
 
 @app.post('/api/auth/resend-verification')
 def resend(who=Depends(user)):
-    if who['verified']: return {'ok':True}
+    if who['verified']: return {'ok':True,'retry_after':0}
+    throttle('verification:'+who['id'],1,60)
     with db.engine.begin() as c: token=mail_token(c,who['id'],'verify')
-    try:deliver(who['email'],'Verify your TiHu account',f'{settings.app_origin}/#/verify?token={token}')
-    except (OSError,smtplib.SMTPException):pass
-    return {'ok':True}
+    try:
+        sent=deliver(who['email'],'Verify your TiHu account',f'{settings.app_origin}/#/verify?token={token}')
+    except (OSError,smtplib.SMTPException):
+        raise HTTPException(503,'verification_delivery_failed',headers={'Retry-After':'60'}) from None
+    if not sent: raise HTTPException(503,'verification_delivery_unavailable',headers={'Retry-After':'60'})
+    return {'ok':True,'retry_after':60}
 
 @app.post('/api/auth/verify')
 def verify(body:TokenBody):
@@ -283,8 +291,10 @@ def add_key(body:KeyInput,who=Depends(verified_user)):
 @app.delete('/api/keys/{ident}')
 def delete_key(ident:str,who=Depends(user)):
     with db.engine.begin() as c:
+        domain.admission_lock(c)
         domain.require_row(c,db.credentials,ident,who['id'])
-        c.execute(update(db.runs).where(db.runs.c.key_id==ident,db.runs.c.status.in_(domain.ACTIVE)).values(status='canceled',finished=db.now(),error='credential_revoked'))
+        canceled=c.execute(update(db.runs).where(db.runs.c.key_id==ident,db.runs.c.status.in_(domain.ACTIVE)).values(status='canceled',finished=db.now(),error='credential_revoked').returning(db.runs.c.id)).scalars().all()
+        for run_id in canceled:db.log(c,run_id,'canceled','Canceled because the provider credential was revoked.')
         c.execute(delete(db.credentials).where(db.credentials.c.id==ident));db.audit_log(c,who['id'],'credential.revoked',ident)
     return {'ok':True}
 
@@ -298,12 +308,19 @@ async def models(ident:str,who=Depends(user)):
 
 @app.get('/api/prompts')
 def list_prompts(who=Depends(user)):
-    with db.engine.connect() as c:return db.rows(c,select(db.prompt_templates).where(db.prompt_templates.c.owner_id==who['id']).order_by(db.prompt_templates.c.created.desc()))
+    with db.engine.connect() as c:return db.rows(c,select(db.prompt_templates).where(db.prompt_templates.c.owner_id==who['id']).order_by(db.prompt_templates.c.created.desc(),db.prompt_templates.c.id).limit(30))
 @app.post('/api/prompts',status_code=201)
 def save_prompt(body:PromptTemplate,who=Depends(verified_user)):
     with db.engine.begin() as c:
+        domain.admission_lock(c)
         if c.execute(select(func.count()).select_from(db.prompt_templates).where(db.prompt_templates.c.owner_id==who['id'])).scalar_one()>=30:raise HTTPException(422,'prompt_limit')
         ident=db.uid();c.execute(insert(db.prompt_templates).values(id=ident,owner_id=who['id'],name=body.name,body=body.body,created=db.now()))
+    return {'id':ident}
+@app.put('/api/prompts/{ident}')
+def update_prompt(ident:str,body:PromptTemplate,who=Depends(verified_user)):
+    with db.engine.begin() as c:
+        domain.require_row(c,db.prompt_templates,ident,who['id'])
+        c.execute(update(db.prompt_templates).where(db.prompt_templates.c.id==ident).values(name=body.name,body=body.body))
     return {'id':ident}
 @app.delete('/api/prompts/{ident}')
 def del_prompt(ident:str,who=Depends(user)):
@@ -312,32 +329,69 @@ def del_prompt(ident:str,who=Depends(user)):
 
 @app.get('/api/skills')
 def list_skills(who=Depends(user)):
-    with db.engine.connect() as c:return db.rows(c,select(db.skills.c.id,db.skills.c.name,db.skills.c.sha256,db.skills.c.created).where(db.skills.c.owner_id==who['id']).order_by(db.skills.c.created.desc()))
+    with db.engine.connect() as c:
+        current=select(func.max(db.skill_versions.c.number)).where(db.skill_versions.c.skill_id==db.skills.c.id).scalar_subquery()
+        rows=db.rows(c,select(db.skills,current.label('current_version')).where(db.skills.c.owner_id==who['id']).order_by(db.skills.c.created.desc(),db.skills.c.id))
+    return [{**{k:x[k] for k in ('id','name','sha256','created','current_version')},'file_count':len(x['files'])} for x in rows]
+
+@app.get('/api/skills/{ident}')
+def skill_detail(ident:str,version:int|None=Query(None,ge=1),who=Depends(user)):
+    with db.engine.connect() as c:
+        skill=domain.require_row(c,db.skills,ident,who['id'])
+        versions=db.rows(c,select(db.skill_versions.c.number,db.skill_versions.c.sha256,db.skill_versions.c.created).where(db.skill_versions.c.skill_id==ident).order_by(db.skill_versions.c.number.desc()))
+        current=versions[0]['number']
+        revision=db.row(c,select(db.skill_versions).where(db.skill_versions.c.skill_id==ident,db.skill_versions.c.number==(version or current)))
+        if not revision: raise HTTPException(404,'not_found')
+    return {'id':ident,'name':skill['name'],'sha256':revision['sha256'],'current_version':current,'version':revision['number'],'files':revision['files'],'versions':versions}
+
+def persist_skill(c,ident,who,name,files):
+    domain.admission_lock(c)
+    sha=stable_hash(files);created=db.now();name=unquote(name).strip()[:80]
+    if not name: raise HTTPException(422,'skill_name_required')
+    if ident:
+        domain.require_row(c,db.skills,ident,who['id'])
+        number=c.execute(select(func.max(db.skill_versions.c.number)).where(db.skill_versions.c.skill_id==ident)).scalar_one()+1
+        c.execute(update(db.skills).where(db.skills.c.id==ident).values(name=name,files=files,sha256=sha))
+    else:
+        if c.execute(select(func.count()).select_from(db.skills).where(db.skills.c.owner_id==who['id'])).scalar_one()>=30:raise HTTPException(422,'skill_limit')
+        ident=db.uid();number=1
+        c.execute(insert(db.skills).values(id=ident,owner_id=who['id'],name=name,files=files,sha256=sha,created=created))
+    c.execute(insert(db.skill_versions).values(skill_id=ident,number=number,files=files,sha256=sha,created=created))
+    return {'id':ident,'current_version':number,'sha256':sha}
+
 @app.post('/api/skills',status_code=201)
 async def add_skill(request:Request,x_file_name:str=Header('SKILL.md'),x_skill_name:str=Header('Skill'),who=Depends(verified_user)):
-    data=await request.body(); files=parse_skill(quote(x_file_name,safe='').replace('%','') if False else __import__('urllib.parse').parse.unquote(x_file_name),data)
-    with db.engine.begin() as c:
-        if c.execute(select(func.count()).select_from(db.skills).where(db.skills.c.owner_id==who['id'])).scalar_one()>=30:raise HTTPException(422,'skill_limit')
-        ident=db.uid();c.execute(insert(db.skills).values(id=ident,owner_id=who['id'],name=__import__('urllib.parse').parse.unquote(x_skill_name)[:80],files=files,sha256=stable_hash(files),created=db.now()))
-    return {'id':ident}
+    files=parse_skill(unquote(x_file_name),await request.body())
+    with db.engine.begin() as c:return persist_skill(c,None,who,x_skill_name,files)
+
+@app.put('/api/skills/{ident}')
+async def update_skill(ident:str,request:Request,x_file_name:str=Header('SKILL.md'),x_skill_name:str=Header('Skill'),who=Depends(verified_user)):
+    files=parse_skill(unquote(x_file_name),await request.body())
+    with db.engine.begin() as c:return persist_skill(c,ident,who,x_skill_name,files)
+
 @app.delete('/api/skills/{ident}')
 def del_skill(ident:str,who=Depends(user)):
-    with db.engine.begin() as c:domain.require_row(c,db.skills,ident,who['id']);c.execute(delete(db.skills).where(db.skills.c.id==ident))
+    with db.engine.begin() as c:
+        domain.admission_lock(c)
+        domain.require_row(c,db.skills,ident,who['id'])
+        c.execute(delete(db.skill_versions).where(db.skill_versions.c.skill_id==ident))
+        c.execute(delete(db.skills).where(db.skills.c.id==ident))
     return {'ok':True}
 
 
 @app.get('/api/challenges')
-def challenges(q:str='',limit:int=Query(50,ge=1,le=100)):
+def challenges(q:str=Query('',max_length=200),category:str|None=None,cursor:str|None=Query(None,max_length=512),limit:int=Query(50,ge=1,le=100)):
     with db.engine.connect() as c:
-        stmt=select(db.challenges).where(db.challenges.c.archived.is_(False)).order_by(db.challenges.c.created.asc()).limit(limit)
-        rows=db.rows(c,stmt)
-    if q: rows=[x for x in rows if q.lower() in (x['title']+' '+x['description']).lower()]
-    return rows
+        stmt=select(db.challenges).where(db.challenges.c.archived.is_(False))
+        if q.strip():stmt=stmt.where(or_(db.challenges.c.title.icontains(q.strip(),autoescape=True),db.challenges.c.description.icontains(q.strip(),autoescape=True)))
+        if category:stmt=stmt.where(db.challenges.c.category==category)
+        return domain.paginate(c,stmt,db.challenges.c.created,db.challenges.c.id,cursor,limit)
 
 @app.get('/api/challenges/{ident}')
-def challenge_detail(ident:str):
+def challenge_detail(ident:str,who=Depends(optional_user)):
     with db.engine.connect() as c:
         row=domain.require_row(c,db.challenges,ident);row['versions']=db.rows(c,select(db.versions).where(db.versions.c.challenge_id==ident).order_by(db.versions.c.number.desc()))
+        row['can_edit']=bool(who and who['verified'] and (who['id']==row['owner_id'] or who['role']=='admin'))
     return row
 
 @app.post('/api/challenges',status_code=201)
@@ -351,9 +405,10 @@ def create_challenge(body:Challenge,who=Depends(verified_user)):
 @app.post('/api/challenges/{ident}/versions',status_code=201)
 def create_version(ident:str,body:VersionInput,who=Depends(verified_user)):
     with db.engine.begin() as c:
+        domain.admission_lock(c)
         task=domain.require_row(c,db.challenges,ident)
         if task['owner_id']!=who['id'] and who['role']!='admin':raise HTTPException(403,'owner_required')
-        number=task['current_version']+1;vid=db.uid();p=body.prompt.strip();r=body.rubric.strip()
+        number=c.execute(select(func.max(db.versions.c.number)).where(db.versions.c.challenge_id==ident)).scalar_one()+1;vid=db.uid();p=body.prompt.strip();r=body.rubric.strip()
         c.execute(insert(db.versions).values(id=vid,challenge_id=ident,number=number,prompt=p,rubric=r,sha256=stable_hash({'prompt':p,'rubric':r}),created=db.now()));c.execute(update(db.challenges).where(db.challenges.c.id==ident).values(current_version=number))
     return {'id':vid,'number':number}
 
@@ -372,32 +427,37 @@ def submit_run(body:RunInput,idempotency_key:str=Header('',alias='Idempotency-Ke
     return domain.enqueue(who['id'],body.model_dump(exclude={'consent'}),idempotency_key)
 
 @app.get('/api/runs')
-def list_runs(challenge:str|None=None,version:str|None=None,mine:bool=False,limit:int=Query(24,ge=1,le=100),who=Depends(optional_user)):
+def list_runs(challenge:str|None=None,version:str|None=None,mine:bool=False,track:Literal['all','standard','open']='all',status:Literal['all','queued','running','succeeded','failed','canceled']='all',published:Literal['all','public','private']='all',q:str=Query('',max_length=200),cursor:str|None=Query(None,max_length=512),limit:int=Query(24,ge=1,le=100),who=Depends(optional_user)):
     with db.engine.connect() as c:
         stmt=domain.run_query()
         if mine:
             if not who:raise HTTPException(401,'authentication_required')
             stmt=stmt.where(db.runs.c.owner_id==who['id'])
-        else:stmt=stmt.where(*domain.public_conditions(challenge,version,'all'))
+        else:stmt=stmt.where(*domain.public_conditions(track='all',latest=False))
         if challenge:stmt=stmt.where(db.runs.c.challenge_id==challenge)
         if version:stmt=stmt.where(db.runs.c.version_id==version)
-        return db.rows(c,stmt.order_by(db.runs.c.created.desc()).limit(limit))
+        if track!='all':stmt=stmt.where(db.runs.c.track==track)
+        if status!='all':stmt=stmt.where(db.runs.c.status==status)
+        if published!='all':stmt=stmt.where(db.runs.c.published.is_(published=='public'))
+        if q.strip():stmt=stmt.where(or_(*[column.icontains(q.strip(),autoescape=True) for column in (db.challenges.c.title,db.runs.c.model,db.runs.c.provider,db.users.c.username)]))
+        page=domain.paginate(c,stmt,db.runs.c.created,db.runs.c.id,cursor,limit,descending=True)
+        domain.decorate_summaries(c,page['items'],who)
+        return page
 
 def decorate_run(c,row,who):
-    public = bool(row['published'] and not row['hidden'] and row['status']=='succeeded')
-    owner=bool(who and (who['id']==row['owner_id'] or who['role']=='admin'))
-    result=dict(row)
-    if not owner and public:
-        snap=dict(result['snapshot']);snap['skills']=[{'id':x['id'],'name':x['name'],'sha256':x['sha256']} for x in snap.get('skills',[])];result['snapshot']=snap
-    vc=domain.vote_counts();votesrow=db.row(c,select(func.coalesce(vc.c.capability,0).label('capability'),func.coalesce(vc.c.funny,0).label('funny')).select_from(db.runs.outerjoin(vc,db.runs.c.id==vc.c.run_id)).where(db.runs.c.id==row['id'])) or {'capability':0,'funny':0}
-    result.update(votesrow);result['my_votes']=[]
-    if who:result['my_votes']=[x[0] for x in c.execute(select(db.votes.c.kind).where(db.votes.c.run_id==row['id'],db.votes.c.user_id==who['id']))]
+    owner=bool(who and who['id']==row['owner_id'])
+    result=domain.decorate_summaries(c,[dict(row)],who)[0]
+    if not owner:
+        snap=dict(result['snapshot']);snap['skills']=[{k:x[k] for k in ('id','name','sha256') if k in x} for x in snap.get('skills',[])];result['snapshot']=snap
+    result['can_view_events']=bool(owner or (who and who['role']=='admin'))
+    result['vote_reason']=domain.vote_reason(row,who)
+    result['can_vote']=result['vote_reason'] is None
     return result
 
 @app.get('/api/runs/{ident}')
 def get_run(ident:str,who=Depends(optional_user)):
     with db.engine.connect() as c:
-        row=domain.visible_run(c,ident,who);base=db.row(c,domain.run_query().where(db.runs.c.id==ident));return decorate_run(c,base,who)
+        domain.visible_run(c,ident,who);base=db.row(c,domain.run_query(detail=True).where(db.runs.c.id==ident));return decorate_run(c,base,who)
 
 @app.get('/api/runs/{ident}/source')
 def source(ident:str,who=Depends(optional_user)):
@@ -413,7 +473,15 @@ def preview_link(ident:str,who=Depends(optional_user)):
         if not artifact: raise HTTPException(404,'not_found')
     expires=int(db.now()+300); scope='public' if run['published'] and not run['hidden'] else ('private:'+run['owner_id'])
     token=sign(f'{ident}:{artifact["sha256"]}:{expires}:{scope}')
-    return {'url':f'{settings.preview_origin}/p/{ident}/{artifact["sha256"]}/{expires}/{token}'}
+    return {'url':f'{settings.preview_origin}/p/{ident}/{artifact["sha256"]}/{expires}/{token}/index.html','expires':expires}
+
+@app.get('/api/runs/{ident}/thumbnail')
+def thumbnail(ident:str,who=Depends(optional_user)):
+    with db.engine.connect() as c:
+        domain.visible_run(c,ident,who)
+        data=c.execute(select(db.thumbnails.c.data).where(db.thumbnails.c.run_id==ident)).scalar_one_or_none()
+    if data is None: raise HTTPException(404,'not_found')
+    return Response(data,media_type='image/jpeg',headers={'Cache-Control':'no-store'})
 
 @app.put('/api/runs/{ident}/publish')
 def publish(ident:str,body:Publish,who=Depends(user)):
@@ -426,44 +494,55 @@ def publish(ident:str,body:Publish,who=Depends(user)):
 @app.post('/api/runs/{ident}/cancel')
 def cancel(ident:str,who=Depends(user)):
     with db.engine.begin() as c:
-        row=domain.require_row(c,db.runs,ident,who['id'])
-        if row['status'] in domain.ACTIVE:c.execute(update(db.runs).where(db.runs.c.id==ident).values(status='canceled',finished=db.now(),error='user_canceled'))
+        domain.require_row(c,db.runs,ident,who['id'])
+        changed=c.execute(update(db.runs).where(db.runs.c.id==ident,db.runs.c.status.in_(domain.ACTIVE)).values(status='canceled',finished=db.now(),error='user_canceled')).rowcount
+        if changed:
+            db.log(c,ident,'canceled','Canceled by the owner. In-flight provider usage may still be billed.')
+            db.audit_log(c,who['id'],'run.cancel',ident)
     return {'ok':True}
 
 @app.put('/api/runs/{ident}/vote')
 def vote(ident:str,body:Vote,who=Depends(verified_user)):
-    if db.now()-who['created']<settings.vote_age:raise HTTPException(403,'vote_not_allowed')
+    if db.now()-who['created']<settings.vote_age:raise HTTPException(403,'account_too_new')
     with db.engine.begin() as c:
+        domain.admission_lock(c)
         run=domain.visible_run(c,ident,who)
-        if run['owner_id']==who['id'] or not run['published'] or run['hidden']:raise HTTPException(403,'vote_not_allowed')
+        reason=domain.vote_reason(run,who)
+        if reason:raise HTTPException(403,reason)
         c.execute(delete(db.votes).where(db.votes.c.run_id==ident,db.votes.c.user_id==who['id'],db.votes.c.kind==body.kind))
         if body.active:c.execute(insert(db.votes).values(run_id=ident,user_id=who['id'],kind=body.kind,created=db.now()))
         count=c.execute(select(func.count()).select_from(db.votes).where(db.votes.c.run_id==ident,db.votes.c.kind==body.kind)).scalar_one()
     return {'count':count,'active':body.active}
 
 @app.get('/api/leaderboard')
-def leaderboard(kind:Literal['capability','funny']='capability',group:Literal['works','models']='works',challenge:str|None=None,version:str|None=None,track:Literal['standard','open','all']='standard',days:int=Query(0,ge=0,le=30),limit:int=Query(20,ge=1,le=100)):
+def leaderboard(kind:Literal['capability','funny']='capability',group:Literal['works','models']='works',challenge:str|None=None,version:str|None=None,track:Literal['standard','open','all']='standard',days:int=Query(0,ge=0,le=30),limit:int=Query(20,ge=1,le=100),environment:str|None=Query(None,pattern=r'^[a-f0-9]{64}$'),who=Depends(optional_user)):
     if days not in (0,7,30):raise HTTPException(422,'invalid_time_window')
-    with db.engine.connect() as c:return {'items':domain.leaderboard(c,kind,group,challenge,version,track,days,limit)}
+    environment=environment or stable_hash(domain.harness())
+    with db.engine.connect() as c:
+        items=domain.leaderboard(c,kind,group,challenge,version,track,days,limit,environment)
+        if group=='works':domain.decorate_summaries(c,items,who)
+    return {'items':items,'basis':{'time':'work_created','days':days,'environment':environment,'version':version or 'latest_per_challenge','model_aggregation':'best_work_per_author_challenge_version_provider_model_track_environment'}}
 
 @app.get('/api/runs/{ident}/comments')
 def comments(ident:str,who=Depends(optional_user)):
     with db.engine.connect() as c:
         run=domain.visible_run(c,ident,who)
-        if not run['published'] or run['hidden']:raise HTTPException(404,'not_found')
-        return db.rows(c,select(db.comments.c.id,db.comments.c.owner_id,db.comments.c.body,db.comments.c.created,db.users.c.username).select_from(db.comments.join(db.users,db.comments.c.owner_id==db.users.c.id)).where(db.comments.c.run_id==ident,db.comments.c.hidden.is_(False)).order_by(db.comments.c.created))
+        rows=db.rows(c,select(db.comments.c.id,db.comments.c.owner_id,db.comments.c.body,db.comments.c.created,db.users.c.username).select_from(db.comments.join(db.users,db.comments.c.owner_id==db.users.c.id)).where(db.comments.c.run_id==ident,db.comments.c.hidden.is_(False)).order_by(db.comments.c.created,db.comments.c.id))
+        for row in rows:row['can_delete']=bool(who and (who['id'] in (row['owner_id'],run['owner_id']) or who['role']=='admin'))
+        return rows
 @app.post('/api/runs/{ident}/comments',status_code=201)
 def add_comment(ident:str,body:Comment,who=Depends(verified_user)):
     with db.engine.begin() as c:
         run=domain.visible_run(c,ident,who)
-        if not run['published'] or run['hidden']:raise HTTPException(404,'not_found')
+        if not run['published'] or run['hidden'] or run['status']!='succeeded':raise HTTPException(404,'not_found')
         ident2=db.uid();c.execute(insert(db.comments).values(id=ident2,owner_id=who['id'],run_id=ident,body=body.body,hidden=False,created=db.now()))
     return {'id':ident2}
 @app.delete('/api/comments/{ident}')
 def delete_comment(ident:str,who=Depends(user)):
     with db.engine.begin() as c:
         row=domain.require_row(c,db.comments,ident)
-        if row['owner_id']!=who['id'] and who['role']!='admin':raise HTTPException(403,'owner_required')
+        run=domain.require_row(c,db.runs,row['run_id'])
+        if who['id'] not in (row['owner_id'],run['owner_id']) and who['role']!='admin':raise HTTPException(403,'owner_required')
         c.execute(delete(db.comments).where(db.comments.c.id==ident))
     return {'ok':True}
 
@@ -488,44 +567,57 @@ def admin_metrics(_=Depends(admin)):
 @app.post('/api/admin/moderate')
 def moderate(body:Moderate,who=Depends(admin)):
     with db.engine.begin() as c:
+        domain.admission_lock(c)
         if body.action in ('hide_run','unhide_run'):
             domain.require_row(c,db.runs,body.target);c.execute(update(db.runs).where(db.runs.c.id==body.target).values(hidden=body.action=='hide_run',published=False if body.action=='hide_run' else db.runs.c.published))
         elif body.action=='archive_challenge':domain.require_row(c,db.challenges,body.target);c.execute(update(db.challenges).where(db.challenges.c.id==body.target).values(archived=True))
         elif body.action in ('suspend_user','reinstate_user'):
             target=domain.require_row(c,db.users,body.target);suspended=body.action=='suspend_user';c.execute(update(db.users).where(db.users.c.id==target['id']).values(suspended=suspended))
             if suspended:
-                c.execute(delete(db.sessions).where(db.sessions.c.owner_id==target['id']));c.execute(delete(db.votes).where(db.votes.c.user_id==target['id']));c.execute(update(db.runs).where(db.runs.c.owner_id==target['id']).values(published=False,hidden=True));c.execute(update(db.runs).where(db.runs.c.owner_id==target['id'],db.runs.c.status.in_(domain.ACTIVE)).values(status='canceled',finished=db.now(),error='account_suspended'))
+                c.execute(delete(db.sessions).where(db.sessions.c.owner_id==target['id']));c.execute(delete(db.votes).where(db.votes.c.user_id==target['id']));c.execute(update(db.runs).where(db.runs.c.owner_id==target['id']).values(published=False,hidden=True))
+                canceled=c.execute(update(db.runs).where(db.runs.c.owner_id==target['id'],db.runs.c.status.in_(domain.ACTIVE)).values(status='canceled',finished=db.now(),error='account_suspended').returning(db.runs.c.id)).scalars().all()
+                for run_id in canceled:db.log(c,run_id,'canceled','Canceled because the account was suspended.')
         elif body.action=='resolve_report':domain.require_row(c,db.reports,body.target);c.execute(update(db.reports).where(db.reports.c.id==body.target).values(resolved=True))
         db.audit_log(c,who['id'],'moderation.'+body.action,body.target)
     return {'ok':True}
 
 @app.get('/api/runs/{ident}/events')
-def event_stream(ident:str,request:Request,who=Depends(user)):
+def event_stream(ident:str,request:Request,after:int=Query(0,ge=0,le=2**63-1),last_event_id:str|None=Header(None,alias='Last-Event-ID'),who=Depends(user)):
     with db.engine.connect() as c:
         run=domain.require_row(c,db.runs,ident)
         if who['id']!=run['owner_id'] and who['role']!='admin':raise HTTPException(404,'not_found')
+    if last_event_id is not None:
+        try:
+            resumed=int(last_event_id)
+            if not 0<=resumed<=2**63-1:raise ValueError()
+        except ValueError:raise HTTPException(422,'invalid_event_id') from None
+        after=max(after,resumed)
     async def generate():
-        last=0
-        for _ in range(150):
+        last=after;idle=0
+        while idle<150:
+            if await request.is_disconnected():break
+            current=session_row(request)
+            if not current or (current['id']!=run['owner_id'] and current['role']!='admin'):break
             with db.engine.connect() as c:
-                rows=db.rows(c,select(db.events).where(db.events.c.run_id==ident,db.events.c.id>last).order_by(db.events.c.id).limit(200));state=domain.require_row(c,db.runs,ident)
+                state=domain.require_row(c,db.runs,ident)
+                rows=db.rows(c,select(db.events).where(db.events.c.run_id==ident,db.events.c.id>last).order_by(db.events.c.id).limit(200))
             for x in rows:
-                last=x['id'];yield f"event: progress\ndata: {json.dumps(x,separators=(',',':'))}\n\n"
+                last=x['id'];yield f"id: {last}\nevent: progress\ndata: {json.dumps(x,separators=(',',':'))}\n\n"
+            if len(rows)==200:continue
             if state['status'] not in domain.ACTIVE:
                 yield f"event: state\ndata: {json.dumps({'status':state['status']})}\n\n";break
-            if await request.is_disconnected():break
+            idle+=1
             await asyncio.sleep(0.5)
     return StreamingResponse(generate(),media_type='text/event-stream',headers={'Cache-Control':'no-store','X-Accel-Buffering':'no'})
 
 # Serve the dependency-free web UI when present.
 from pathlib import Path
 WEB = Path(__file__).resolve().parent.parent / 'web'
-if (WEB/'art').exists(): app.mount('/assets/art',StaticFiles(directory=WEB/'art'),name='art')
+if (WEB/'art').exists(): app.mount('/art',StaticFiles(directory=WEB/'art'),name='art')
+app.mount('/dist',StaticFiles(directory=WEB/'dist',check_dir=False),name='dist')
 @app.get('/')
 def index():
     if (WEB/'index.html').exists():return FileResponse(WEB/'index.html',headers={'Cache-Control':'no-store'})
     return {'name':'TiHu','api':'/api/config'}
-@app.get('/app.js')
-def app_js(): return FileResponse(WEB/'dist/app.js',media_type='text/javascript')
 @app.get('/style.css')
 def css(): return FileResponse(WEB/'style.css',media_type='text/css')

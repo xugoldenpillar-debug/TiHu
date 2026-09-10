@@ -21,6 +21,7 @@ services:
       ACTIVE_KEY_ID: ${ACTIVE_KEY_ID:-v1}
       SIGNING_KEY: ${SIGNING_KEY:?set SIGNING_KEY}
       SANDBOX_RUNTIME: ${SANDBOX_RUNTIME:-runsc}
+      SANDBOX_IMAGE: ${SANDBOX_IMAGE:-tihu-sandbox:0.1}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
@@ -29,6 +30,7 @@ services:
       REGISTRATION_OPEN: ${REGISTRATION_OPEN:-true}
     depends_on: {db: {condition: service_healthy}}
     command: ["sh","-c","python -m tihu.cli init && python -m tihu.cli seed && exec uvicorn tihu.api:app --host 0.0.0.0 --port 8000 --no-access-log"]
+    healthcheck: {test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/config',timeout=3)"], interval: 5s, timeout: 4s, retries: 20}
     restart: unless-stopped
   preview:
     build: .
@@ -60,11 +62,13 @@ services:
       SIGNING_KEY: ${SIGNING_KEY:?set SIGNING_KEY}
       SANDBOX_IMAGE: ${SANDBOX_IMAGE:-tihu-sandbox:0.1}
       SANDBOX_RUNTIME: ${SANDBOX_RUNTIME:-runsc}
+      THUMBNAIL_IMAGE: ${THUMBNAIL_IMAGE:-tihu-thumbnail:0.1}
       BROKER_ROOT: /var/lib/tihu/brokers
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
-    depends_on: {db: {condition: service_healthy}}
+    depends_on: {db: {condition: service_healthy}, api: {condition: service_healthy}}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker:ro
       - /var/lib/tihu/brokers:/var/lib/tihu/brokers
     command: ["python","-m","tihu.worker"]
     restart: unless-stopped
@@ -82,6 +86,11 @@ services:
     profiles: ["build-only"]
     build: ./sandbox
     image: ${SANDBOX_IMAGE:-tihu-sandbox:0.1}
+    command: ["true"]
+  thumbnail-image:
+    profiles: ["build-only"]
+    build: ./thumbnail
+    image: ${THUMBNAIL_IMAGE:-tihu-thumbnail:0.1}
     command: ["true"]
 volumes:
   tihu-db:

@@ -26,16 +26,19 @@ The real provider key is AES-256-GCM encrypted and only decrypted in trusted wor
 
 ## Features
 
-- Registration/login, Argon2id passwords, server sessions, CSRF and origin checks, verification/reset token plumbing.
-- Multiple encrypted API connections, provider allowlist, SSRF-hardened model discovery, model selection.
-- Versioned community challenges and three honest starter challenges (no fake results/scores).
-- Private prompt-template library and restricted `SKILL.md`/ZIP library.
-- Immutable run snapshots, idempotent admission, per-user active/daily quotas, queue backpressure.
-- PostgreSQL `SKIP LOCKED` worker claims, leases/heartbeats, no automatic paid retry.
-- pi 0.85.1 guest with fixed resource/tool contract; per-run credential broker.
-- Private HTML/source preview, explicit publish/unpublish, capability/funny votes, comments and reports.
-- Work and model boards separated by task version, track and execution-environment hash.
-- Responsive dependency-free TypeScript frontend and separate preview service.
+- Registration/login, Argon2id passwords, server sessions, CSRF/origin checks, verification/reset flows and resend-error guidance.
+- Multiple encrypted API connections, provider allowlist, SSRF-hardened model discovery and linked model selection.
+- Searchable, cursor-paginated challenges, public gallery and private experiment history; three starter challenges with no fabricated results or scores.
+- Editable private prompt templates and immutable `SKILL.md`/ZIP revisions, including historical file inspection.
+- Immutable run snapshots, idempotent admission, visible rolling 24-hour/concurrency quotas and queue backpressure.
+- PostgreSQL `SKIP LOCKED` worker claims, leases/heartbeats, cancellation cleanup and no automatic paid retry.
+- pi 0.85.1 guest with a fixed resource/tool contract and a per-run credential broker.
+- Resumable, sanitized progress events; recorded provider Token usage distinguishes unknown/partial usage from zero. No fabricated price estimates.
+- Separate-origin multi-file previews support bundle-local CSS, JavaScript modules, SVG and images; source files can be inspected or downloaded byte-for-byte.
+- Real JPEG thumbnails captured from saved artifacts in a separate networkless gVisor guest. Missing/failed thumbnails are labelled explicitly and never invalidate a successful experiment.
+- Explicit publication disclosure and withdrawal, capability/funny votes, comments, reports and moderation. Public responses omit private Skill file bodies and execution logs.
+- Work/model boards separated by task version, track and environment fingerprint; time windows select newly created works, not recent votes. Side-by-side comparison exposes condition differences.
+- Modular, dependency-free TypeScript frontend with responsive navigation, keyboard focus management, readable errors and accessible scroll regions.
 
 ## Development start
 
@@ -43,10 +46,10 @@ Requirements: Python 3.12+, Node/TypeScript for rebuilding the frontend, Docker,
 
 ```bash
 python scripts/generate_env.py
-# Build frontend after editing web/app.ts
+# Rebuild all web/*.ts modules (TypeScript 5.8.3 or newer)
 tsc
-# Build the fixed pi guest image
-docker compose --profile build-only build sandbox-image
+# Build both isolated guests before starting workers
+docker compose --profile build-only build sandbox-image thumbnail-image
 # Start PostgreSQL, API, preview, worker and frontend
 docker compose up --build -d
 ```
@@ -59,6 +62,8 @@ Without Docker/gVisor you can still run the API regression suite locally:
 pip install -r requirements.txt
 pytest -q --disable-warnings
 ```
+
+See `VALIDATION.json` for the exercised scope. Local verification includes PostgreSQL concurrency, real gVisor/pi/Unix-socket execution against a non-billable protocol fixture, real Chromium thumbnails, and desktop/mobile browser workflows. It does not establish production readiness or prove real paid-provider or SMTP delivery.
 
 ## Production
 

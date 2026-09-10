@@ -1,6 +1,6 @@
 FROM node:22-bookworm-slim
 ARG PI_VERSION=0.85.1
-RUN npm install -g "@earendil-works/pi-coding-agent@${PI_VERSION}" \
+RUN npm install -g --registry=https://registry.npmmirror.com "@earendil-works/pi-coding-agent@${PI_VERSION}" \
  && npm cache clean --force \
  && mkdir -p /opt/tihu /workspace \
  && chmod 1777 /workspace
