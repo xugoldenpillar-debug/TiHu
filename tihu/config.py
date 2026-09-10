@@ -34,7 +34,7 @@ class Settings:
     master_keys: dict = field(default_factory=lambda: json.loads(os.getenv('MASTER_KEYS', '{}')))
     active_key: str = field(default_factory=lambda: os.getenv('ACTIVE_KEY_ID', 'v1'))
     signing_key: str = field(default_factory=lambda: os.getenv('SIGNING_KEY', ''))
-    allowed_bases: list = field(default_factory=lambda: os.getenv('PROVIDER_BASES', 'https://api.openai.com/v1,https://api.anthropic.com/v1,https://api.deepseek.com/v1,https://openrouter.ai/api/v1,https://generativelanguage.googleapis.com/v1beta/openai').split(','))
+    allowed_bases: list = field(default_factory=lambda: os.getenv('PROVIDER_BASES', 'https://api.openai.com/v1,https://api.anthropic.com,https://api.anthropic.com/v1,https://api.deepseek.com/v1,https://openrouter.ai/api/v1,https://generativelanguage.googleapis.com/v1beta/openai').split(','))
     sandbox_image: str = field(default_factory=lambda: os.getenv('SANDBOX_IMAGE', 'tihu-sandbox:0.1'))
     sandbox_runtime: str = field(default_factory=lambda: os.getenv('SANDBOX_RUNTIME', 'runsc'))
     broker_root: str = field(default_factory=lambda: os.getenv('BROKER_ROOT', '/tmp/tihu-brokers'))

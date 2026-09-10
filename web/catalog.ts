@@ -391,10 +391,13 @@ export async function leaderboardPage(): Promise<Page> {
   const q = query();
   const group = q.get("group") === "models" ? "models" : "works";
   const kind = q.get("kind") === "funny" ? "funny" : "capability";
+  const providerScope =
+    q.get("provider_scope") ?? q.get("provider-scope") ?? "all";
   const params = new URLSearchParams({
     group,
     kind,
     track: q.get("track") ?? "standard",
+    provider_scope: providerScope,
     days: q.get("days") ?? "0",
     limit: "50",
   });
@@ -412,7 +415,11 @@ export async function leaderboardPage(): Promise<Page> {
   const rows = board.items
     .map((item, index) => {
       const work = "id" in item;
-      return `<tr><td class="rank">${index + 1}</td><td>${work ? `<a class="text-link" href="#/run/${esc(item.id)}">${esc(item.model)}</a><p class="help">${esc(challengeCopy[item.title]?.title ?? item.title)} · v${item.version}</p>` : `<strong>${esc(item.model)}</strong><p class="help break-word">${esc(item.provider)}</p>`}</td><td>${badge(item.track)}</td><td class="score">${fmt(work ? item[kind] : item.score)}</td><td>${work ? `@${esc(item.username)}<p class="help">${date(item.created)}</p>` : `${fmt(item.entries)} 件作品<p class="help">${fmt(item.authors)} 位作者 · ${fmt(item.challenges)} 道题</p>`}</td></tr>`;
+      const isOfficial = item.is_official;
+      const provBadge = isOfficial
+        ? '<span class="badge official">官方直连</span>'
+        : '<span class="badge custom">自定义源</span>';
+      return `<tr><td class="rank">${index + 1}</td><td>${work ? `<a class="text-link" href="#/run/${esc(item.id)}">${esc(item.model)}</a> ${provBadge}<p class="help">${esc(challengeCopy[item.title]?.title ?? item.title)} · v${item.version}</p>` : `<strong>${esc(item.model)}</strong> ${provBadge}<p class="help break-word">${esc(item.provider)}</p>`}</td><td>${badge(item.track)}</td><td class="score">${fmt(work ? item[kind] : item.score)}</td><td>${work ? `@${esc(item.username)}<p class="help">${date(item.created)}</p>` : `${fmt(item.entries)} 件作品<p class="help">${fmt(item.authors)} 位作者 · ${fmt(item.challenges)} 道题</p>`}</td></tr>`;
     })
     .join("");
   const filterSelect = (
@@ -453,6 +460,15 @@ export async function leaderboardPage(): Promise<Page> {
           ["open", "开放赛道"],
         ],
         params.get("track")!,
+      )}${filterSelect(
+        "board-provider_scope",
+        "服务商来源",
+        [
+          ["all", "全网服务商（综合榜）"],
+          ["official", "官方直连源（标准榜）"],
+          ["custom", "社区中转/自建源"],
+        ],
+        providerScope,
       )}${filterSelect(
         "board-days",
         "作品创建时间",

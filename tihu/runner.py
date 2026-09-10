@@ -10,6 +10,7 @@ import shutil
 import tempfile
 from pathlib import Path
 from aiohttp import web
+from urllib.parse import urlparse
 from sqlalchemy import select, update
 
 from . import db, domain
@@ -199,7 +200,18 @@ class CallUsage:
     @property
     def complete(self):return self.finished and self.tokens['input'] is not None and self.tokens['output'] is not None
 
-
+def resolve_endpoint(base: str, protocol: str) -> str:
+    base = base.rstrip('/')
+    if protocol == 'anthropic':
+        return base + ('/messages' if base.endswith('/v1') else '/v1/messages')
+    if protocol == 'responses':
+        return base + ('/responses' if base.endswith('/v1') else '/v1/responses')
+    if base.endswith('/chat/completions'):
+        return base
+    path = urlparse(base).path
+    if not path or path == '/':
+        return base + '/v1/chat/completions'
+    return base + '/chat/completions'
 class Broker:
     def __init__(self,run,key):
         self.run=run;self.key=key;self.token=secrets.token_urlsafe(32)
@@ -233,14 +245,14 @@ class Broker:
             self.error='model_call_limit'
             return web.json_response({'error':self.error},status=429)
         protocol=self.run['snapshot']['protocol'];base=self.run['snapshot']['base_url']
-        suffix={'openai':'/chat/completions','responses':'/responses','anthropic':'/messages'}[protocol]
+        endpoint=resolve_endpoint(base,protocol)
         self.calls+=1;call_number=self.calls;usage=CallUsage();self.usage.append(usage)
         self.persist('call_started',f'Model call {call_number} started.')
         headers=auth_headers(protocol,self.key);headers['content-type']='application/json'
         outcome='provider_request_failed';streaming=False
         try:
             async with outbound_session() as client:
-                async with client.post(base+suffix,headers=headers,json=payload,allow_redirects=False) as response:
+                async with client.post(endpoint,headers=headers,json=payload,allow_redirects=False) as response:
                     if response.content_length and response.content_length>RESPONSE_LIMIT:raise ValueError('provider_response_too_large')
                     content_type=response.headers.get('content-type','application/json').split(';')[0].strip().lower()
                     streaming=content_type=='text/event-stream';body=bytearray()
@@ -266,6 +278,7 @@ class Broker:
             outcome='run_inactive'
             raise
         except Exception as exc:
+            logger.warning("Broker outbound request failed for run %s call %s: %s (%s)", self.run['id'], call_number, type(exc).__name__, exc)
             outcome=safe_error(exc,'provider_request_failed');self.error=outcome
             return web.json_response({'error':outcome},status=400)
         finally:

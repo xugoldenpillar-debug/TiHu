@@ -86,41 +86,74 @@ function actionButton(event) {
         : null;
 }
 const protocols = {
-    openai: "OpenAI Chat Completions",
-    responses: "OpenAI Responses",
-    anthropic: "Anthropic Messages",
+    openai: "OpenAI Chat Completions（标准兼容协议，自建中转/One-API通常选此项）",
+    anthropic: "Anthropic Messages（Claude 原生协议，官方或 Claude 专属中转选此项）",
+    responses: "OpenAI Responses（OpenAI 新版 Responses 专用接口）",
 };
 function providerPreset(base) {
-    const host = new URL(base).hostname;
-    if (host === "api.anthropic.com")
-        return { name: "Anthropic", protocol: "anthropic" };
-    if (host === "api.openai.com")
-        return { name: "OpenAI", protocol: "openai" };
-    if (host === "api.deepseek.com")
-        return { name: "DeepSeek", protocol: "openai" };
-    if (host === "openrouter.ai")
-        return { name: "OpenRouter", protocol: "openai" };
-    if (host === "generativelanguage.googleapis.com")
-        return { name: "Gemini · OpenAI 兼容", protocol: "openai" };
-    return { name: host, protocol: "openai" };
+    try {
+        const host = new URL(base).hostname.toLowerCase();
+        if (host === "api.anthropic.com")
+            return { name: "Anthropic 官方源", protocol: "anthropic" };
+        if (host === "api.openai.com")
+            return { name: "OpenAI 官方源", protocol: "openai" };
+        if (host === "api.deepseek.com")
+            return { name: "DeepSeek 官方源", protocol: "openai" };
+        if (host === "openrouter.ai")
+            return { name: "OpenRouter 聚合源", protocol: "openai" };
+        if (host === "generativelanguage.googleapis.com")
+            return { name: "Gemini 官方兼容源", protocol: "openai" };
+        if (host.includes("siliconflow"))
+            return { name: "硅基流动 SiliconFlow", protocol: "openai" };
+        if (host.includes("aliyuncs.com") || host.includes("dashscope"))
+            return { name: "阿里百炼 DashScope", protocol: "openai" };
+        if (host.includes("moonshot.cn"))
+            return { name: "月之暗面 Moonshot", protocol: "openai" };
+        if (host.includes("groq.com"))
+            return { name: "Groq 高速推理", protocol: "openai" };
+        return { name: host, protocol: "openai" };
+    }
+    catch {
+        return { name: "自定义服务商", protocol: "openai" };
+    }
 }
 function modelsHtml(models, search = "") {
     const found = models.filter((model) => model.toLowerCase().includes(search.trim().toLowerCase()));
     return `${models.length ? `<p class="help">显示 ${found.length} / ${models.length} 个模型。发现成功不代表该 Key 有每个模型的调用权限；实际费用由服务商收取。</p>` : ""}${found.length ? `<ul class="summary-list">${found.map((model) => `<li class="mono">${esc(model)}</li>`).join("")}</ul>` : `<p class="muted">${models.length ? "没有匹配的模型，试试其他关键词。" : "尚无可用模型。点击“检测模型”；若服务商未开放模型目录，请检查 Key 权限或选择其他连接。"}</p>`}`;
 }
 function connectionHtml(key) {
-    return `<article class="panel library-card" data-key="${esc(key.id)}"><div class="row between"><div><h3>${esc(key.label)}</h3><p class="mono">••••${esc(key.last4)}</p></div><div class="actions"><button class="btn outline small" data-action="discover">检测模型</button><button class="btn danger small" data-action="revoke">撤销连接</button></div></div><p class="help mono">${esc(key.base_url)}</p><p class="meta">${esc(protocols[key.protocol] || key.protocol)} · 创建于 ${esc(date(key.created))}</p>${statusBox()}<details class="details"><summary>模型目录（<span data-model-count>${key.models.length}</span>）</summary>${field(`models-${key.id}`, "搜索模型", `<input id="models-${esc(key.id)}" type="search" data-model-search placeholder="输入模型名称">`)}<div data-models>${modelsHtml(key.models)}</div></details></article>`;
+    const isOfficial = key.is_official ?? state.config.providers?.includes(key.base_url);
+    const protoShort = {
+        openai: "OpenAI Chat",
+        anthropic: "Anthropic Messages",
+        responses: "OpenAI Responses",
+    }[key.protocol] || key.protocol;
+    return `<article class="panel library-card" data-key="${esc(key.id)}"><div class="row between"><div><h3>${esc(key.label)}</h3><p class="mono">••••${esc(key.last4)}</p></div><div class="actions"><button class="btn outline small" data-action="discover">检测模型</button><button class="btn danger small" data-action="revoke">撤销连接</button></div></div><div class="row items-center gap-2" style="margin:4px 0 2px"><p class="help mono break-word" style="margin:0">${esc(key.base_url)}</p><span class="badge ${isOfficial ? "official" : "custom"}">${isOfficial ? "官方直连" : "自定义源"}</span><span class="badge protocol">${esc(protoShort)}</span></div><p class="meta">请求协议：<strong>${esc(protoShort)}</strong> · 创建于 ${esc(date(key.created))}</p>${statusBox()}<details class="details"><summary>模型目录（<span data-model-count>${key.models.length}</span>）</summary>${field(`models-${key.id}`, "搜索模型", `<input id="models-${esc(key.id)}" type="search" data-model-search placeholder="输入模型名称">`)}<div data-models>${modelsHtml(key.models)}</div></details></article>`;
 }
 export async function connectionsPage() {
     if (!state.user)
         return authGate();
     const keys = await api("/keys");
     const bases = state.config.providers || [];
-    const first = bases[0] ? providerPreset(bases[0]).protocol : "openai";
+    const defaultPresets = [
+        ["https://api.deepseek.com/v1", "DeepSeek 官方源 (OpenAI Chat)"],
+        ["https://api.openai.com/v1", "OpenAI 官方源 (OpenAI Chat)"],
+        ["https://api.anthropic.com", "Anthropic 官方源 (Anthropic Messages)"],
+        ["https://openrouter.ai/api/v1", "OpenRouter 聚合源 (OpenAI Chat)"],
+        [
+            "https://generativelanguage.googleapis.com/v1beta/openai",
+            "Google Gemini 官方源 (OpenAI 兼容)",
+        ],
+        ["https://api.siliconflow.cn/v1", "硅基流动 SiliconFlow (OpenAI Chat)"],
+        ["https://dashscope.aliyuncs.com/compatible-mode/v1", "阿里百炼 DashScope (OpenAI Chat)"],
+        ["https://api.moonshot.cn/v1", "月之暗面 Moonshot (OpenAI Chat)"],
+        ["https://api.groq.com/openai/v1", "Groq 高速推理 (OpenAI Chat)"],
+    ];
+    const first = "openai";
     return {
-        html: `${head("API 连接", "自己的 Key，自己的额度。先保存连接，再确认服务商提供的模型。")}${verificationNotice()}<div class="two"><section class="stack"><div class="section-head"><h2>已保存连接</h2><span class="muted" data-key-count>${keys.length} 个</span></div><div class="stack" data-key-list>${keys.length ? keys.map(connectionHtml).join("") : empty("还没有连接", "在右侧添加专用低额度 Key，保存后会自动检测模型。")}</div></section><form class="panel stack" data-key-form><h2>添加连接</h2><p class="notice warn">建议使用专用低额度 Key，并在服务商侧设置消费上限。Key 加密保存在服务端，不写入浏览器存储，也不会进入实验沙箱。</p>${field("connection-label", "连接名称", '<input id="connection-label" name="label" required maxlength="60" placeholder="我的低额度测试连接">')}${field("connection-base", "服务商与 API 地址", `<select id="connection-base" name="base_url" required>${bases.map((base) => `<option value="${esc(base)}">${esc(providerPreset(base).name)} — ${esc(base)}</option>`).join("")}</select>`, "仅可使用管理员允许的地址；选择服务商会应用协议预设，不会扩大访问白名单。")}${field("connection-protocol", "请求协议", `<select id="connection-protocol" name="protocol">${Object.entries(protocols)
+        html: `${head("API 连接", "自己的 Key，自己的额度。支持官方服务商直连或自定义中转/兼容地址。")}${verificationNotice()}<div class="two"><section class="stack"><div class="section-head"><h2>已保存连接</h2><span class="muted" data-key-count>${keys.length} 个</span></div><div class="stack" data-key-list>${keys.length ? keys.map(connectionHtml).join("") : empty("还没有连接", "在右侧添加专用低额度 Key，保存后会自动检测模型。")}</div></section><form class="panel stack" data-key-form><h2>添加连接</h2><p class="notice warn">建议使用专用低额度 Key，并在服务商侧设置消费上限。Key 加密保存在服务端，不写入浏览器存储，也不会进入实验沙箱。</p>${field("connection-label", "连接名称", '<input id="connection-label" name="label" required maxlength="60" placeholder="我的低额度测试连接">')}${field("connection-preset-select", "快捷预设", `<select id="connection-preset-select"><option value="">-- 选择常用预设（快速填充）--</option>${defaultPresets.map(([url, title]) => `<option value="${esc(url)}">${esc(title)}</option>`).join("")}<option value="custom">✏️ 自定义 API 地址（自建中转 / One-API 等）</option></select>`, "可直接选择常用服务商，也可在下方自由输入或修改任意 HTTPS API 地址。")}${field("connection-base", "服务商与 API 地址 (Base URL)", '<input id="connection-base" name="base_url" type="url" required value="https://api.deepseek.com/v1" placeholder="https://api.example.com/v1">', "支持官方直连或任意自建/中转兼容 API（须为 HTTPS）。官方直连源作品将参与官方独立排行榜。")}${field("connection-protocol", "请求协议", `<select id="connection-protocol" name="protocol">${Object.entries(protocols)
             .map(([value, label]) => `<option value="${value}"${value === first ? " selected" : ""}>${label}</option>`)
-            .join("")}</select>`, "兼容服务商默认使用 Chat Completions；若服务商要求 Responses，可在此切换。")}${field("connection-secret", "API Key", '<input id="connection-secret" name="api_key" type="password" required minlength="8" maxlength="500" autocomplete="off" spellcheck="false">', "保存后只显示末四位，不能再次查看完整 Key。")}${!bases.length ? '<p class="notice warn">管理员尚未配置允许的服务商，请联系管理员后再添加连接。</p>' : ""}${statusBox()}<button class="btn primary full" type="submit"${!bases.length ? " disabled" : locked()}>保存并检测模型</button><p class="help">只检测模型目录，不创建实验、不调用付费生成模型。</p></form></div>${footer()}`,
+            .join("")}</select>`, "兼容服务商默认使用 Chat Completions；若服务商要求 Responses，可在此切换。")}${field("connection-secret", "API Key", '<input id="connection-secret" name="api_key" type="password" required minlength="8" maxlength="500" autocomplete="off" spellcheck="false">', "保存后只显示末四位，不能再次查看完整 Key。")}${statusBox()}<button class="btn primary full" type="submit"${locked()}>保存并检测模型</button><p class="help">只检测模型目录，不创建实验、不调用付费生成模型。</p></form></div>${footer()}`,
         mount(root) {
             return mountScope(root, (scope) => {
                 const form = root.querySelector("[data-key-form]");
@@ -137,10 +170,39 @@ export async function connectionsPage() {
                     card.querySelector("[data-models]").innerHTML = modelsHtml(key.models, card.querySelector("[data-model-search]").value);
                     card.querySelector("details").open = true;
                 };
-                form
-                    .querySelector('[name="base_url"]')
-                    .addEventListener("change", (event) => {
-                    form.querySelector('[name="protocol"]').value = providerPreset(event.target.value).protocol;
+                const baseInput = form.querySelector('[name="base_url"]');
+                const presetSelect = form.querySelector("#connection-preset-select");
+                const protoSelect = form.querySelector('[name="protocol"]');
+                if (presetSelect) {
+                    presetSelect.addEventListener("change", () => {
+                        const val = presetSelect.value;
+                        if (val === "custom") {
+                            baseInput.value = "";
+                            baseInput.placeholder = "https://你的代理地址/v1（支持自建中转 / One-API 等）";
+                            baseInput.focus();
+                            status(form, "自定义服务商：支持任何标准兼容的 HTTPS 接口。自建中转（如 One-API、New API 等）请保持选择『OpenAI Chat Completions』协议；Claude 原生中转请切换为『Anthropic Messages』协议。", "");
+                        }
+                        else if (val) {
+                            baseInput.value = val;
+                            protoSelect.value = providerPreset(val).protocol;
+                            status(form, "");
+                        }
+                    }, { signal: scope.signal });
+                }
+                baseInput.addEventListener("input", () => {
+                    const trimmed = baseInput.value.trim();
+                    if (!trimmed)
+                        return;
+                    try {
+                        const host = new URL(trimmed).hostname.toLowerCase();
+                        if (host === "api.anthropic.com") {
+                            protoSelect.value = "anthropic";
+                        }
+                        else if (host === "api.openai.com" && protoSelect.value !== "responses") {
+                            protoSelect.value = "openai";
+                        }
+                    }
+                    catch { }
                 }, { signal: scope.signal });
                 form.addEventListener("submit", (event) => {
                     event.preventDefault();

@@ -1,7 +1,7 @@
 """Trust boundaries: cryptography, authentication, archive validation and SSRF-safe egress."""
 import asyncio, base64, hashlib, hmac, io, ipaddress, json, re, secrets, socket, stat, zipfile
 from pathlib import PurePosixPath
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlparse
 import aiohttp
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, InvalidHashError, VerificationError
@@ -41,7 +41,7 @@ def throttle(key: str, limit: int, seconds: int):
         c.execute(statement); used = c.execute(select(db.buckets.c.used).where(db.buckets.c.key == bucket)).scalar_one()
     if used > limit: raise HTTPException(429, 'rate_limit', headers={'Retry-After': str(seconds)})
 
-def canonical_base(value: str) -> str:
+def canonical_base(value: str, allow_custom: bool = False) -> str:
     value = value.strip().rstrip('/')
     try:
         parsed = urlsplit(value); port = parsed.port
@@ -55,9 +55,8 @@ def canonical_base(value: str) -> str:
     except ValueError: pass
     else: raise HTTPException(422, 'provider_ip_literal_denied')
     normalized = f'https://{parsed.hostname.lower()}{parsed.path}'
-    if normalized not in settings.allowed_bases: raise HTTPException(422, 'provider_not_allowlisted')
+    if not allow_custom and normalized not in settings.allowed_bases: raise HTTPException(422, 'provider_not_allowlisted')
     return normalized
-
 def public_ip(value: str) -> bool:
     ip = ipaddress.ip_address(value)
     if not ip.is_global or ip.is_multicast or ip.is_unspecified: return False
@@ -72,17 +71,28 @@ class PublicResolver(aiohttp.abc.AbstractResolver):
         return [{'hostname': host, 'host': r[4][0], 'port': port, 'family': r[0], 'proto': r[2], 'flags': socket.AI_NUMERICHOST} for r in results]
     async def close(self): pass
 
-def outbound_session():
-    return aiohttp.ClientSession(connector=aiohttp.TCPConnector(resolver=PublicResolver(), use_dns_cache=False, force_close=True), timeout=aiohttp.ClientTimeout(total=90, connect=10), trust_env=False)
+def outbound_session(total: float | None = None, connect: float = 15, sock_read: float | None = 120):
+    return aiohttp.ClientSession(connector=aiohttp.TCPConnector(resolver=PublicResolver(), use_dns_cache=False, force_close=True), timeout=aiohttp.ClientTimeout(total=total, connect=connect, sock_read=sock_read), trust_env=False)
 
 def auth_headers(protocol: str, key: str) -> dict:
     return {'x-api-key': key, 'anthropic-version': '2023-06-01'} if protocol == 'anthropic' else {'Authorization': f'Bearer {key}'}
+def resolve_models_endpoint(base: str, protocol: str) -> str:
+    base = base.rstrip('/')
+    if protocol == 'anthropic':
+        return base + ('/models' if base.endswith('/v1') else '/v1/models')
+    if protocol == 'responses':
+        return base + ('/models' if base.endswith('/v1') else '/v1/models')
+    path = urlparse(base).path
+    if not path or path == '/':
+        return base + '/v1/models'
+    return base + '/models'
 
 async def discover(base: str, protocol: str, key: str) -> list[str]:
-    base = canonical_base(base)
+    base = canonical_base(base, allow_custom=True)
+    endpoint = resolve_models_endpoint(base, protocol)
     try:
-        async with outbound_session() as client:
-            async with client.get(base + '/models', headers=auth_headers(protocol, key), allow_redirects=False) as response:
+        async with outbound_session(total=60, connect=15, sock_read=30) as client:
+            async with client.get(endpoint, headers=auth_headers(protocol, key), allow_redirects=False) as response:
                 if response.status != 200: raise HTTPException(502, f'provider_models_http_{response.status}')
                 data = bytearray()
                 async for chunk in response.content.iter_chunked(16384):

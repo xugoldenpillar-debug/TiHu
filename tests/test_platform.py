@@ -54,6 +54,26 @@ def test_parallel_idempotency_only_creates_one_paid_job(client):
     assert len({x['id'] for x in results})==1
     with db.engine.connect() as c:assert c.execute(select(func.count()).select_from(db.runs)).scalar_one()==1
 
+def test_custom_provider_and_official_leaderboard_partition(client,monkeypatch):
+    owner=account(client);official_key=connection(client)
+    custom_res=client.post('/api/keys',json={'label':'Custom relay','base_url':'https://api.siliconflow.cn/v1','protocol':'openai','api_key':KEY})
+    assert custom_res.status_code==201
+    custom_key=custom_res.json()['id']
+    with db.engine.begin() as c:c.execute(update(db.credentials).where(db.credentials.c.id==custom_key).values(models=['custom-fast-model']))
+    keys=client.get('/api/keys').json()
+    assert any(k['id']==official_key and k['is_official'] is True for k in keys)
+    assert any(k['id']==custom_key and k['is_official'] is False for k in keys)
+    vid=version(client)
+    run_official=submit(client,official_key,vid).json()['id'];complete(run_official,True)
+    run_custom=submit(client,custom_key,vid,model='custom-fast-model').json()['id'];complete(run_custom,True)
+    all_board=client.get('/api/leaderboard?provider_scope=all').json()['items']
+    official_board=client.get('/api/leaderboard?provider_scope=official').json()['items']
+    custom_board=client.get('/api/leaderboard?provider_scope=custom').json()['items']
+    all_ids={x['id'] for x in all_board};off_ids={x['id'] for x in official_board};cust_ids={x['id'] for x in custom_board}
+    assert run_official in all_ids and run_custom in all_ids
+    assert run_official in off_ids and run_custom not in off_ids
+    assert run_custom in cust_ids and run_official not in cust_ids
+
 def test_parallel_admission_enforces_active_quota(client):
     owner=account(client);key=connection(client);vid=version(client);body={'key_id':key,'version_id':vid,'model':MODEL}
     def attempt(_):

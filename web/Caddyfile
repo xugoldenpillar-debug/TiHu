@@ -5,6 +5,8 @@
   handle @api {
     reverse_proxy api:8000
   }
+  @nocache path /dist/* /style.css /index.html /
+  header @nocache Cache-Control "no-cache, must-revalidate"
   handle {
     try_files {path} /index.html
     file_server

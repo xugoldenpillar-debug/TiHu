@@ -73,6 +73,7 @@ def decorate_summaries(c, items, user):
     for item in items:
         item['my_votes'] = sorted(votes.get(item['id'], []))
         item['can_manage'] = bool(user and user['id'] == item['owner_id'])
+        item['is_official'] = bool(item.get('provider') in settings.allowed_bases)
     return items
 
 def enqueue(user_id, body, idempotency):
@@ -115,7 +116,7 @@ def run_query(detail=False):
     thumbnail = select(db.thumbnails.c.run_id).where(db.thumbnails.c.run_id == db.runs.c.id).exists().label('thumbnail_available')
     return select(*fields, thumbnail, db.users.c.username, db.challenges.c.title, db.versions.c.number.label('version'), func.coalesce(vc.c.capability, 0).label('capability'), func.coalesce(vc.c.funny, 0).label('funny')).select_from(db.runs.join(db.users, db.runs.c.owner_id == db.users.c.id).join(db.challenges, db.runs.c.challenge_id == db.challenges.c.id).join(db.versions, db.runs.c.version_id == db.versions.c.id).outerjoin(vc, db.runs.c.id == vc.c.run_id))
 
-def public_conditions(challenge=None, version=None, track='standard', model=None, days=0, latest=True):
+def public_conditions(challenge=None, version=None, track='standard', model=None, days=0, latest=True, provider_scope='all'):
     filters = [db.runs.c.published.is_(True), db.runs.c.hidden.is_(False), db.runs.c.status == 'succeeded']
     if challenge: filters.append(db.runs.c.challenge_id == challenge)
     if version: filters.append(db.runs.c.version_id == version)
@@ -123,13 +124,22 @@ def public_conditions(challenge=None, version=None, track='standard', model=None
     if track != 'all': filters.append(db.runs.c.track == track)
     if model: filters.append(db.runs.c.model == model)
     if days: filters.append(db.runs.c.created >= db.now() - days * 86400)
+    if provider_scope == 'official':
+        filters.append(db.runs.c.provider.in_(settings.allowed_bases))
+    elif provider_scope == 'custom':
+        filters.append(~db.runs.c.provider.in_(settings.allowed_bases))
     return filters
 
-def leaderboard(c, kind, group, challenge, version, track, days, limit, environment=None):
-    base = run_query().where(*public_conditions(challenge, version, track, days=days), db.runs.c.environment == (environment or stable_hash(harness()))).subquery()
-    if group == 'works': return db.rows(c, select(base).order_by(base.c[kind].desc(), base.c.created.asc(), base.c.id.asc()).limit(limit))
+def leaderboard(c, kind, group, challenge, version, track, days, limit, environment=None, provider_scope='all'):
+    base = run_query().where(*public_conditions(challenge, version, track, days=days, provider_scope=provider_scope), db.runs.c.environment == (environment or stable_hash(harness()))).subquery()
+    if group == 'works':
+        rows = db.rows(c, select(base).order_by(base.c[kind].desc(), base.c.created.asc(), base.c.id.asc()).limit(limit))
+        for r in rows: r['is_official'] = bool(r.get('provider') in settings.allowed_bases)
+        return rows
     ranked = select(base, func.row_number().over(partition_by=[base.c.owner_id, base.c.challenge_id, base.c.version_id, base.c.provider, base.c.model, base.c.track, base.c.environment], order_by=[base.c[kind].desc(), base.c.created.asc(), base.c.id]).label('rn')).subquery()
-    return db.rows(c, select(ranked.c.provider, ranked.c.model, ranked.c.track, ranked.c.environment, func.sum(ranked.c[kind]).label('score'), func.count().label('entries'), func.count(func.distinct(ranked.c.owner_id)).label('authors'), func.count(func.distinct(ranked.c.challenge_id)).label('challenges')).where(ranked.c.rn == 1).group_by(ranked.c.provider, ranked.c.model, ranked.c.track, ranked.c.environment).order_by(func.sum(ranked.c[kind]).desc(), ranked.c.model, ranked.c.provider).limit(limit))
+    rows = db.rows(c, select(ranked.c.provider, ranked.c.model, ranked.c.track, ranked.c.environment, func.sum(ranked.c[kind]).label('score'), func.count().label('entries'), func.count(func.distinct(ranked.c.owner_id)).label('authors'), func.count(func.distinct(ranked.c.challenge_id)).label('challenges')).where(ranked.c.rn == 1).group_by(ranked.c.provider, ranked.c.model, ranked.c.track, ranked.c.environment).order_by(func.sum(ranked.c[kind]).desc(), ranked.c.model, ranked.c.provider).limit(limit))
+    for r in rows: r['is_official'] = bool(r.get('provider') in settings.allowed_bases)
+    return rows
 
 def seed():
     with db.engine.begin() as c:

@@ -648,8 +648,21 @@ small,
   background: #eaf5f8;
   border-color: #bfdce4;
 }
-.badge.succeeded {
+.badge.succeeded,
+.badge.official {
+  color: #275218;
   background: #e8f2dc;
+  border-color: #bad69e;
+}
+.badge.custom {
+  color: #5a6652;
+  background: #f2f5ee;
+  border-color: #dbe4d2;
+}
+.badge.protocol {
+  color: #274b5c;
+  background: #edf5f8;
+  border-color: #cadfe7;
 }
 .panel {
   background: white;
@@ -668,6 +681,12 @@ small,
 .field {
   margin-bottom: 20px;
   min-width: 0;
+}
+[data-key-form] .field {
+  margin-bottom: 14px;
+}
+[data-key-form] .field .help {
+  margin-top: 4px;
 }
 .field > label {
   display: block;

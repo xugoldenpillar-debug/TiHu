@@ -97,6 +97,7 @@ export interface RunSummary {
   my_votes: string[];
   can_manage: boolean;
   thumbnail_available: boolean;
+  is_official?: boolean;
   metrics: {
     calls?: number;
     elapsed_ms?: number;
@@ -113,6 +114,7 @@ export interface ModelScore {
   entries: number;
   authors: number;
   challenges: number;
+  is_official?: boolean;
 }
 
 export function record(value: unknown): value is Record<string, unknown> {

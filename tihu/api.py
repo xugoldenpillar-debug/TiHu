@@ -103,7 +103,8 @@ async def boundaries(request: Request, call_next):
     if request.method not in ('GET','HEAD','OPTIONS'):
         origin=request.headers.get('origin')
         if origin and origin.rstrip('/') != settings.app_origin:
-            return JSONResponse({'detail':'origin_denied'}, status_code=403)
+            if settings.production or origin.rstrip('/') not in (settings.app_origin, 'http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:8000', 'http://127.0.0.1:8000'):
+                return JSONResponse({'detail':'origin_denied'}, status_code=403)
         # Cookie-authenticated mutations require a CSRF token, except login/register/reset token flows.
         if request.cookies.get(settings.cookie) and request.url.path not in ('/api/auth/login','/api/auth/register','/api/auth/reset','/api/auth/verify'):
             raw=request.cookies.get(settings.cookie)
@@ -278,11 +279,11 @@ def reset(body:ResetBody,response:Response):
 def list_keys(who=Depends(user)):
     with db.engine.connect() as c:
         rows=db.rows(c,select(db.credentials).where(db.credentials.c.owner_id==who['id']).order_by(db.credentials.c.created.desc()))
-    return [{k:x[k] for k in ('id','label','base_url','protocol','last4','models','created')} for x in rows]
+    return [{**{k:x[k] for k in ('id','label','base_url','protocol','last4','models','created')},'is_official':bool(x['base_url'] in settings.allowed_bases)} for x in rows]
 
 @app.post('/api/keys',status_code=201)
 def add_key(body:KeyInput,who=Depends(verified_user)):
-    base=canonical_base(body.base_url);ident=db.uid()
+    base=canonical_base(body.base_url,allow_custom=True);ident=db.uid()
     with db.engine.begin() as c:
         c.execute(insert(db.credentials).values(id=ident,owner_id=who['id'],label=body.label,base_url=base,protocol=body.protocol,sealed=seal(body.api_key,who['id'],ident),last4=body.api_key[-4:],models=[],created=db.now()))
         db.audit_log(c,who['id'],'credential.created',ident)
@@ -515,13 +516,13 @@ def vote(ident:str,body:Vote,who=Depends(verified_user)):
     return {'count':count,'active':body.active}
 
 @app.get('/api/leaderboard')
-def leaderboard(kind:Literal['capability','funny']='capability',group:Literal['works','models']='works',challenge:str|None=None,version:str|None=None,track:Literal['standard','open','all']='standard',days:int=Query(0,ge=0,le=30),limit:int=Query(20,ge=1,le=100),environment:str|None=Query(None,pattern=r'^[a-f0-9]{64}$'),who=Depends(optional_user)):
+def leaderboard(kind:Literal['capability','funny']='capability',group:Literal['works','models']='works',challenge:str|None=None,version:str|None=None,track:Literal['standard','open','all']='standard',provider_scope:Literal['all','official','custom']='all',days:int=Query(0,ge=0,le=30),limit:int=Query(20,ge=1,le=100),environment:str|None=Query(None,pattern=r'^[a-f0-9]{64}$'),who=Depends(optional_user)):
     if days not in (0,7,30):raise HTTPException(422,'invalid_time_window')
     environment=environment or stable_hash(domain.harness())
     with db.engine.connect() as c:
-        items=domain.leaderboard(c,kind,group,challenge,version,track,days,limit,environment)
+        items=domain.leaderboard(c,kind,group,challenge,version,track,days,limit,environment,provider_scope=provider_scope)
         if group=='works':domain.decorate_summaries(c,items,who)
-    return {'items':items,'basis':{'time':'work_created','days':days,'environment':environment,'version':version or 'latest_per_challenge','model_aggregation':'best_work_per_author_challenge_version_provider_model_track_environment'}}
+    return {'items':items,'basis':{'time':'work_created','days':days,'environment':environment,'version':version or 'latest_per_challenge','provider_scope':provider_scope,'model_aggregation':'best_work_per_author_challenge_version_provider_model_track_environment'}}
 
 @app.get('/api/runs/{ident}/comments')
 def comments(ident:str,who=Depends(optional_user)):
