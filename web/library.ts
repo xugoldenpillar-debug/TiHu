@@ -15,6 +15,7 @@ import {
   clearFormError,
   confirmDialog,
   errorText,
+  icons,
   type Page,
 } from "./core.js";
 
@@ -220,7 +221,48 @@ function connectionHtml(key: Connection): string {
       anthropic: "Anthropic Messages",
       responses: "OpenAI Responses",
     }[key.protocol] || key.protocol;
-  return `<article class="panel library-card" data-key="${esc(key.id)}"><div class="row between"><div><h3>${esc(key.label)}</h3><p class="mono">••••${esc(key.last4)}</p></div><div class="actions"><button class="btn outline small" data-action="discover">检测模型</button><button class="btn danger small" data-action="revoke">撤销连接</button></div></div><div class="row items-center gap-2" style="margin:4px 0 2px"><p class="help mono break-word" style="margin:0">${esc(key.base_url)}</p><span class="badge ${isOfficial ? "official" : "custom"}">${isOfficial ? "官方直连" : "自定义源"}</span><span class="badge protocol">${esc(protoShort)}</span></div><p class="meta">请求协议：<strong>${esc(protoShort)}</strong> · 创建于 ${esc(date(key.created))}</p>${statusBox()}<details class="details"><summary>模型目录（<span data-model-count>${key.models.length}</span>）</summary>${field(`models-${key.id}`, "搜索模型", `<input id="models-${esc(key.id)}" type="search" data-model-search placeholder="输入模型名称">`)}<div data-models>${modelsHtml(key.models)}</div></details></article>`;
+  return `<article class="panel library-card connection-card" data-key="${esc(key.id)}">
+    <div class="card-header">
+      <div class="card-title-group">
+        <div class="card-icon-title">
+          <span class="card-badge-icon" aria-hidden="true">${icons.key}</span>
+          <h3 class="card-title">${esc(key.label)}</h3>
+        </div>
+        <div class="card-badges">
+          <span class="badge ${isOfficial ? "official" : "custom"}"><span class="badge-dot"></span>${isOfficial ? "官方直连" : "自定义源"}</span>
+          <span class="badge protocol">${esc(protoShort)}</span>
+        </div>
+      </div>
+      <div class="actions card-actions">
+        <button class="btn outline small" data-action="discover">${icons.refresh} 检测模型</button>
+        <button class="btn danger small" data-action="revoke">${icons.trash} 撤销</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="connection-info-grid">
+        <div class="connection-key-badge">
+          <span class="key-icon" aria-hidden="true">${icons.key}</span>
+          <span class="mono key-mask">sk-••••••••${esc(key.last4)}</span>
+          <span class="key-status-label">加密存储</span>
+        </div>
+        <div class="connection-url-line">
+          <span class="url-icon" aria-hidden="true">${icons.link}</span>
+          <span class="mono break-word url-text">${esc(key.base_url)}</span>
+        </div>
+      </div>
+      <div class="connection-meta-line">
+        <span class="meta-item">请求协议：<strong>${esc(protoShort)}</strong></span>
+        <span class="meta-sep">·</span>
+        <span class="meta-item">创建于 ${esc(date(key.created))}</span>
+      </div>
+    </div>
+    ${statusBox()}
+    <details class="details modern-details">
+      <summary><span class="summary-label">${icons.cpu} 模型目录（<span data-model-count>${key.models.length}</span>）</span><span class="summary-hint">展开检索</span></summary>
+      ${field(`models-${key.id}`, "搜索模型", `<input id="models-${esc(key.id)}" type="search" data-model-search placeholder="输入模型名称">`, "", icons.search)}
+      <div data-models>${modelsHtml(key.models)}</div>
+    </details>
+  </article>`;
 }
 
 export async function connectionsPage(): Promise<Page> {
@@ -243,7 +285,7 @@ export async function connectionsPage(): Promise<Page> {
   ];
   const first = "openai";
   return {
-    html: `${head("API 连接", "自己的 Key，自己的额度。支持官方服务商直连或自定义中转/兼容地址。")}${verificationNotice()}<div class="two"><section class="stack"><div class="section-head"><h2>已保存连接</h2><span class="muted" data-key-count>${keys.length} 个</span></div><div class="stack" data-key-list>${keys.length ? keys.map(connectionHtml).join("") : empty("还没有连接", "在右侧添加专用低额度 Key，保存后会自动检测模型。")}</div></section><form class="panel stack" data-key-form><h2>添加连接</h2><p class="notice warn">建议使用专用低额度 Key，并在服务商侧设置消费上限。Key 加密保存在服务端，不写入浏览器存储，也不会进入实验沙箱。</p>${field("connection-label", "连接名称", '<input id="connection-label" name="label" required maxlength="60" placeholder="我的低额度测试连接">')}${field("connection-preset-select", "快捷预设", `<select id="connection-preset-select"><option value="">-- 选择常用预设（快速填充）--</option>${defaultPresets.map(([url, title]) => `<option value="${esc(url)}">${esc(title)}</option>`).join("")}<option value="custom">✏️ 自定义 API 地址（自建中转 / One-API 等）</option></select>`, "可直接选择常用服务商，也可在下方自由输入或修改任意 HTTPS API 地址。")}${field("connection-base", "服务商与 API 地址 (Base URL)", '<input id="connection-base" name="base_url" type="url" required value="https://api.deepseek.com/v1" placeholder="https://api.example.com/v1">', "支持官方直连或任意自建/中转兼容 API（须为 HTTPS）。官方直连源作品将参与官方独立排行榜。")}${field(
+    html: `${head("API 连接", "自己的 Key，自己的额度。支持官方服务商直连或自定义中转/兼容地址。")}${verificationNotice()}<div class="two"><section class="stack"><div class="section-head"><h2>已保存连接</h2><span class="muted" data-key-count>${keys.length} 个</span></div><div class="library-grid stack" data-key-list>${keys.length ? keys.map(connectionHtml).join("") : empty("还没有连接", "在右侧添加专用低额度 Key，保存后会自动检测模型。")}</div></section><form class="panel stack form-card" data-key-form><div class="section-head"><h2>添加连接</h2></div><p class="notice warn">建议使用专用低额度 Key，并在服务商侧设置消费上限。Key 加密保存在服务端，不写入浏览器存储，也不会进入实验沙箱。</p>${field("connection-label", "连接名称", '<input id="connection-label" name="label" required maxlength="60" placeholder="我的低额度测试连接">', "", icons.edit)}${field("connection-preset-select", "快捷预设", `<select id="connection-preset-select"><option value="">-- 选择常用预设（快速填充）--</option>${defaultPresets.map(([url, title]) => `<option value="${esc(url)}">${esc(title)}</option>`).join("")}<option value="custom">✏️ 自定义 API 地址（自建中转 / One-API 等）</option></select>`, "可直接选择常用服务商，也可在下方自由输入或修改任意 HTTPS API 地址。", icons.sparkles)}${field("connection-base", "服务商与 API 地址 (Base URL)", '<input id="connection-base" name="base_url" type="url" required value="https://api.deepseek.com/v1" placeholder="https://api.example.com/v1">', "支持官方直连或任意自建/中转兼容 API（须为 HTTPS）。官方直连源作品将参与官方独立排行榜。", icons.link)}${field(
       "connection-protocol",
       "请求协议",
       `<select id="connection-protocol" name="protocol">${Object.entries(
@@ -255,7 +297,8 @@ export async function connectionsPage(): Promise<Page> {
         )
         .join("")}</select>`,
       "兼容服务商默认使用 Chat Completions；若服务商要求 Responses，可在此切换。",
-    )}${field("connection-secret", "API Key", '<input id="connection-secret" name="api_key" type="password" required minlength="8" maxlength="500" autocomplete="off" spellcheck="false">', "保存后只显示末四位，不能再次查看完整 Key。")}${statusBox()}<button class="btn primary full" type="submit"${locked()}>保存并检测模型</button><p class="help">只检测模型目录，不创建实验、不调用付费生成模型。</p></form></div>${footer()}`,
+      icons.terminal,
+    )}${field("connection-secret", "API Key", '<input id="connection-secret" name="api_key" type="password" required minlength="8" maxlength="500" autocomplete="off" spellcheck="false" placeholder="sk-...">', "保存后只显示末四位，不能再次查看完整 Key。", icons.key)}${statusBox()}<button class="btn primary full" type="submit"${locked()}>保存并检测模型</button><p class="help">只检测模型目录，不创建实验、不调用付费生成模型。</p></form></div>${footer()}`,
     mount(root) {
       return mountScope(root, (scope) => {
         const form = root.querySelector<HTMLFormElement>("[data-key-form]")!;
@@ -453,7 +496,25 @@ export async function connectionsPage(): Promise<Page> {
 }
 
 function promptHtml(prompt: Prompt): string {
-  return `<article class="panel library-card" data-prompt="${esc(prompt.id)}"><h3>${esc(prompt.name)}</h3><pre class="code">${esc(prompt.body)}</pre><div class="actions"><button class="btn outline small" data-action="edit"${locked()}>编辑</button><button class="btn outline small" data-action="duplicate"${locked()}>复制为新模板</button><button class="btn ghost small" data-action="clipboard">复制正文</button><button class="btn danger small" data-action="delete">删除</button></div>${statusBox()}</article>`;
+  return `<article class="panel library-card prompt-card" data-prompt="${esc(prompt.id)}">
+    <div class="card-header">
+      <div class="card-title-group">
+        <div class="card-icon-title">
+          <span class="card-badge-icon prompt-badge-icon" aria-hidden="true">${icons.sparkles}</span>
+          <h3 class="card-title">${esc(prompt.name)}</h3>
+        </div>
+        <span class="badge char-badge">${prompt.body.length} 字符</span>
+      </div>
+      <div class="actions card-actions">
+        <button class="btn outline small" data-action="edit"${locked()}>${icons.edit} 编辑</button>
+        <button class="btn outline small" data-action="duplicate"${locked()}>${icons.copy} 复制</button>
+        <button class="btn ghost small" data-action="clipboard">${icons.copy} 复制正文</button>
+        <button class="btn danger small" data-action="delete">${icons.trash} 删除</button>
+      </div>
+    </div>
+    <pre class="code prompt-preview" tabindex="0">${esc(prompt.body)}</pre>
+    ${statusBox()}
+  </article>`;
 }
 
 export async function promptsPage(): Promise<Page> {
@@ -461,7 +522,7 @@ export async function promptsPage(): Promise<Page> {
   const prompts = await api<Prompt[]>("/prompts");
   const limit = state.config.limits?.prompts ?? 30;
   return {
-    html: `${head("提示词库", "把有效的附加指令留作模板；每次实验使用独立的内容快照。")}${verificationNotice()}<div class="two"><section class="stack">${field("prompt-search", "搜索提示词", '<input id="prompt-search" type="search" placeholder="搜索名称或正文">')}<p class="help" data-prompt-count></p><div class="stack" data-prompt-list></div></section><form class="panel stack" data-prompt-form><h2 data-editor-title>保存新模板</h2><p class="help">模板只属于你。编辑或删除不会修改已有实验，也不会覆盖实验室里已经填入的草稿。</p>${field("prompt-name", "模板名称", '<input id="prompt-name" name="name" required maxlength="80">')}${field("prompt-body", "附加提示词", '<textarea id="prompt-body" name="body" required rows="12" maxlength="5000"></textarea>', "最多 5,000 字符。实验题目的冻结提示词不会在这里改变。")}${statusBox()}<div class="actions"><button class="btn primary" type="submit"${locked()}>保存模板</button><button class="btn ghost" type="button" data-action="cancel-edit" hidden>取消编辑</button></div></form></div>${footer()}`,
+    html: `${head("提示词库", "把有效的附加指令留作模板；每次实验使用独立的内容快照。")}${verificationNotice()}<div class="two"><section class="stack">${field("prompt-search", "搜索提示词", '<input id="prompt-search" type="search" placeholder="搜索名称或正文">', "", icons.search)}<p class="help" data-prompt-count></p><div class="library-grid stack" data-prompt-list></div></section><form class="panel stack form-card" data-prompt-form><div class="section-head"><h2 data-editor-title>保存新模板</h2></div><p class="help">模板只属于你。编辑或删除不会修改已有实验，也不会覆盖实验室里已经填入的草稿。</p>${field("prompt-name", "模板名称", '<input id="prompt-name" name="name" required maxlength="80" placeholder="例如：高质量代码架构师规范">', "", icons.edit)}${field("prompt-body", "附加提示词", '<textarea id="prompt-body" name="body" required rows="12" maxlength="5000" placeholder="填写你的系统提示词或附加指导指令..."></textarea>', "最多 5,000 字符。实验题目的冻结提示词不会在这里改变。", icons.sparkles)}${statusBox()}<div class="actions"><button class="btn primary" type="submit"${locked()}>保存模板</button><button class="btn ghost" type="button" data-action="cancel-edit" hidden>${icons.close} 取消编辑</button></div></form></div>${footer()}`,
     mount(root) {
       return mountScope(root, (scope) => {
         const list = root.querySelector<HTMLElement>("[data-prompt-list]")!;
@@ -617,12 +678,44 @@ export async function promptsPage(): Promise<Page> {
 }
 
 function skillHtml(skill: Skill): string {
-  return `<article class="panel library-card" data-skill="${esc(skill.id)}"><div class="row between"><h3>${esc(skill.name)}</h3><span class="badge">v${esc(skill.current_version)}</span></div><p class="meta">${esc(skill.file_count)} 个文件 · 创建于 ${esc(date(skill.created))}</p><p class="help mono">SHA-256 ${esc(skill.sha256)}</p><div class="actions"><button class="btn outline small" data-action="view">查看文件与版本</button><button class="btn danger small" data-action="delete">删除</button></div>${statusBox()}</article>`;
+  return `<article class="panel library-card skill-card" data-skill="${esc(skill.id)}">
+    <div class="card-header">
+      <div class="card-title-group">
+        <div class="card-icon-title">
+          <span class="card-badge-icon skill-badge-icon" aria-hidden="true">${icons.code}</span>
+          <h3 class="card-title">${esc(skill.name)}</h3>
+        </div>
+        <span class="badge version-badge"><span class="badge-dot"></span>v${esc(skill.current_version)}</span>
+      </div>
+      <div class="actions card-actions">
+        <button class="btn outline small" data-action="view">${icons.eye} 查看版本与文件</button>
+        <button class="btn danger small" data-action="delete">${icons.trash} 删除</button>
+      </div>
+    </div>
+    <div class="skill-meta-row">
+      <span class="skill-chip">${icons.fileText} ${esc(skill.file_count)} 个文件</span>
+      <span class="skill-chip">${esc(date(skill.created))}</span>
+    </div>
+    <div class="hash-pill mono" title="SHA-256: ${esc(skill.sha256)}">
+      <span class="hash-tag">SHA-256</span>
+      <span class="hash-val">${esc(skill.sha256.slice(0, 16))}…${esc(skill.sha256.slice(-10))}</span>
+    </div>
+    ${statusBox()}
+  </article>`;
 }
 
 function skillUploadForm(prefix: string, title: string, name = ""): string {
   const limits = state.config.limits;
-  return `<form class="panel stack" data-skill-upload="${prefix}"><h2>${title}</h2>${field(`${prefix}-name`, "Skill 名称", `<input id="${prefix}-name" name="name" required maxlength="80" value="${esc(name)}">`)}${field(`${prefix}-file`, "Skill 文件", `<input id="${prefix}-file" name="file" type="file" accept=".md,.zip" required>`, `上传 UTF-8 Markdown 或包含 SKILL.md 的 ZIP。上传及解压内容合计不超过 ${Math.floor((limits.skill_bytes ?? 262144) / 1024)} KB，最多 ${limits.skill_files ?? 30} 个文本文件；单个文件不超过 64 KB。`)}<p class="notice">${prefix === "skill-new" ? "Skill 只属于你。每次实验会冻结所选版本的内容与哈希。" : "上传的是完整新版本，不是增量补丁。已有实验继续使用当时冻结的文件与哈希；不会被更新或删除影响。"}</p>${statusBox()}<button class="btn primary" type="submit"${locked()}>${prefix === "skill-new" ? "上传 Skill" : "上传新版本"}</button></form>`;
+  return `<form class="panel stack form-card" data-skill-upload="${prefix}">
+    <div class="section-head">
+      <h2>${title}</h2>
+    </div>
+    ${field(`${prefix}-name`, "Skill 名称", `<input id="${prefix}-name" name="name" required maxlength="80" value="${esc(name)}" placeholder="例如：react-tailwind-expert">`, "", icons.code)}
+    ${field(`${prefix}-file`, "Skill 文件", `<input id="${prefix}-file" name="file" type="file" accept=".md,.zip" required>`, `上传 UTF-8 Markdown 或包含 SKILL.md 的 ZIP。上传及解压内容合计不超过 ${Math.floor((limits.skill_bytes ?? 262144) / 1024)} KB，最多 ${limits.skill_files ?? 30} 个文本文件；单个文件不超过 64 KB。`, icons.upload)}
+    <p class="notice">${prefix === "skill-new" ? "Skill 只属于你。每次实验会冻结所选版本的内容与哈希。" : "上传的是完整新版本，不是增量补丁。已有实验继续使用当时冻结的文件与哈希；不会被更新或删除影响。"}</p>
+    ${statusBox()}
+    <button class="btn primary" type="submit"${locked()}>${prefix === "skill-new" ? "上传 Skill" : "上传新版本"}</button>
+  </form>`;
 }
 
 async function uploadSkill(
@@ -653,7 +746,7 @@ export async function skillsPage(): Promise<Page> {
   if (!state.user) return authGate();
   let skills = await api<Skill[]>("/skills");
   return {
-    html: `${head("Skill 库", "查看文件、追踪版本，把可复用的工作方式带进下一次实验。")}${verificationNotice()}<p class="notice">版本是实验的依据，不是会自动更新的依赖。更新或删除 Skill 都不会改变已有实验的冻结快照。</p><div class="two"><section class="stack">${field("skill-search", "搜索 Skill", '<input id="skill-search" type="search" placeholder="搜索 Skill 名称">')}<p class="help" data-skill-count></p><div class="stack" data-skill-list></div></section>${skillUploadForm("skill-new", "上传 Skill")}</div><section class="stack" data-skill-detail hidden aria-label="Skill 文件与版本"></section>${footer()}`,
+    html: `${head("Skill 库", "查看文件、追踪版本，把可复用的工作方式带进下一次实验。")}${verificationNotice()}<p class="notice">版本是实验的依据，不是会自动更新的依赖。更新或删除 Skill 都不会改变已有实验的冻结快照。</p><div class="two"><section class="stack">${field("skill-search", "搜索 Skill", '<input id="skill-search" type="search" placeholder="搜索 Skill 名称">', "", icons.search)}<p class="help" data-skill-count></p><div class="library-grid stack" data-skill-list></div></section>${skillUploadForm("skill-new", "上传 Skill")}</div><section class="stack" data-skill-detail hidden aria-label="Skill 文件与版本"></section>${footer()}`,
     mount(root) {
       return mountScope(root, (scope) => {
         const list = root.querySelector<HTMLElement>("[data-skill-list]")!;
@@ -706,7 +799,7 @@ export async function skillsPage(): Promise<Page> {
           viewedVersion = shownVersion;
           const filenames = Object.keys(value.files).sort();
           detail.hidden = false;
-          detail.innerHTML = `<div class="panel stack"><div class="row between"><div><p class="eyebrow">冻结版本档案</p><h2>${esc(value.name)}</h2></div><button class="btn ghost" data-action="close-detail">收起详情</button></div>${statusBox()}${field("skill-version", "查看版本", `<select id="skill-version">${value.versions.map((revision) => `<option value="${esc(revision.number)}"${revision.number === shownVersion ? " selected" : ""}>v${esc(revision.number)} · ${esc(date(revision.created))}${revision.number === value.current_version ? " · 当前版本" : ""}</option>`).join("")}</select>`)}<p class="mono help">SHA-256 ${esc(value.sha256)}</p><div class="source-layout"><div class="source-files">${field("skill-file-view", "查看文件", `<select id="skill-file-view">${filenames.map((filename) => `<option value="${esc(filename)}">${esc(filename)}</option>`).join("")}</select>`)}<p class="help">${filenames.length} 个文件 · 只读查看，内容不会作为 HTML 执行。</p></div><pre class="code" data-skill-content tabindex="0">${esc(value.files[filenames[0]] || "")}</pre></div></div>${skillUploadForm("skill-update", "上传新版本", value.name)}`;
+          detail.innerHTML = `<div class="panel stack skill-detail-card"><div class="row between"><div><p class="eyebrow">冻结版本档案</p><h2>${esc(value.name)}</h2></div><button class="btn ghost" data-action="close-detail">${icons.close} 收起详情</button></div>${statusBox()}${field("skill-version", "查看版本", `<select id="skill-version">${value.versions.map((revision) => `<option value="${esc(revision.number)}"${revision.number === shownVersion ? " selected" : ""}>v${esc(revision.number)} · ${esc(date(revision.created))}${revision.number === value.current_version ? " · 当前版本" : ""}</option>`).join("")}</select>`, "", icons.layers)}<div class="hash-pill mono" title="SHA-256: ${esc(value.sha256)}"><span class="hash-tag">SHA-256</span><span class="hash-val">${esc(value.sha256)}</span></div><div class="source-layout"><div class="source-files">${field("skill-file-view", "查看文件", `<select id="skill-file-view">${filenames.map((filename) => `<option value="${esc(filename)}">${esc(filename)}</option>`).join("")}</select>`, "", icons.fileText)}<p class="help">${filenames.length} 个文件 · 只读查看，内容不会作为 HTML 执行。</p></div><pre class="code" data-skill-content tabindex="0">${esc(value.files[filenames[0]] || "")}</pre></div></div>${skillUploadForm("skill-update", "上传新版本", value.name)}`;
         };
         draw();
         search.addEventListener("input", draw, { signal: scope.signal });
@@ -882,7 +975,7 @@ export async function adminPage(): Promise<Page> {
       ? reports
           .map(
             (report) =>
-              `<article class="panel" data-report="${esc(report.id)}"><p class="meta">举报时间 ${esc(date(report.created))} · 举报人 <span class="mono">${esc(report.owner_id)}</span></p><p>${esc(report.reason)}</p><p class="help">作品 <a class="mono" href="#/run/${idPath(report.run_id)}">${esc(report.run_id)}</a></p><div class="actions"><button class="btn danger small" data-action="hide">隐藏作品</button><button class="btn outline small" data-action="resolve">标记已解决</button></div>${statusBox()}</article>`,
+              `<article class="panel" data-report="${esc(report.id)}"><p class="meta">举报时间 ${esc(date(report.created))} · 举报人 <span class="mono">${esc(report.owner_id)}</span></p><p>${esc(report.reason)}</p><p class="help">作品 <a class="mono" href="#/run/${idPath(report.run_id)}">${esc(report.run_id)}</a></p><div class="actions"><button class="btn danger small" data-action="hide">${icons.eye} 隐藏作品</button><button class="btn outline small" data-action="resolve">${icons.check} 标记已解决</button></div>${statusBox()}</article>`,
           )
           .join("")
       : empty("没有待处理举报", "新的举报会出现在这里。");
@@ -900,7 +993,7 @@ export async function adminPage(): Promise<Page> {
           .join("")
       : '<p class="muted">当前还没有实验。</p>';
   return {
-    html: `${head("管理", "先检查举报上下文，再隐藏作品或结束处理。审计记录保留每次管理操作。")}<section class="panel stack" data-admin-summary><div class="section-head"><h2>全站实验状态</h2><button class="btn outline small" data-action="refresh">刷新管理数据</button></div>${statusBox()}<div class="metric-grid" data-queue>${queueHtml()}</div></section><div class="section-head"><h2>待处理举报</h2><span class="muted" data-report-count>${reports.length} 条</span></div><p class="notice">隐藏会立即取消公开展示，但不会自动解决举报。确认处理完成后，请另行“标记已解决”；仅解决举报不会改变作品可见性。</p><section class="stack" data-reports>${reportsHtml()}</section><section class="panel stack"><h2>审计记录</h2><div data-audit>${auditHtml()}</div></section>${footer()}`,
+    html: `${head("管理", "先检查举报上下文，再隐藏作品或结束处理。审计记录保留每次管理操作。")}<section class="panel stack" data-admin-summary><div class="section-head"><h2>全站实验状态</h2><button class="btn outline small" data-action="refresh">${icons.refresh} 刷新管理数据</button></div>${statusBox()}<div class="metric-grid" data-queue>${queueHtml()}</div></section><div class="section-head"><h2>待处理举报</h2><span class="muted" data-report-count>${reports.length} 条</span></div><p class="notice">隐藏会立即取消公开展示，但不会自动解决举报。确认处理完成后，请另行“标记已解决”；仅解决举报不会改变作品可见性。</p><section class="stack" data-reports>${reportsHtml()}</section><section class="panel stack"><h2>审计记录</h2><div data-audit>${auditHtml()}</div></section>${footer()}`,
     mount(root) {
       return mountScope(root, (scope) => {
         const list = root.querySelector<HTMLElement>("[data-reports]")!;

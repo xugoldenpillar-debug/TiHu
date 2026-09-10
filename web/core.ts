@@ -6,6 +6,12 @@ import {
   type AppConfig,
   type Session,
 } from "./types.js";
+import {
+  burstParticles,
+  celebrate,
+  type ParticleOptions,
+} from "./particles.js";
+export { burstParticles, celebrate, type ParticleOptions };
 export type Obj = Record<string, unknown>;
 export interface Page {
   html: string;
@@ -270,15 +276,24 @@ export async function api<T = unknown>(
   const typed = data as T;
   return typed;
 }
-export function mutate<T = unknown>(
+export async function mutate<T = unknown>(
   path: string,
   method: string,
   body?: unknown,
 ): Promise<T> {
-  return api<T>(path, {
+  const result = await api<T>(path, {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+  if (
+    method === "POST" &&
+    (path === "/challenges" ||
+      path.startsWith("/challenges/") ||
+      path === "/runs")
+  ) {
+    celebrate();
+  }
+  return result;
 }
 export async function refreshSession(): Promise<void> {
   const previous = state.user?.id;
@@ -351,13 +366,63 @@ export function head(title: string, description: string, actions = ""): string {
 export function empty(title: string, description: string, action = ""): string {
   return `<div class="empty"><h3>${esc(title)}</h3><p>${esc(description)}</p>${action}</div>`;
 }
+export const icons = {
+  close: `<svg class="icon icon-close" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+  check: `<svg class="icon icon-check" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  alert: `<svg class="icon icon-alert" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`,
+  info: `<svg class="icon icon-info" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>`,
+  search: `<svg class="icon icon-search" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>`,
+  key: `<svg class="icon icon-key" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-2.5-2.5"/></svg>`,
+  code: `<svg class="icon icon-code" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+  sparkles: `<svg class="icon icon-sparkles" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>`,
+  fileText: `<svg class="icon icon-file" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`,
+  layers: `<svg class="icon icon-layers" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-8.58 3.91a2 2 0 0 1-1.66 0L2 12.5"/><path d="m22 17.5-8.58 3.91a2 2 0 0 1-1.66 0L2 17.5"/></svg>`,
+  cpu: `<svg class="icon icon-cpu" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>`,
+  copy: `<svg class="icon icon-copy" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`,
+  trash: `<svg class="icon icon-trash" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
+  edit: `<svg class="icon icon-edit" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>`,
+  link: `<svg class="icon icon-link" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
+  shield: `<svg class="icon icon-shield" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  user: `<svg class="icon icon-user" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  mail: `<svg class="icon icon-mail" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`,
+  lock: `<svg class="icon icon-lock" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+  upload: `<svg class="icon icon-upload" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`,
+  refresh: `<svg class="icon icon-refresh" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>`,
+  eye: `<svg class="icon icon-eye" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  plus: `<svg class="icon icon-plus" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>`,
+  terminal: `<svg class="icon icon-terminal" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>`,
+};
+
+export function inferFieldIcon(id: string): string {
+  const lower = id.toLowerCase();
+  if (lower.includes("search") || lower === "q") return icons.search;
+  if (lower.includes("email") || lower.includes("mail")) return icons.mail;
+  if (lower.includes("password")) return icons.lock;
+  if (lower.includes("username") || lower.includes("author")) return icons.user;
+  if (lower.includes("key") || lower.includes("secret") || lower.includes("token")) return icons.key;
+  if (lower.includes("url") || lower.includes("base") || lower.includes("link")) return icons.link;
+  if (lower.includes("prompt")) return icons.sparkles;
+  if (lower.includes("rubric") || lower.includes("file")) return icons.fileText;
+  if (lower.includes("model")) return icons.cpu;
+  if (lower.includes("version")) return icons.layers;
+  return "";
+}
+
 export function field(
   id: string,
   label: string,
   control: string,
   help = "",
+  icon = "",
 ): string {
-  return `<div class="field"><label for="${esc(id)}">${esc(label)}</label>${control}${help ? `<p class="help" id="${esc(id)}-help">${esc(help)}</p>` : ""}</div>`;
+  const chosenIcon = icon || inferFieldIcon(id);
+  const isTextarea = control.includes("<textarea");
+  const isSelect = control.includes("<select");
+  const hasIcon = Boolean(chosenIcon && !isTextarea && !isSelect);
+  const controlWrap = hasIcon
+    ? `<div class="field-control-wrap with-icon"><span class="field-icon" aria-hidden="true">${chosenIcon}</span>${control}</div>`
+    : `<div class="field-control-wrap">${control}</div>`;
+  return `<div class="field"><label for="${esc(id)}" class="field-label">${esc(label)}</label>${controlWrap}${help ? `<p class="help field-help" id="${esc(id)}-help">${esc(help)}</p>` : ""}</div>`;
 }
 export function footer(): string {
   return '<footer class="footer"><span>TiHu · 一个共同的模型实验场</span><span>社区投票表达偏好，不是客观智力分数。</span></footer>';
@@ -381,12 +446,30 @@ export function authGate(): Page {
 export function toast(message: string, error = false): void {
   const region = document.querySelector("#toast");
   if (!region) return;
+  if (!error && /发布|创建|提交成功|已公开/.test(message)) {
+    celebrate();
+  }
   const item = document.createElement("div");
-  item.className = "toast" + (error ? " err" : "");
-  item.textContent = message;
+  item.className = "toast" + (error ? " err toast-error" : " toast-success");
   item.setAttribute("role", error ? "alert" : "status");
+  const iconSvg = error ? icons.alert : icons.check;
+  item.innerHTML = `<span class="toast-icon-wrap" aria-hidden="true">${iconSvg}</span><span class="toast-message">${esc(message)}</span><button class="toast-close" type="button" aria-label="关闭通知" tabindex="-1">${icons.close}</button>`;
+  let dismissed = false;
+  let timer: number | undefined;
+  const dismiss = () => {
+    if (dismissed) return;
+    dismissed = true;
+    clearTimeout(timer);
+    item.classList.add("toast-leaving");
+    setTimeout(() => item.remove(), 280);
+  };
+  item.addEventListener("click", dismiss);
+  item.querySelector(".toast-close")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dismiss();
+  });
   region.append(item);
-  setTimeout(() => item.remove(), error ? 8000 : 4500);
+  timer = window.setTimeout(dismiss, error ? 8000 : 4500);
 }
 export function clearFormError(form: HTMLFormElement): void {
   form.querySelector(".form-error")?.remove();
@@ -412,9 +495,34 @@ export function formError(form: HTMLFormElement, error: unknown): void {
   message.focus();
 }
 let dialogClose: (() => void) | null = null;
-export function closeDialog(): void {
+let closeTimer: number | undefined;
+export function closeDialog(immediate = false): void {
   const dialog = document.querySelector<HTMLDialogElement>("#modal");
-  dialog?.close();
+  if (!dialog) return;
+  if (closeTimer) {
+    window.clearTimeout(closeTimer);
+    closeTimer = undefined;
+  }
+  if (dialog.open) {
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const activeEl = document.activeElement;
+    if (activeEl instanceof HTMLElement && dialog.contains(activeEl)) {
+      activeEl.blur();
+    }
+    const doClose = () => {
+      dialog.close();
+      dialog.classList.remove("modal-closing");
+      window.scrollTo({ left: scrollX, top: scrollY, behavior: "instant" });
+      closeTimer = undefined;
+    };
+    if (immediate) {
+      doClose();
+    } else {
+      dialog.classList.add("modal-closing");
+      closeTimer = window.setTimeout(doClose, 150);
+    }
+  }
   const finish = dialogClose;
   dialogClose = null;
   finish?.();
@@ -424,32 +532,33 @@ export function showDialog(
   content: string,
   mount?: (dialog: HTMLDialogElement) => void,
 ): HTMLDialogElement {
-  closeDialog();
+  closeDialog(true);
   const dialog = document.querySelector<HTMLDialogElement>("#modal")!;
-  dialog.className = "";
-  dialog.innerHTML = `<div class="modal"><button class="btn ghost close" type="button" aria-label="关闭对话框" data-dialog-close>关闭</button><h2 id="dialog-title">${esc(title)}</h2>${content}</div>`;
+  dialog.className = "modern-dialog";
+  dialog.innerHTML = `<div class="modal modal-card"><div class="modal-header"><h2 id="dialog-title" class="modal-title">${esc(title)}</h2><button class="btn ghost modal-close-btn" type="button" aria-label="关闭对话框" data-dialog-close title="关闭">${icons.close}</button></div><div class="modal-body">${content}</div></div>`;
   dialog.setAttribute("aria-labelledby", "dialog-title");
   dialog
     .querySelector("[data-dialog-close]")
-    ?.addEventListener("click", closeDialog);
+    ?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeDialog();
+    });
   dialog.oncancel = (event) => {
     event.preventDefault();
     closeDialog();
   };
   dialog.onclick = (event) => {
     if (event.target === dialog) {
-      const box = dialog.getBoundingClientRect();
-      if (
-        event.clientX < box.left ||
-        event.clientX > box.right ||
-        event.clientY < box.top ||
-        event.clientY > box.bottom
-      )
-        closeDialog();
+      closeDialog();
     }
   };
   dialog.showModal();
   mount?.(dialog);
+  const firstInput = dialog.querySelector<HTMLInputElement>("input:not([type=hidden]), textarea, select");
+  if (firstInput) {
+    firstInput.focus({ preventScroll: true });
+  }
   return dialog;
 }
 export function confirmDialog(options: {
@@ -459,12 +568,14 @@ export function confirmDialog(options: {
   danger?: boolean;
 }): Promise<boolean> {
   const { promise, resolve } = Promise.withResolvers<boolean>();
+  const iconSvg = options.danger ? icons.alert : icons.info;
   const dialog = showDialog(
     options.title,
-    `<div class="dialog-body">${options.body}</div><div class="actions"><button class="btn outline" type="button" data-cancel>暂不操作</button><button class="btn ${options.danger ? "danger" : "primary"}" type="button" data-confirm>${esc(options.confirm)}</button></div>`,
+    `<div class="confirm-dialog-content"><div class="confirm-body-row"><span class="confirm-icon ${options.danger ? "danger" : "info"}" aria-hidden="true">${iconSvg}</span><div class="dialog-body confirm-message">${options.body}</div></div><div class="actions modal-actions confirm-actions"><button class="btn outline" type="button" data-cancel>暂不操作</button><button class="btn ${options.danger ? "danger" : "primary"}" type="button" data-confirm>${esc(options.confirm)}</button></div></div>`,
   );
+  dialog.classList.add("confirm-modal");
   dialogClose = () => resolve(false);
-  dialog.querySelector("[data-cancel]")?.addEventListener("click", closeDialog);
+  dialog.querySelector("[data-cancel]")?.addEventListener("click", () => closeDialog());
   dialog.querySelector("[data-confirm]")?.addEventListener("click", () => {
     dialogClose = null;
     closeDialog();
@@ -479,11 +590,59 @@ export function authenticate(mode = "login"): void {
     toast(errors.registration_closed, true);
     return;
   }
-  const dialog = showDialog(
-    forgot ? "重置密码" : register ? "创建账号" : "欢迎回来",
-    `<p class="muted">${forgot ? "如果邮箱对应已有账号，我们会发送一次性重置链接。" : register ? "保存自己的模型连接，开始一次私有实验。" : "继续你的模型实验。"}</p><form id="auth-form">${register ? field("auth-username", "用户名", '<input id="auth-username" name="username" required minlength="2" maxlength="32" pattern="[A-Za-z0-9_-]+" autocomplete="username">', "2–32 位英文字母、数字、下划线或短横线。") : ""}${field("auth-email", "邮箱", '<input id="auth-email" name="email" type="email" required maxlength="254" autocomplete="email">')}${forgot ? "" : field("auth-password", "密码", `<input id="auth-password" name="password" type="password" required minlength="${register ? 12 : 1}" maxlength="200" autocomplete="${register ? "new-password" : "current-password"}">`, register ? "至少 12 个字符，建议使用独立密码。" : "")}<button class="btn primary full" type="submit">${forgot ? "发送重置链接" : register ? "创建账号" : "登录"}</button></form><div class="actions spacer">${!register && !forgot && state.config.registration ? '<button class="btn ghost" data-auth-mode="register">第一次来？创建账号</button>' : '<button class="btn ghost" data-auth-mode="login">已有账号？登录</button>'}${!forgot && !register ? '<button class="btn ghost" data-auth-mode="forgot">忘记密码</button>' : ""}</div>`,
-  );
-  dialog.classList.add("compact");
+  const title = forgot ? "重置密码" : register ? "创建账号" : "欢迎回来";
+  const subtitle = forgot
+    ? "如果邮箱对应已有账号，我们会发送一次性重置链接。"
+    : register
+      ? "保存自己的模型连接，开始一次私有实验。"
+      : "继续你的模型实验。";
+
+  const tabsHtml =
+    !forgot && state.config.registration
+      ? `<div class="segmented-control auth-segmented" role="tablist">
+        <button class="segment-btn ${!register ? "active" : ""}" type="button" data-auth-mode="login">登录</button>
+        <button class="segment-btn ${register ? "active" : ""}" type="button" data-auth-mode="register">创建账号</button>
+      </div>`
+      : "";
+
+  const content = `
+    <div class="auth-dialog-wrap">
+      <div class="auth-header">
+        <div class="auth-icon-badge" aria-hidden="true">${forgot ? icons.lock : register ? icons.sparkles : icons.user}</div>
+        <p class="muted auth-subtitle">${subtitle}</p>
+      </div>
+      ${tabsHtml}
+      <form id="auth-form" class="stack">
+        ${register ? field("auth-username", "用户名", '<input id="auth-username" name="username" required minlength="2" maxlength="32" pattern="[A-Za-z0-9_-]+" autocomplete="username" placeholder="英文字母、数字或下划线">', "2–32 位英文字母、数字、下划线或短横线。", icons.user) : ""}
+        ${field("auth-email", "邮箱", '<input id="auth-email" name="email" type="email" required maxlength="254" autocomplete="email" placeholder="name@example.com">', "", icons.mail)}
+        ${forgot ? "" : field("auth-password", "密码", `<input id="auth-password" name="password" type="password" required minlength="${register ? 12 : 1}" maxlength="200" autocomplete="${register ? "new-password" : "current-password"}" placeholder="${register ? "至少 12 位密码" : "输入密码"}">`, register ? "至少 12 个字符，建议使用独立密码。" : "", icons.lock)}
+        <button class="btn primary full auth-submit-btn" type="submit">${forgot ? "发送重置链接" : register ? "创建账号" : "登录"}</button>
+      </form>
+      <div class="actions spacer auth-footer-actions">
+        ${forgot ? '<button class="btn ghost small" type="button" data-auth-mode="login">← 返回登录</button>' : `<button class="btn ghost small" type="button" data-auth-mode="forgot">忘记密码？</button>`}
+      </div>
+    </div>`;
+
+  const existingDialog = document.querySelector<HTMLDialogElement>("#modal");
+  let dialog: HTMLDialogElement;
+  if (
+    existingDialog &&
+    existingDialog.open &&
+    existingDialog.classList.contains("auth-dialog")
+  ) {
+    dialog = existingDialog;
+    const titleEl = dialog.querySelector<HTMLElement>("#dialog-title");
+    if (titleEl) titleEl.textContent = title;
+    const bodyEl = dialog.querySelector<HTMLElement>(".modal-body");
+    if (bodyEl) bodyEl.innerHTML = content;
+    const firstInput = dialog.querySelector<HTMLInputElement>(
+      "input:not([type=hidden]), textarea, select",
+    );
+    if (firstInput) firstInput.focus({ preventScroll: true });
+  } else {
+    dialog = showDialog(title, content);
+    dialog.classList.add("compact", "auth-dialog");
+  }
   dialog
     .querySelectorAll<HTMLElement>("[data-auth-mode]")
     .forEach((button) =>

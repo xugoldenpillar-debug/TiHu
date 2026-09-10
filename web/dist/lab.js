@@ -1,4 +1,4 @@
-import { api, mutate, state, go, query, refreshSession, esc, fmt, date, duration, errorText, head, empty, badge, field, footer, authGate, verificationNotice, toast, formError, clearFormError, showDialog, closeDialog, confirmDialog, authenticate, } from "./core.js";
+import { api, mutate, state, go, query, refreshSession, esc, fmt, date, duration, errorText, head, empty, badge, field, footer, authGate, verificationNotice, toast, formError, clearFormError, showDialog, closeDialog, confirmDialog, authenticate, burstParticles, celebrate, } from "./core.js";
 import { record, } from "./types.js";
 const voteKinds = ["capability", "funny"];
 let draft = null;
@@ -342,6 +342,7 @@ export async function studioPage() {
                         return;
                     d.consent = false;
                     consent.checked = false;
+                    celebrate(submit, { count: 28 });
                     go("/run/" + encodeURIComponent(result.id));
                 }
                 catch (error) {
@@ -393,7 +394,12 @@ function metricsHTML(run) {
     return `<div class="metric-grid">${rows.map(([label, value]) => `<div class="metric"><span class="muted">${esc(label)}</span><strong>${esc(value)}</strong></div>`).join("")}</div><p class="help">${m.usage_complete === true ? "Token 为服务商返回的已记录用量。" : "用量回报不完整或尚未返回；已显示的是部分已知用量，未知值不等于 0。"} 费用未估算，请以服务商账单为准。</p>${run.started ? `<p class="help">开始：${esc(date(run.started))}${run.finished ? ` · 结束：${esc(date(run.finished))}` : ""}</p>` : ""}${m.image_id ? `<p class="help mono break-word">镜像：${esc(m.image_id)}</p>` : ""}`;
 }
 function previewHTML(run, prefix) {
-    return `<section class="preview" data-preview="${esc(prefix)}"><div class="preview-toolbar"><strong>隔离预览</strong><div class="actions"><button type="button" class="btn outline small" data-preview-mode="desktop" aria-pressed="true">桌面</button><button type="button" class="btn outline small" data-preview-mode="mobile" aria-pressed="false">手机</button><button type="button" class="btn outline small" data-preview-refresh>重新加载预览</button></div></div><p class="help">手机模式只调整视窗宽度，不模拟设备。重新加载会清空预览内的交互状态；链接过期后可重新获取。</p><p class="form-error" data-preview-error role="alert" hidden></p><div class="preview-stage desktop"><iframe class="preview-frame" title="${esc(run.title)} · ${esc(run.model)} 的隔离作品预览" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe></div></section>`;
+    const isCompare = prefix.startsWith("compare");
+    const iframeHeight = isCompare
+        ? "min(520px, calc(100vh - 220px))"
+        : "min(720px, calc(100vh - 160px))";
+    const iframeMinHeight = isCompare ? "380px" : "480px";
+    return `<section class="preview ${isCompare ? "preview-compare" : "preview-run"}" data-preview="${esc(prefix)}"><div class="preview-toolbar"><strong>隔离预览</strong><div class="actions"><button type="button" class="btn outline small" data-preview-mode="desktop" aria-pressed="true">桌面</button><button type="button" class="btn outline small" data-preview-mode="mobile" aria-pressed="false">手机</button><button type="button" class="btn outline small" data-preview-refresh>重新加载预览</button></div></div><p class="help" style="margin:6px 16px 0 16px;font-size:12px;">手机模式只调整视窗宽度，不模拟设备。重新加载会清空预览内的交互状态；链接过期后可重新获取。</p><p class="form-error" data-preview-error role="alert" hidden></p><div class="preview-stage desktop"><iframe class="preview-frame" style="height:${iframeHeight};min-height:${iframeMinHeight};" title="${esc(run.title)} · ${esc(run.model)} 的隔离作品预览" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe></div></section>`;
 }
 function mountPreview(container, run) {
     const abort = new AbortController();
@@ -480,7 +486,79 @@ function voteReason(run) {
         : "此账号目前不能投票。服务器会再次核对资格。";
 }
 function votesHTML(run) {
-    return `<h2>社区评价</h2><p class="help">${esc(voteReason(run))}</p>${!state.user ? '<button class="btn outline small" type="button" data-lab-action="login">登录参与</button>' : ""}<div class="stack">${voteKinds.map((kind) => `<button type="button" class="vote${run.my_votes?.includes(kind) ? " on" : ""}" data-lab-action="vote" data-kind="${kind}" aria-pressed="${run.my_votes?.includes(kind) ? "true" : "false"}"${run.can_vote ? "" : " disabled"}><span>${kind === "capability" ? "能力" : "有趣"}</span><strong>${esc(fmt(run[kind] || 0))}</strong></button>`).join("")}</div>`;
+    return `<h2>社区评价</h2><p class="help">${esc(voteReason(run))}</p>${!state.user ? '<button class="btn outline small" type="button" data-lab-action="login">登录参与</button>' : ""}<div class="stack">${voteKinds.map((kind) => `<button type="button" class="vote${run.my_votes?.includes(kind) ? " on" : ""}" data-lab-action="vote" data-kind="${kind}" aria-pressed="${run.my_votes?.includes(kind) ? "true" : "false"}"${run.can_vote ? "" : " disabled"}><span>${kind === "capability" ? "能力" : "有趣"}</span><strong class="vote-count" data-kind="${kind}" data-val="${run[kind] || 0}"><span class="vote-val">${esc(fmt(run[kind] || 0))}</span></strong></button>`).join("")}</div>`;
+}
+function ensureVoteMotionStyles() {
+    // Styles bundled statically in theme.css to comply with CSP
+}
+function rollVoteCount(strongEl, fromVal, toVal) {
+    if (fromVal === toVal) {
+        strongEl.innerHTML = `<span class="vote-val">${esc(fmt(toVal))}</span>`;
+        strongEl.dataset.val = String(toVal);
+        return;
+    }
+    const isUp = toVal > fromVal;
+    const fromStr = esc(fmt(fromVal));
+    const toStr = esc(fmt(toVal));
+    const startY = isUp ? "0%" : "-50%";
+    const endY = isUp ? "-50%" : "0%";
+    strongEl.innerHTML = `
+    <span class="vote-rail" style="transform: translateY(${startY});">
+      <span class="vote-val">${isUp ? fromStr : toStr}</span>
+      <span class="vote-val">${isUp ? toStr : fromStr}</span>
+    </span>
+  `;
+    strongEl.dataset.val = String(toVal);
+    const rail = strongEl.querySelector(".vote-rail");
+    if (!rail)
+        return;
+    void rail.offsetHeight;
+    rail.style.transition = "transform 360ms cubic-bezier(0.2, 0.9, 0.3, 1)";
+    rail.style.transform = `translateY(${endY})`;
+    const cleanup = () => {
+        strongEl.innerHTML = `<span class="vote-val">${toStr}</span>`;
+    };
+    rail.addEventListener("transitionend", cleanup, { once: true });
+    setTimeout(cleanup, 420);
+}
+function syncVotesSection(container, currentRun, animate = true) {
+    ensureVoteMotionStyles();
+    const help = container.querySelector(".help");
+    if (help)
+        help.textContent = voteReason(currentRun);
+    let fullRerender = false;
+    for (const kind of voteKinds) {
+        const btn = container.querySelector(`button[data-kind="${kind}"]`);
+        if (!btn) {
+            fullRerender = true;
+            break;
+        }
+        const isActive = Boolean(currentRun.my_votes?.includes(kind));
+        btn.classList.toggle("on", isActive);
+        btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+        btn.disabled = !currentRun.can_vote;
+        const strong = btn.querySelector(".vote-count");
+        if (strong) {
+            const currentVal = parseInt(strong.dataset.val || "0", 10);
+            const targetVal = currentRun[kind] || 0;
+            if (currentVal !== targetVal) {
+                if (animate) {
+                    rollVoteCount(strong, currentVal, targetVal);
+                }
+                else {
+                    strong.innerHTML = `<span class="vote-val">${esc(fmt(targetVal))}</span>`;
+                    strong.dataset.val = String(targetVal);
+                }
+            }
+        }
+        else {
+            fullRerender = true;
+            break;
+        }
+    }
+    if (fullRerender) {
+        container.innerHTML = votesHTML(currentRun);
+    }
 }
 function sourceHTML() {
     return `<section class="panel stack"><div class="section-head"><h2>生成的源码</h2><button type="button" class="btn outline small" data-lab-action="load-source">读取源码文件</button></div><p class="help">源码是模型生成的产物，不包含 API 密钥。请先检查内容，不要直接在本地执行未知脚本。</p><p class="form-error" data-source-error role="alert" hidden></p><div data-source-browser hidden><div class="source-layout">${field("source-file", "文件", '<select id="source-file" class="source-files"></select>')}<div class="source-content"><div class="actions"><button type="button" class="btn outline small" data-lab-action="copy-source">复制当前文件</button><button type="button" class="btn outline small" data-lab-action="download-source">下载当前文件</button><button type="button" class="btn outline small" data-lab-action="download-all">下载完整源码 JSON</button></div><pre class="code" tabindex="0"><code data-source-code></code></pre></div></div><p class="help mono break-word" data-source-meta></p></div></section>`;
@@ -494,10 +572,11 @@ export async function runPage(id) {
     const actionHTML = () => `<a class="btn outline" href="#/challenge/${encodeURIComponent(run.challenge_id)}?version=${encodeURIComponent(run.version_id)}">查看任务来源</a>${active(run) && state.user?.id === run.owner_id ? '<button type="button" class="btn danger" data-lab-action="cancel">取消实验</button>' : ""}${run.status === "succeeded" && !run.hidden && state.user?.id === run.owner_id ? `<button type="button" class="btn ${run.published ? "outline" : "primary"}" data-lab-action="publish">${run.published ? "撤下公开" : "发布作品"}</button>` : ""}${run.status === "succeeded" && run.published && !run.hidden && state.user?.verified ? '<button type="button" class="btn ghost" data-lab-action="report">举报作品</button>' : ""}`;
     const statusHTML = () => `<div class="status-line">${badge(run.status, statusLabels[run.status] || run.status)} ${badge(run.track, run.track === "standard" ? "标准赛道" : "开放赛道")} ${badge(run.hidden ? "hidden" : run.published ? "public" : "private", run.hidden ? "管理员已隐藏" : run.published ? "公开作品" : "私有实验")}</div>${active(run) ? `<p class="notice">${run.status === "queued" ? "等待隔离执行器。排队本身不会调用模型。" : "模型正在隔离环境中构建。"} 离开页面不会中断实验，也不会触发重试。</p>` : run.status !== "succeeded" ? runError(run.error) : '<p class="help">实验已完成。模型产物只在隔离来源中执行；社区操作不会重置预览。</p>'}`;
     return {
-        html: `${head(run.model, `${run.title} · v${run.version} · @${run.username} · ${date(run.created)}`)}<div class="actions" id="run-actions">${actionHTML()}</div><p class="form-error" id="run-action-error" role="alert" hidden></p><div class="run-layout"><div class="stack"><section class="panel" id="run-status">${statusHTML()}</section><div id="run-artifact">${run.status === "succeeded" ? previewHTML(run, "run") + sourceHTML() : ""}</div><section class="panel stack" id="run-events"${run.can_view_events ? "" : " hidden"}><h2>执行进度</h2><p class="help" id="event-state" role="status">正在连接已脱敏的执行日志…</p><ol class="progress-list" id="event-list" aria-label="执行日志"></ol></section><section class="panel" id="run-comments">${commentsHTML(run)}</section><details class="panel details"><summary>不可变配置快照</summary><p class="help">记录提交时的任务、模型、提示词和环境。公开浏览者只可见 Skill 名称与摘要，不会看到 Skill 文件正文。</p><pre class="code">${esc(JSON.stringify(run.snapshot, null, 2))}</pre></details></div><aside class="stack"><section class="panel" id="run-votes">${votesHTML(run)}</section><section class="panel stack"><h2>运行记录</h2><div id="run-metrics">${metricsHTML(run)}</div><dl class="summary-list"><div class="summary-row"><dt>服务商</dt><dd class="mono break-word">${esc(run.provider)}</dd></div><div class="summary-row"><dt>请求协议</dt><dd class="mono">${esc(run.snapshot?.protocol || "openai")}</dd></div><div class="summary-row"><dt>实验 ID</dt><dd class="mono break-word">${esc(run.id)}</dd></div><div class="summary-row"><dt>环境指纹</dt><dd class="mono break-word">${esc(run.environment)}</dd></div></dl><a class="btn outline" href="#/studio?challenge=${encodeURIComponent(run.challenge_id)}&version=${encodeURIComponent(run.version_id)}">以此任务创建新实验</a><p class="help">创建新实验会使用你选择的连接与配置，不会自动复制他人的私有 Skill 或再次调用模型。</p></section></aside></div>${footer()}`,
+        html: `${head(run.model, `${run.title} · v${run.version} · @${run.username} · ${date(run.created)}`)}<div class="run-viewport-layout"><div class="run-viewport-main"><div id="run-artifact">${run.status === "succeeded" ? previewHTML(run, "run") + sourceHTML() : `<section class="panel stack" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:min(480px,calc(100vh - 200px));text-align:center;padding:48px 24px;background:#fafcf6;border:1px dashed var(--line);border-radius:12px;"><div style="font-size:36px;margin-bottom:12px;">🌱</div><h3 style="margin:0 0 8px 0;color:var(--ink);">${active(run) ? "模型正在隔离构建作品…" : "实验未生成作品预览"}</h3><p class="help" style="margin:0;max-width:420px;">${active(run) ? "隔离环境正在生成代码并部署沙箱，完成后将在此处自动呈现全尺寸动画预览。" : "可在右侧面板查看具体状态、错误日志与运行记录。"}</p></section>`}</div></div><aside class="run-viewport-aside stack"><div class="actions" id="run-actions">${actionHTML()}</div><p class="form-error" id="run-action-error" role="alert" hidden></p><section class="panel" id="run-status">${statusHTML()}</section><section class="panel" id="run-votes">${votesHTML(run)}</section><section class="panel stack" id="run-events"${run.can_view_events ? "" : " hidden"}><h2>执行进度</h2><p class="help" id="event-state" role="status">正在连接已脱敏的执行日志…</p><ol class="progress-list" id="event-list" aria-label="执行日志"></ol></section><section class="panel stack"><h2>运行记录</h2><div id="run-metrics">${metricsHTML(run)}</div><dl class="summary-list"><div class="summary-row"><dt>服务商</dt><dd class="mono break-word">${esc(run.provider)}</dd></div><div class="summary-row"><dt>请求协议</dt><dd class="mono">${esc(run.snapshot?.protocol || "openai")}</dd></div><div class="summary-row"><dt>实验 ID</dt><dd class="mono break-word">${esc(run.id)}</dd></div><div class="summary-row"><dt>环境指纹</dt><dd class="mono break-word">${esc(run.environment)}</dd></div></dl><a class="btn outline" href="#/studio?challenge=${encodeURIComponent(run.challenge_id)}&version=${encodeURIComponent(run.version_id)}">以此任务创建新实验</a><p class="help">创建新实验会使用你选择的连接与配置，不会自动复制他人的私有 Skill 或再次调用模型。</p></section><details class="panel details"><summary>不可变配置快照</summary><p class="help">记录提交时的任务、模型、提示词和环境。公开浏览者只可见 Skill 名称与摘要，不会看到 Skill 文件正文。</p><pre class="code">${esc(JSON.stringify(run.snapshot, null, 2))}</pre></details><section class="panel" id="run-comments">${commentsHTML(run)}</section></aside></div>${footer()}`,
         mount(root) {
             const abort = new AbortController();
             let disposed = false;
+            ensureVoteMotionStyles();
             let eventSource = null;
             let previewCleanup;
             let poll;
@@ -604,7 +683,13 @@ export async function runPage(id) {
                     root.querySelector("#run-status").innerHTML = statusHTML();
                     root.querySelector("#run-actions").innerHTML = actionHTML();
                     root.querySelector("#run-metrics").innerHTML = metricsHTML(run);
-                    root.querySelector("#run-votes").innerHTML = votesHTML(run);
+                    const votesEl = root.querySelector("#run-votes");
+                    if (votesEl instanceof HTMLElement) {
+                        syncVotesSection(votesEl, run, true);
+                    }
+                    else if (votesEl) {
+                        votesEl.innerHTML = votesHTML(run);
+                    }
                     if (run.status === "succeeded" && priorStatus !== "succeeded") {
                         root.querySelector("#run-artifact").innerHTML =
                             previewHTML(run, "run") + sourceHTML();
@@ -883,9 +968,17 @@ export async function runPage(id) {
                             run[kind] = result.count;
                             ++voteRevision;
                             run.my_votes = (run.my_votes || []).filter((value) => value !== kind);
-                            if (result.active)
+                            if (result.active) {
                                 run.my_votes.push(kind);
-                            root.querySelector("#run-votes").innerHTML = votesHTML(run);
+                                burstParticles(button, { count: 20 });
+                            }
+                            const votesEl = root.querySelector("#run-votes");
+                            if (votesEl instanceof HTMLElement) {
+                                syncVotesSection(votesEl, run, true);
+                            }
+                            else if (votesEl) {
+                                votesEl.innerHTML = votesHTML(run);
+                            }
                         }
                     }
                     else if (action === "delete-comment") {
@@ -1053,17 +1146,17 @@ export async function comparePage() {
                 const matches = fields.every(([key]) => typeof runs[0][key] === "string" &&
                     runs[0][key].length > 0 &&
                     runs[0][key] === runs[1][key]);
-                const conditions = `<section class="panel stack"><h2>${matches ? "四项条件一致" : "不能标记为同条件比较"}</h2><p class="notice ${matches ? "success" : "warn"}">${matches ? "两个实验的任务、版本、赛道和环境指纹完全一致。模型与服务商仍单独显示；开放赛道中的附加提示词、思考设置和 Skills 也可能不同。" : "至少一项条件不同或缺失。下方仅作并排查看，不给出公平排名或胜负结论。"}</p><div class="table"><table><thead><tr><th scope="col">条件</th><th scope="col">实验 A</th><th scope="col">实验 B</th><th scope="col">核对</th></tr></thead><tbody>${fields
+                const conditions = `<details class="panel details"${matches ? "" : " open"}><summary><strong>${matches ? "✓ 四项条件完全一致" : "⚠ 不能标记为同条件比较"}</strong> <span class="muted">${matches ? "（任务、版本、赛道与环境指纹相同，点击展开核对）" : "（至少一项条件不同或缺失，点击查看核对详情）"}</span></summary><div class="stack" style="margin-top: 12px;"><p class="notice ${matches ? "success" : "warn"}">${matches ? "两个实验的任务、版本、赛道和环境指纹完全一致。模型与服务商仍单独显示；开放赛道中的附加提示词、思考设置和 Skills 也可能不同。" : "至少一项条件不同或缺失。下方仅作并排查看，不给出公平排名或胜负结论。"}</p><div class="table"><table><thead><tr><th scope="col">条件</th><th scope="col">实验 A</th><th scope="col">实验 B</th><th scope="col">核对</th></tr></thead><tbody>${fields
                     .map(([key, label]) => {
                     const same = typeof runs[0][key] === "string" &&
                         runs[0][key].length > 0 &&
                         runs[0][key] === runs[1][key];
                     return `<tr><th scope="row">${label}</th><td class="mono break-word compare-condition">${esc(runs[0][key] || "缺失")}</td><td class="mono break-word compare-condition">${esc(runs[1][key] || "缺失")}</td><td>${same ? "相同" : "不同或缺失"}</td></tr>`;
                 })
-                    .join("")}</tbody></table></div></section>`;
+                    .join("")}</tbody></table></div></div></details>`;
                 content =
                     conditions +
-                        `<div class="compare-grid">${runs.map((run, index) => `<article class="stack"><section class="panel"><div class="eyebrow">实验 ${index === 0 ? "A" : "B"}</div><h2>${esc(run.model)}</h2><p class="mono break-word">${esc(run.provider)}</p><p>${esc(run.title)} · v${esc(run.version)} · @${esc(run.username)}</p>${badge(run.status, statusLabels[run.status] || run.status)} <a class="btn outline small" href="#/run/${encodeURIComponent(run.id)}">完整实验与源码</a></section>${run.status === "succeeded" ? previewHTML(run, "compare-" + index) : `<section class="panel">${active(run) ? '<p class="notice">实验尚未完成。进入完整实验查看实时进度；本比较页不会自动重载。</p>' : runError(run.error)}</section>`}<section class="panel"><h3>调用与用量</h3>${metricsHTML(run)}</section><details class="panel details"><summary>查看不可变配置快照</summary><pre class="code">${esc(JSON.stringify(run.snapshot, null, 2))}</pre></details></article>`).join("")}</div>`;
+                        `<div class="compare-grid">${runs.map((run, index) => `<article class="stack"><section class="panel compact" style="padding:12px 16px;"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;"><div><span class="eyebrow" style="margin-right:8px;">实验 ${index === 0 ? "A" : "B"}</span><strong style="font-size:16px;">${esc(run.model)}</strong></div><div class="actions">${badge(run.status, statusLabels[run.status] || run.status)} <a class="btn outline small" href="#/run/${encodeURIComponent(run.id)}">完整实验与源码</a></div></div><p class="muted mono break-word" style="margin:4px 0 0 0;font-size:12px;">${esc(run.provider)} · ${esc(run.title)} · v${esc(run.version)} · @${esc(run.username)}</p></section>${run.status === "succeeded" ? previewHTML(run, "compare-" + index) : `<section class="panel">${active(run) ? '<p class="notice">实验尚未完成。进入完整实验查看实时进度；本比较页不会自动重载。</p>' : runError(run.error)}</section>`}<section class="panel"><h3>调用与用量</h3>${metricsHTML(run)}</section><details class="panel details"><summary>查看不可变配置快照</summary><pre class="code">${esc(JSON.stringify(run.snapshot, null, 2))}</pre></details></article>`).join("")}</div>`;
             }
         }
     }
@@ -1072,7 +1165,9 @@ export async function comparePage() {
             '<p class="notice">同条件比较严格核对任务、版本、赛道和环境指纹，不把不同实验条件混成一个排名。</p>';
     return {
         html: head("并排比较", "先核对条件，再观察模型的实际产物。", '<a class="btn outline" href="#/gallery">从作品库选择</a>') +
-            form +
+            (runs.length === 2
+                ? `<details class="panel details" style="margin-bottom:16px;"><summary>更换对比实验</summary>${form}</details>`
+                : form) +
             content +
             footer(),
         mount(root) {

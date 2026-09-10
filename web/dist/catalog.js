@@ -43,16 +43,103 @@ const categoryNames = {
     Creative: "创意表达",
     UI: "界面设计",
 };
+const icons = {
+    arrowRight: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`,
+    gallery: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>`,
+    search: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
+    sparkles: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>`,
+    trophy: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`,
+    cpu: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>`,
+    layers: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>`,
+    play: `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>`,
+    flame: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"/></svg>`,
+    table: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>`,
+    tag: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><circle cx="7" cy="7" r=".5" fill="currentColor"/></svg>`,
+};
+function ensureCatalogStyles() {
+    // Styles are bundled statically in theme.css to comply with CSP and eliminate FOUC
+}
 function challengeCard(item, index) {
     const copy = challengeCopy[item.title];
-    return `<article class="card challenge-card"><a href="#/challenge/${esc(item.id)}"><div class="cover">${copy ? `<img src="${copy.art}" alt="${copy.alt}" loading="lazy" width="600" height="360">` : `<div class="generated-mark" aria-hidden="true">${esc(item.category)}</div>`}<span class="cover-num">题目 ${String(index + 1).padStart(2, "0")}</span><span class="cover-type">${esc(categoryNames[item.category] ?? item.category)}</span></div><div class="card-body"><div class="card-kicker">固定版本 · v${item.current_version}</div><h3>${esc(copy?.title ?? item.title)}</h3><p>${esc(copy?.description ?? item.description)}</p><div class="meta"><span>查看任务与评价参考</span><span class="card-arrow">开始挑战 →</span></div></div></a></article>`;
+    const cat = item.category;
+    const catName = categoryNames[cat] ?? cat;
+    const title = copy?.title ?? item.title;
+    const desc = copy?.description ?? item.description;
+    const numStr = String(index + 1).padStart(2, "0");
+    return `<article class="card challenge-card challenge-bento-card">
+    <a class="challenge-card-link" href="#/challenge/${esc(item.id)}" title="${esc(title)}">
+      <div class="challenge-cover cover">
+        ${copy
+        ? `<img src="${copy.art}" alt="${copy.alt}" loading="lazy" width="600" height="360">`
+        : `<div class="generated-mark" aria-hidden="true">${esc(cat)}</div>`}
+        <span class="cover-num">题目 ${numStr}</span>
+        <span class="cover-type category-capsule category-${esc(cat.toLowerCase())}">${esc(catName)}</span>
+      </div>
+      <div class="card-body challenge-card-body">
+        <div class="challenge-card-header">
+          <span class="badge-version">v${item.current_version} 固定评测</span>
+          <span class="challenge-card-index">#${numStr}</span>
+        </div>
+        <h3 class="challenge-card-title">${esc(title)}</h3>
+        <p class="challenge-card-desc">${esc(desc)}</p>
+        <div class="challenge-card-footer meta">
+          <span class="challenge-card-sub">标准评价基准</span>
+          <span class="card-arrow btn-challenge-action">开始挑战 ${icons.arrowRight}</span>
+        </div>
+      </div>
+    </a>
+  </article>`;
 }
 function workCard(item, mine = false) {
     const title = challengeCopy[item.title]?.title ?? item.title;
+    const userInitial = (item.username || "U").slice(0, 1).toUpperCase();
     const art = item.thumbnail_available
-        ? `<img class="work-image" src="/api/runs/${esc(item.id)}/thumbnail" alt="${esc(title)}的生成作品预览" loading="lazy" width="960" height="600">`
-        : `<div class="work-placeholder"><span>${item.status === "succeeded" ? "暂无缩略图" : item.status === "queued" ? "等待开始" : item.status === "running" ? "正在构建" : "查看运行记录"}</span><small>${item.status === "succeeded" ? "打开作品查看完整效果" : "每一次实验都有自己的记录"}</small></div>`;
-    return `<article class="card run-card" data-run-id="${esc(item.id)}">${!mine ? `<a class="work-cover" href="#/run/${esc(item.id)}">${art}</a>` : ""}<div class="card-body"><div class="row between">${mine ? badge(item.status) : badge(item.track)}<span class="help">${date(item.created)}</span></div><h3><a href="#/run/${esc(item.id)}">${esc(title)}</a></h3><p class="model-name">${esc(item.model)}</p><p class="help">v${item.version} · @${esc(item.username)}${mine ? ` · ${item.published ? "已公开" : "仅自己可见"}` : ""}</p>${mine ? `<div class="row">${badge(item.track)}${item.metrics?.elapsed_ms != null ? `<span class="help">${duration(item.metrics.elapsed_ms)}</span>` : ""}</div>` : ""}${mine && item.error ? '<p class="notice warn">实验未完成，打开记录查看原因和下一步。</p>' : ""}<div class="meta"><span>能力 ${fmt(item.capability)} · 趣味 ${fmt(item.funny)}</span><a class="text-link" href="#/run/${esc(item.id)}">${item.status === "succeeded" ? "查看作品" : "查看记录"} →</a></div>${item.status === "succeeded" ? `<label class="check compare-pick"><input type="checkbox" data-compare="${esc(item.id)}">加入同条件对比</label>` : ""}</div></article>`;
+        ? `<img class="work-image" src="/api/runs/${esc(item.id)}/thumbnail" alt="${esc(title)}的生成作品预览" loading="lazy" width="960" height="540">`
+        : `<div class="work-placeholder">
+        <span class="placeholder-icon">${icons.gallery}</span>
+        <span>${item.status === "succeeded" ? "暂无缩略图" : item.status === "queued" ? "等待开始" : item.status === "running" ? "正在构建" : "查看运行记录"}</span>
+        <small>${item.status === "succeeded" ? "打开作品查看完整效果" : "每一次实验都有自己的记录"}</small>
+      </div>`;
+    return `<article class="card run-card modern-run-card" data-run-id="${esc(item.id)}">
+    ${!mine
+        ? `<a class="work-cover work-cover-aspect" data-run-id="${esc(item.id)}" href="#/run/${esc(item.id)}" title="${esc(title)}">
+            ${art}
+            <div class="work-cover-overlay">
+              <span class="btn-quick-view">${icons.play} 查看沙箱</span>
+            </div>
+          </a>`
+        : ""}
+    <div class="card-body work-card-body">
+      <div class="row between work-top-row">
+        <div class="work-badges-row">
+          ${mine ? badge(item.status) : badge(item.track)}
+          ${item.is_official ? '<span class="badge official">官方直连</span>' : ""}
+        </div>
+        <span class="work-date">${date(item.created)}</span>
+      </div>
+      <h3 class="work-title">
+        <a href="#/run/${esc(item.id)}" title="${esc(title)}">${esc(title)}</a>
+      </h3>
+      <div class="work-model-pill">
+        <span class="model-icon">${icons.cpu}</span>
+        <span class="model-text" title="${esc(item.model)}">${esc(item.model)}</span>
+      </div>
+      <div class="work-footer-meta row between">
+        <div class="work-author">
+          <span class="author-avatar" aria-hidden="true">${esc(userInitial)}</span>
+          <span class="author-name">@${esc(item.username)}</span>
+          <span class="work-version-tag">v${item.version}</span>
+        </div>
+        ${mine
+        ? `<span class="work-privacy-tag">${item.published ? "已公开" : "仅自己可见"}</span>`
+        : `<label class="compare-checkbox" title="勾选进行两两并排对比"><input type="checkbox" data-compare="${esc(item.id)}"><span>对比</span></label>`}
+      </div>
+      ${mine
+        ? `<div class="row work-mine-metrics">${badge(item.track)}${item.metrics?.elapsed_ms != null ? `<span class="help">${duration(item.metrics.elapsed_ms)}</span>` : ""}</div>`
+        : ""}
+      ${mine && item.error ? '<p class="notice warn">实验未完成，打开查看详情</p>' : ""}
+    </div>
+  </article>`;
 }
 function pageControls(page) {
     return `<div class="pager"><p class="help" id="result-count">已展示 ${page.items.length} / ${fmt(page.total)} 项</p><button class="btn outline" id="load-more" ${!page.next_cursor ? "hidden" : ""}>加载更多</button></div>`;
@@ -99,6 +186,32 @@ function mountFeed(root, url, first, renderer) {
     }, { signal: controller.signal });
     return () => controller.abort();
 }
+function renderSegmentedControl(name, label, options, current) {
+    return `
+    <div class="segmented-control-field">
+      <span class="segmented-control-label">${esc(label)}</span>
+      <div class="segmented-control" role="radiogroup" aria-label="${esc(label)}">
+        <input type="hidden" name="${esc(name)}" value="${esc(current)}">
+        ${options
+        .map((opt) => `
+          <button
+            type="button"
+            class="segment-btn ${opt.value === current ? "is-active" : ""}"
+            data-filter-name="${esc(name)}"
+            data-filter-value="${esc(opt.value)}"
+            role="radio"
+            aria-checked="${opt.value === current}"
+            aria-pressed="${opt.value === current}"
+          >
+            ${opt.icon ? `<span class="segment-icon" aria-hidden="true">${opt.icon}</span>` : ""}
+            <span>${esc(opt.label)}</span>
+          </button>
+        `)
+        .join("")}
+      </div>
+    </div>
+  `;
+}
 function bindFilter(root, base) {
     const form = root.querySelector("[data-filters]");
     if (!form)
@@ -114,6 +227,34 @@ function bindFilter(root, base) {
     form
         .querySelectorAll("select")
         .forEach((select) => select.addEventListener("change", () => form.requestSubmit()));
+    form.querySelectorAll("[data-filter-name]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            const name = btn.dataset.filterName;
+            const value = btn.dataset.filterValue ?? "";
+            if (!name)
+                return;
+            let hidden = form.querySelector(`input[type="hidden"][name="${name}"]`);
+            if (!hidden) {
+                hidden = document.createElement("input");
+                hidden.type = "hidden";
+                hidden.name = name;
+                form.appendChild(hidden);
+            }
+            hidden.value = value;
+            form
+                .querySelectorAll(`[data-filter-name="${name}"]`)
+                .forEach((b) => {
+                const isActive = b === btn;
+                b.classList.toggle("is-active", isActive);
+                b.setAttribute("aria-pressed", String(isActive));
+                if (b.getAttribute("role") === "radio") {
+                    b.setAttribute("aria-checked", String(isActive));
+                }
+            });
+            form.requestSubmit();
+        });
+    });
 }
 function compareBar() {
     return '<section class="compare-bar" id="compare-bar" aria-label="作品对比" hidden><p id="compare-note" role="status">已选择 1 个作品，再选择一个同条件作品。</p><div class="actions"><button class="btn ghost" id="compare-clear">清空选择</button><button class="btn primary" id="compare-open" disabled>并排对比</button></div></section>';
@@ -159,19 +300,132 @@ function bindComparison(root) {
 }
 export async function explorePage() {
     const q = query();
+    const currentCat = q.get("category") ?? "";
     const params = new URLSearchParams({
         limit: "12",
         q: q.get("q") ?? "",
-        category: q.get("category") ?? "",
+        category: currentCat,
     });
     const url = "/challenges?" + params;
     const [page, stats] = await Promise.all([
         api(url),
         api("/stats"),
     ]);
+    const heroHtml = `
+    <section class="bento-hero">
+      <div class="bento-hero-main">
+        <div class="bento-hero-eyebrow">
+          <span class="eyebrow-dot"></span>
+          <span>TIHU · 现代大语言模型前沿大赏</span>
+        </div>
+        <h1 class="bento-hero-title" tabindex="-1">同一道题目，<br><span class="highlight-text">让模型各显其能。</span></h1>
+        <p class="bento-hero-desc">接上你喜爱的模型，在标准沙箱中完成一次真实构建。先私下安全预览，再把令人惊叹的成果带给社区评赏。</p>
+        <div class="bento-hero-actions">
+          <a class="btn primary btn-hero-primary" href="#/studio">
+            <span>开始一次实验</span>
+            ${icons.arrowRight}
+          </a>
+          <a class="btn light btn-hero-secondary" href="#/gallery">
+            ${icons.gallery}
+            <span>浏览社区作品</span>
+          </a>
+        </div>
+      </div>
+      <div class="bento-hero-visual">
+        <div class="hero-visual-glow" aria-hidden="true"></div>
+        <div class="hero-visual-frame">
+          <img src="/art/pelican.svg" alt="TiHu 的鹈鹕骑着自行车驶入模型实验场" width="700" height="480" class="hero-pelican-img">
+          <div class="hero-visual-badge hero-badge-top">
+            <span class="badge-dot-pulse"></span>
+            <span>独立安全沙箱 · 毫秒级构建</span>
+          </div>
+          <div class="hero-visual-badge hero-badge-bottom">
+            ${icons.sparkles}
+            <span>双盲投票 · 真实社区大赏</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+    const metricCardsHtml = `
+    <div class="metric-cards">
+      <div class="metric-card">
+        <div class="metric-icon-wrap">${icons.layers}</div>
+        <div class="metric-content">
+          <div class="metric-value">${fmt(stats.challenges)}</div>
+          <div class="metric-label">开放题目</div>
+          <div class="metric-sub">覆盖 SVG、交互与创意构建</div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon-wrap icon-amber">${icons.gallery}</div>
+        <div class="metric-content">
+          <div class="metric-value">${fmt(stats.works)}</div>
+          <div class="metric-label">真实公开作品</div>
+          <div class="metric-sub">作者自主校验并共享至社区</div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon-wrap icon-sage">${icons.cpu}</div>
+        <div class="metric-content">
+          <div class="metric-value">${fmt(stats.models)}</div>
+          <div class="metric-label">参与模型</div>
+          <div class="metric-sub">涵盖官方直连与开源自建源</div>
+        </div>
+      </div>
+    </div>
+  `;
+    const categoryCapsules = [
+        ["", "全部分类"],
+        ...state.config.categories.map((c) => [c, categoryNames[c] ?? c]),
+    ];
     return {
-        html: `<section class="hero"><div class="hero-copy"><div class="eyebrow">TIHU · 模型实验场</div><h1 tabindex="-1">同一道题，<br>让模型各显其能。</h1><p>接上自己的模型，完成一次真实构建。先私下预览，再把值得分享的作品带给社区。</p><div class="hero-actions"><a class="btn primary" href="#/studio">开始一次实验 →</a><a class="btn light" href="#/gallery">看看模型的作品</a></div></div><div class="hero-art"><img src="/art/pelican.svg" alt="TiHu 的鹈鹕骑着自行车，驶入模型实验场" width="700" height="480"></div></section>${stats.works ? `<div class="stats"><div class="stat"><strong>${fmt(stats.challenges)}</strong><span>开放题目</span></div><div class="stat"><strong>${fmt(stats.works)}</strong><span>真实公开作品</span></div><div class="stat"><strong>${fmt(stats.models)}</strong><span>参与模型</span></div></div>` : '<ol class="onboarding"><li><span>1</span><div><strong>选一道题</strong><p>任务和评价参考都公开</p></div></li><li><span>2</span><div><strong>接上模型</strong><p>使用自己的低额度 API Key</p></div></li><li><span>3</span><div><strong>观察结果</strong><p>私下预览，自主决定公开</p></div></li></ol>'}<div class="section-head"><div><h2>从一道好题开始</h2><p>保持任务条件一致，观察每个模型的不同选择。</p></div><a class="btn outline" href="#/new-challenge">创建题目</a></div><form class="filter-bar" data-filters role="search">${field("challenge-search", "搜索题目", `<input id="challenge-search" name="q" type="search" value="${esc(q.get("q"))}" placeholder="题目名称或内容">`)}${field("challenge-category", "分类", `<select id="challenge-category" name="category"><option value="">全部分类</option>${state.config.categories.map((category) => `<option value="${esc(category)}" ${category === q.get("category") ? "selected" : ""}>${esc(categoryNames[category] ?? category)}</option>`).join("")}</select>`)}<button class="btn outline" type="submit">搜索</button></form><div class="grid" id="feed">${page.items.length ? page.items.map(challengeCard).join("") : empty("没有找到匹配的题目", "试试其他关键词，或创建一道人们愿意挑战的新题。", '<a class="btn outline" href="#/explore">清除筛选</a>')}</div>${pageControls(page)}${footer()}`,
+        html: `
+      ${heroHtml}
+      ${stats.works
+            ? metricCardsHtml
+            : `
+        <ol class="onboarding">
+          <li><span>1</span><div><strong>选一道题</strong><p>任务和评价参考都公开</p></div></li>
+          <li><span>2</span><div><strong>接上模型</strong><p>使用自己的低额度 API Key</p></div></li>
+          <li><span>3</span><div><strong>观察结果</strong><p>私下预览，自主决定公开</p></div></li>
+        </ol>
+      `}
+      <div class="section-head bento-section-head">
+        <div>
+          <h2>从一道好题开始</h2>
+          <p>保持任务条件一致，观察每个模型的不同选择与审美风格。</p>
+        </div>
+        <a class="btn outline btn-create-challenge" href="#/new-challenge">
+          <span>创建新题目</span>
+          ${icons.arrowRight}
+        </a>
+      </div>
+      <form class="filter-bar modern-filter-bar" data-filters role="search">
+        <div class="search-input-wrapper">
+          <span class="search-icon" aria-hidden="true">${icons.search}</span>
+          <input id="challenge-search" class="search-input" name="q" type="search" value="${esc(q.get("q"))}" placeholder="搜索题目名称、说明或关键词...">
+        </div>
+        <div class="filter-capsule-group" role="group" aria-label="按分类筛选题目">
+          <input type="hidden" name="category" value="${esc(currentCat)}">
+          ${categoryCapsules
+            .map(([catVal, catLabel]) => `
+            <button type="button" class="capsule-btn ${catVal === currentCat ? "is-active" : ""}" data-filter-name="category" data-filter-value="${esc(catVal)}" aria-pressed="${catVal === currentCat}">
+              ${esc(catLabel)}
+            </button>
+          `)
+            .join("")}
+        </div>
+        <button class="btn outline btn-search-submit" type="submit">搜索</button>
+      </form>
+      <div class="grid bento-grid" id="feed">
+        ${page.items.length ? page.items.map(challengeCard).join("") : empty("没有找到匹配的题目", "试试其他关键词，或创建一道人们愿意挑战的新题。", '<a class="btn outline" href="#/explore">清除筛选</a>')}
+      </div>
+      ${pageControls(page)}
+      ${footer()}
+    `,
         mount(root) {
+            ensureCatalogStyles();
             bindFilter(root, "/explore");
             return mountFeed(root, url, page, challengeCard);
         },
@@ -181,15 +435,18 @@ export async function galleryPage(mine = false) {
     if (mine && !state.user)
         return authGate();
     const q = query();
+    const currentTrack = q.get("track") ?? "all";
+    const currentStatus = q.get("status") ?? "all";
+    const currentPublished = q.get("published") ?? "all";
     const params = new URLSearchParams({
         mine: String(mine),
         limit: "12",
         q: q.get("q") ?? "",
-        track: q.get("track") ?? "all",
+        track: currentTrack,
     });
     if (mine) {
-        params.set("status", q.get("status") ?? "all");
-        params.set("published", q.get("published") ?? "all");
+        params.set("status", currentStatus);
+        params.set("published", currentPublished);
     }
     if (q.get("challenge"))
         params.set("challenge", q.get("challenge"));
@@ -197,13 +454,24 @@ export async function galleryPage(mine = false) {
         params.set("version", q.get("version"));
     const url = "/runs?" + params;
     const page = await api(url);
-    const trackOptions = `<select id="run-track" name="track">${[
+    const trackCapsules = [
         ["all", "全部赛道"],
         ["standard", "标准赛道"],
         ["open", "开放赛道"],
-    ]
-        .map(([value, label]) => `<option value="${value}" ${value === (q.get("track") ?? "all") ? "selected" : ""}>${label}</option>`)
-        .join("")}</select>`;
+    ];
+    const statusCapsules = [
+        ["all", "全部状态"],
+        ["queued", "排队中"],
+        ["running", "运行中"],
+        ["succeeded", "已完成"],
+        ["failed", "未完成"],
+        ["canceled", "已取消"],
+    ];
+    const publishedCapsules = [
+        ["all", "全部可见性"],
+        ["public", "已公开"],
+        ["private", "仅自己可见"],
+    ];
     return {
         html: head(mine ? "我的实验" : "作品画廊", mine
             ? "每一次探索都有记录。未公开的实验仅对你可见。"
@@ -211,26 +479,64 @@ export async function galleryPage(mine = false) {
             (mine && state.quota
                 ? `<div class="notice row between"><span>最近 24 小时剩余 <strong>${state.quota.daily_remaining}</strong> / ${state.quota.daily_limit} 次</span><span>活跃实验 ${state.quota.active} / ${state.quota.active_limit}</span></div>`
                 : "") +
-            `<form class="filter-bar" data-filters role="search">${field("run-search", "搜索实验", `<input id="run-search" name="q" type="search" value="${esc(q.get("q"))}" placeholder="题目、模型或作者">`)}${field("run-track", "赛道", trackOptions)}${mine
-                ? field("run-status", "运行状态", `<select id="run-status" name="status">${[
-                    ["all", "全部状态"],
-                    ["queued", "排队中"],
-                    ["running", "运行中"],
-                    ["succeeded", "已完成"],
-                    ["failed", "未完成"],
-                    ["canceled", "已取消"],
-                ]
-                    .map(([value, label]) => `<option value="${value}" ${value === (q.get("status") ?? "all") ? "selected" : ""}>${label}</option>`)
-                    .join("")}</select>`) +
-                    field("run-published", "公开状态", `<select id="run-published" name="published"><option value="all">全部</option><option value="private" ${q.get("published") === "private" ? "selected" : ""}>仅自己可见</option><option value="public" ${q.get("published") === "public" ? "selected" : ""}>已公开</option></select>`)
-                : ""}<button class="btn outline" type="submit">搜索</button></form><div class="grid" id="feed">${page.items.length ? page.items.map((item) => workCard(item, mine)).join("") : empty(mine ? "这里等待你的下一次实验" : "还没有匹配的公开作品", mine ? "选一道题、接上模型，实验记录会保存在这里。" : "只有作者主动公开的成功作品才会出现。不同筛选条件下可能暂时没有作品。", '<a class="btn primary" href="#/studio">开始一次实验</a>')}</div>${pageControls(page)}${compareBar()}${footer()}`,
+            `<form class="filter-bar modern-filter-bar" data-filters role="search">
+        <div class="search-input-wrapper">
+          <span class="search-icon" aria-hidden="true">${icons.search}</span>
+          <input id="run-search" class="search-input" name="q" type="search" value="${esc(q.get("q"))}" placeholder="搜索题目、模型名称或作者...">
+        </div>
+        <div class="capsule-group" role="group" aria-label="赛道筛选">
+          <input type="hidden" name="track" value="${esc(currentTrack)}">
+          ${trackCapsules
+                .map(([val, label]) => `
+            <button type="button" class="capsule-btn ${currentTrack === val ? "is-active" : ""}" data-filter-name="track" data-filter-value="${esc(val)}" aria-pressed="${currentTrack === val}">
+              ${esc(label)}
+            </button>
+          `)
+                .join("")}
+        </div>
+        ${mine
+                ? `
+          <div class="capsule-group" role="group" aria-label="运行状态筛选">
+            <input type="hidden" name="status" value="${esc(currentStatus)}">
+            ${statusCapsules
+                    .map(([val, label]) => `
+              <button type="button" class="capsule-btn ${currentStatus === val ? "is-active" : ""}" data-filter-name="status" data-filter-value="${esc(val)}" aria-pressed="${currentStatus === val}">
+                ${esc(label)}
+              </button>
+            `)
+                    .join("")}
+          </div>
+          <div class="capsule-group" role="group" aria-label="公开状态筛选">
+            <input type="hidden" name="published" value="${esc(currentPublished)}">
+            ${publishedCapsules
+                    .map(([val, label]) => `
+              <button type="button" class="capsule-btn ${currentPublished === val ? "is-active" : ""}" data-filter-name="published" data-filter-value="${esc(val)}" aria-pressed="${currentPublished === val}">
+                ${esc(label)}
+              </button>
+            `)
+                    .join("")}
+          </div>
+        `
+                : ""}
+        <button class="btn outline btn-search-submit" type="submit">搜索</button>
+      </form>
+      <div class="grid gallery-grid bento-grid" id="feed">
+        ${page.items.length ? page.items.map((item) => workCard(item, mine)).join("") : empty(mine ? "这里等待你的下一次实验" : "还没有匹配的公开作品", mine ? "选一道题、接上模型，实验记录会保存在这里。" : "只有作者主动公开的成功作品才会出现。不同筛选条件下可能暂时没有作品。", '<a class="btn primary" href="#/studio">开始一次实验</a>')}
+      </div>
+      ${pageControls(page)}
+      ${compareBar()}
+      ${footer()}
+    `,
         mount(root) {
+            ensureCatalogStyles();
             bindFilter(root, mine ? "/my-runs" : "/gallery");
             const disposeFeed = mountFeed(root, url, page, (item) => workCard(item, mine));
             const disposeComparison = bindComparison(root);
+            const disposeHoverLive = bindHoverLiveMotion(root);
             return () => {
                 disposeFeed();
                 disposeComparison();
+                disposeHoverLive();
             };
         },
     };
@@ -284,11 +590,362 @@ export async function challengePage(id) {
                     }
                 });
             });
+            const disposeHoverLive = bindHoverLiveMotion(root);
             return () => {
                 disposeFeed();
                 disposeComparison();
+                disposeHoverLive();
             };
         },
+    };
+}
+function bindLivePreviewDrawer(root) {
+    let activeAbort = null;
+    let activeDrawer = null;
+    let removeTimer = null;
+    const closeDrawer = () => {
+        if (!activeDrawer)
+            return;
+        if (activeAbort) {
+            activeAbort.abort();
+            activeAbort = null;
+        }
+        const drawer = activeDrawer;
+        activeDrawer = null;
+        drawer.classList.remove("is-open");
+        const frame = drawer.querySelector("iframe");
+        if (frame) {
+            try {
+                frame.src = "about:blank";
+            }
+            catch { }
+        }
+        if (removeTimer != null) {
+            window.clearTimeout(removeTimer);
+        }
+        removeTimer = window.setTimeout(() => {
+            drawer.remove();
+            removeTimer = null;
+        }, 380);
+    };
+    const openDrawer = async (runId, modelName, title) => {
+        closeDrawer();
+        const abort = new AbortController();
+        activeAbort = abort;
+        const drawer = document.createElement("div");
+        drawer.className = "live-preview-drawer";
+        drawer.setAttribute("role", "dialog");
+        drawer.setAttribute("aria-modal", "true");
+        drawer.setAttribute("aria-label", `${modelName} 实时动画沙箱预览`);
+        drawer.innerHTML = `
+      <div class="drawer-backdrop" aria-hidden="true"></div>
+      <div class="drawer-panel">
+        <header class="drawer-header">
+          <div class="drawer-title">
+            <span class="drawer-title-tag">实时沙箱</span>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${esc(modelName)}</span>
+          </div>
+          <div class="drawer-actions">
+            <a class="drawer-link" href="#/run/${esc(runId)}" target="_blank" rel="noopener">查看完整详情 ↗</a>
+            <button type="button" class="drawer-close" aria-label="关闭预览" title="关闭预览 (Esc)">✕</button>
+          </div>
+        </header>
+        <div class="drawer-stage">
+          <div class="drawer-loading">
+            <div class="drawer-spinner" aria-hidden="true"></div>
+            <p>正在启动独立沙箱并加载动画…</p>
+            <small style="color: var(--muted); font-size: 12px;">${esc(title)}</small>
+          </div>
+          <div class="drawer-error" hidden></div>
+          <iframe
+            sandbox="allow-scripts allow-forms allow-modals"
+            title="${esc(title)} 实时动画沙箱"
+            hidden
+          ></iframe>
+        </div>
+      </div>
+    `;
+        root.appendChild(drawer);
+        activeDrawer = drawer;
+        requestAnimationFrame(() => {
+            drawer.classList.add("is-open");
+        });
+        drawer.querySelector(".drawer-backdrop")?.addEventListener("click", closeDrawer);
+        drawer.querySelector(".drawer-close")?.addEventListener("click", closeDrawer);
+        const loadingEl = drawer.querySelector(".drawer-loading");
+        const errorEl = drawer.querySelector(".drawer-error");
+        const iframe = drawer.querySelector("iframe");
+        try {
+            const result = await api("/runs/" + encodeURIComponent(runId) + "/preview", { signal: abort.signal });
+            if (abort.signal.aborted)
+                return;
+            const url = new URL(result.url);
+            const expected = state.config.preview_origin
+                ? new URL(state.config.preview_origin).origin
+                : null;
+            if (!["https:", "http:"].includes(url.protocol) ||
+                url.origin === location.origin ||
+                (expected && url.origin !== expected)) {
+                throw new Error("预览地址没有满足独立来源隔离要求，已阻止加载。");
+            }
+            iframe.src = url.href;
+            iframe.onload = () => {
+                if (abort.signal.aborted)
+                    return;
+                loadingEl.hidden = true;
+                iframe.hidden = false;
+            };
+        }
+        catch (err) {
+            if (abort.signal.aborted)
+                return;
+            loadingEl.hidden = true;
+            errorEl.hidden = false;
+            const msg = err instanceof Error
+                ? err.name === "AbortError"
+                    ? "请求已取消。"
+                    : err.message
+                : "无法加载沙箱预览，请稍后重试。";
+            errorEl.innerHTML = `<p>${esc(msg)}</p><button class="btn outline small" type="button" id="drawer-retry-btn">重新尝试</button>`;
+            errorEl.querySelector("#drawer-retry-btn")?.addEventListener("click", () => {
+                errorEl.hidden = true;
+                loadingEl.hidden = false;
+                openDrawer(runId, modelName, title);
+            });
+        }
+    };
+    const onKeydown = (e) => {
+        if (e.key === "Escape" && activeDrawer) {
+            e.preventDefault();
+            closeDrawer();
+        }
+    };
+    window.addEventListener("keydown", onKeydown);
+    const onClick = (e) => {
+        const target = e.target;
+        if (!target)
+            return;
+        const trigger = target.closest("[data-preview-id]");
+        if (trigger) {
+            e.preventDefault();
+            const runId = trigger.dataset.previewId;
+            const title = trigger.dataset.previewTitle ?? "作品预览";
+            const model = trigger.dataset.previewModel ?? "模型生成作品";
+            if (runId) {
+                openDrawer(runId, model, title);
+            }
+        }
+    };
+    root.addEventListener("click", onClick);
+    return () => {
+        window.removeEventListener("keydown", onKeydown);
+        root.removeEventListener("click", onClick);
+        closeDrawer();
+    };
+}
+function ensureLiveMotionStyles() {
+    // Styles are bundled statically in theme.css to comply with CSP and eliminate FOUC
+}
+export function bindHoverLiveMotion(root) {
+    ensureLiveMotionStyles();
+    let currentCover = null;
+    let currentRunId = null;
+    let hoverTimer = null;
+    let fadeTimer = null;
+    let activeAbort = null;
+    let activeWrapper = null;
+    const previewCache = new Map();
+    const destroyCurrent = (fade = true) => {
+        if (hoverTimer != null) {
+            window.clearTimeout(hoverTimer);
+            hoverTimer = null;
+        }
+        if (activeAbort) {
+            activeAbort.abort();
+            activeAbort = null;
+        }
+        if (fadeTimer != null) {
+            window.clearTimeout(fadeTimer);
+            fadeTimer = null;
+        }
+        const cover = currentCover;
+        const wrapper = activeWrapper;
+        currentCover = null;
+        currentRunId = null;
+        activeWrapper = null;
+        if (cover) {
+            cover.classList.remove("has-live-motion");
+            cover.closest(".card")?.classList.remove("has-live-motion");
+        }
+        if (wrapper) {
+            if (fade && wrapper.classList.contains("is-visible")) {
+                wrapper.classList.remove("is-visible");
+                wrapper.classList.add("is-fading-out");
+                const dyingWrapper = wrapper;
+                fadeTimer = window.setTimeout(() => {
+                    const frame = dyingWrapper.querySelector("iframe");
+                    if (frame) {
+                        try {
+                            frame.src = "about:blank";
+                        }
+                        catch { }
+                    }
+                    dyingWrapper.remove();
+                    fadeTimer = null;
+                }, 200);
+            }
+            else {
+                const frame = wrapper.querySelector("iframe");
+                if (frame) {
+                    try {
+                        frame.src = "about:blank";
+                    }
+                    catch { }
+                }
+                wrapper.remove();
+            }
+        }
+    };
+    const handleCoverEnter = (cover) => {
+        if (cover === currentCover)
+            return;
+        if (currentCover && currentCover !== cover) {
+            destroyCurrent(false);
+        }
+        const runId = cover.dataset.previewId ||
+            cover.dataset.runId ||
+            cover.closest("[data-run-id]")?.dataset.runId ||
+            cover.getAttribute("href")?.match(/\/run\/([^\/?#]+)/)?.[1];
+        if (!runId)
+            return;
+        currentCover = cover;
+        currentRunId = runId;
+        if (hoverTimer != null) {
+            window.clearTimeout(hoverTimer);
+        }
+        // 280ms 计时器防抖，避免快速划过时误触发
+        hoverTimer = window.setTimeout(async () => {
+            hoverTimer = null;
+            if (currentCover !== cover || !root.contains(cover))
+                return;
+            const abort = new AbortController();
+            activeAbort = abort;
+            let previewUrl = previewCache.get(runId);
+            if (!previewUrl) {
+                try {
+                    const result = await api("/runs/" + encodeURIComponent(runId) + "/preview", { signal: abort.signal });
+                    if (abort.signal.aborted || currentCover !== cover)
+                        return;
+                    const url = new URL(result.url);
+                    const expected = state.config.preview_origin
+                        ? new URL(state.config.preview_origin).origin
+                        : null;
+                    if (!["https:", "http:"].includes(url.protocol) ||
+                        url.origin === location.origin ||
+                        (expected && url.origin !== expected)) {
+                        return;
+                    }
+                    previewUrl = url.href;
+                    previewCache.set(runId, previewUrl);
+                }
+                catch {
+                    return;
+                }
+            }
+            if (abort.signal.aborted || currentCover !== cover)
+                return;
+            const wrapper = document.createElement("div");
+            wrapper.className = "card-live-wrapper";
+            wrapper.setAttribute("aria-hidden", "true");
+            const iframe = document.createElement("iframe");
+            iframe.className = "card-live-iframe";
+            iframe.setAttribute("sandbox", "allow-scripts allow-forms allow-modals");
+            iframe.setAttribute("tabindex", "-1");
+            iframe.setAttribute("aria-hidden", "true");
+            iframe.setAttribute("loading", "eager");
+            iframe.setAttribute("title", "动态微视窗实时预览");
+            iframe.setAttribute("allow", "autoplay 'none'; microphone 'none'; camera 'none'");
+            const badge = document.createElement("div");
+            badge.className = "card-live-badge";
+            badge.innerHTML = `<span class="card-live-dot" aria-hidden="true"></span><span>动态预览</span>`;
+            wrapper.appendChild(iframe);
+            wrapper.appendChild(badge);
+            cover.appendChild(wrapper);
+            activeWrapper = wrapper;
+            cover.classList.add("has-live-motion");
+            cover.closest(".card")?.classList.add("has-live-motion");
+            let hasLoaded = false;
+            const reveal = () => {
+                if (hasLoaded)
+                    return;
+                hasLoaded = true;
+                if (abort.signal.aborted || currentCover !== cover)
+                    return;
+                requestAnimationFrame(() => {
+                    wrapper.classList.add("is-visible");
+                });
+            };
+            iframe.onload = reveal;
+            iframe.src = previewUrl;
+        }, 280);
+    };
+    const handleCoverLeave = (cover) => {
+        if (cover === currentCover) {
+            destroyCurrent(true);
+        }
+    };
+    const onPointerOver = (e) => {
+        if (e.pointerType === "touch")
+            return;
+        const target = e.target;
+        if (!target)
+            return;
+        const cover = target.closest(".board-card-cover, .run-card .work-cover");
+        if (!cover || !root.contains(cover))
+            return;
+        const related = e.relatedTarget;
+        if (related && cover.contains(related))
+            return;
+        handleCoverEnter(cover);
+    };
+    const onPointerOut = (e) => {
+        if (e.pointerType === "touch")
+            return;
+        const target = e.target;
+        if (!target)
+            return;
+        const cover = target.closest(".board-card-cover, .run-card .work-cover");
+        if (!cover || cover !== currentCover)
+            return;
+        const related = e.relatedTarget;
+        if (related && cover.contains(related))
+            return;
+        handleCoverLeave(cover);
+    };
+    const onClick = () => {
+        // 发生点击（进入详情页或打开抽屉）时平滑即刻销毁微视窗，避免后台占用与层叠冲突
+        destroyCurrent(false);
+    };
+    const onHashChange = () => {
+        destroyCurrent(false);
+    };
+    const onVisibilityChange = () => {
+        if (document.hidden) {
+            destroyCurrent(false);
+        }
+    };
+    root.addEventListener("pointerover", onPointerOver);
+    root.addEventListener("pointerout", onPointerOut);
+    root.addEventListener("click", onClick, true);
+    window.addEventListener("hashchange", onHashChange);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+        destroyCurrent(false);
+        root.removeEventListener("pointerover", onPointerOver);
+        root.removeEventListener("pointerout", onPointerOut);
+        root.removeEventListener("click", onClick, true);
+        window.removeEventListener("hashchange", onHashChange);
+        document.removeEventListener("visibilitychange", onVisibilityChange);
     };
 }
 export async function leaderboardPage() {
@@ -296,12 +953,14 @@ export async function leaderboardPage() {
     const group = q.get("group") === "models" ? "models" : "works";
     const kind = q.get("kind") === "funny" ? "funny" : "capability";
     const providerScope = q.get("provider_scope") ?? q.get("provider-scope") ?? "all";
+    const currentTrack = q.get("track") ?? "standard";
+    const currentDays = q.get("days") ?? "0";
     const params = new URLSearchParams({
         group,
         kind,
-        track: q.get("track") ?? "standard",
+        track: currentTrack,
         provider_scope: providerScope,
-        days: q.get("days") ?? "0",
+        days: currentDays,
         limit: "50",
     });
     if (q.get("challenge"))
@@ -317,6 +976,91 @@ export async function leaderboardPage() {
         : null;
     if (challenge && !tasks.items.some((item) => item.id === challenge.id))
         tasks.items.push(challenge);
+    const rankMedal = (index) => {
+        if (index === 0) {
+            return `<div class="board-card-medal medal-top-1" title="Top 1 冠绝榜首">
+        <span class="medal-icon">${icons.trophy}</span>
+        <span class="medal-label">TOP 1</span>
+      </div>`;
+        }
+        if (index === 1) {
+            return `<div class="board-card-medal medal-top-2" title="Top 2 银榜生辉">
+        <span class="medal-icon">${icons.trophy}</span>
+        <span class="medal-label">TOP 2</span>
+      </div>`;
+        }
+        if (index === 2) {
+            return `<div class="board-card-medal medal-top-3" title="Top 3 铜章俊秀">
+        <span class="medal-icon">${icons.trophy}</span>
+        <span class="medal-label">TOP 3</span>
+      </div>`;
+        }
+        return `<div class="board-card-medal medal-normal">
+      <span class="medal-label">#${index + 1}</span>
+    </div>`;
+    };
+    const galleryCards = group === "works"
+        ? board.items
+            .map((item, index) => {
+            if (!("id" in item))
+                return "";
+            const title = challengeCopy[item.title]?.title ?? item.title;
+            const isOfficial = item.is_official;
+            const provBadge = isOfficial
+                ? '<span class="badge official">官方直连</span>'
+                : '<span class="badge custom">自定义源</span>';
+            const rankClass = index === 0
+                ? "top-1"
+                : index === 1
+                    ? "top-2"
+                    : index === 2
+                        ? "top-3"
+                        : "";
+            const userInitial = (item.username || "U").slice(0, 1).toUpperCase();
+            const art = item.thumbnail_available
+                ? `<img src="/api/runs/${esc(item.id)}/thumbnail" alt="${esc(title)}预览" loading="lazy" width="480" height="300">`
+                : `<div class="work-placeholder" style="min-height: 170px; font-size: 13px;"><span class="placeholder-icon">${icons.gallery}</span><span>暂无缩略图</span><small>点击运行沙箱实时预览</small></div>`;
+            return `<article class="card board-work-card ${rankClass}" data-run-id="${esc(item.id)}">
+              <div class="board-card-cover work-cover-aspect" data-preview-id="${esc(item.id)}" data-preview-title="${esc(title)}" data-preview-model="${esc(item.model)}" style="cursor: pointer;" title="点击即时预览沙箱动画">
+                ${art}
+                ${rankMedal(index)}
+                <div class="board-card-cover-overlay">
+                  <button type="button" class="btn-live-preview" data-preview-id="${esc(item.id)}" data-preview-title="${esc(title)}" data-preview-model="${esc(item.model)}" aria-label="即时预览 ${esc(title)}">
+                    <span class="preview-play-icon">${icons.play}</span>
+                    <span>实时沙箱抽屉</span>
+                  </button>
+                </div>
+              </div>
+              <div class="board-card-body">
+                <div class="row between board-card-top-row">
+                  <div class="board-card-tags">
+                    ${badge(item.track)}
+                    ${provBadge}
+                  </div>
+                  <div class="board-card-score" title="当前累计社区选票">
+                    <span class="score-number">${fmt(item[kind])}</span>
+                    <span class="score-unit">票</span>
+                  </div>
+                </div>
+                <h4 class="board-card-title">
+                  <a href="#/run/${esc(item.id)}" title="${esc(title)}">${esc(title)}</a>
+                </h4>
+                <div class="board-card-model">
+                  <span class="model-icon">${icons.cpu}</span>
+                  <span class="model-name-text">${esc(item.model)}</span>
+                </div>
+                <div class="board-card-meta row between">
+                  <div class="board-card-author">
+                    <span class="author-avatar-sm" aria-hidden="true">${esc(userInitial)}</span>
+                    <span>@${esc(item.username)}</span>
+                  </div>
+                  <span class="board-card-date">v${item.version} · ${date(item.created)}</span>
+                </div>
+              </div>
+            </article>`;
+        })
+            .join("")
+        : "";
     const rows = board.items
         .map((item, index) => {
         const work = "id" in item;
@@ -324,38 +1068,217 @@ export async function leaderboardPage() {
         const provBadge = isOfficial
             ? '<span class="badge official">官方直连</span>'
             : '<span class="badge custom">自定义源</span>';
-        return `<tr><td class="rank">${index + 1}</td><td>${work ? `<a class="text-link" href="#/run/${esc(item.id)}">${esc(item.model)}</a> ${provBadge}<p class="help">${esc(challengeCopy[item.title]?.title ?? item.title)} · v${item.version}</p>` : `<strong>${esc(item.model)}</strong> ${provBadge}<p class="help break-word">${esc(item.provider)}</p>`}</td><td>${badge(item.track)}</td><td class="score">${fmt(work ? item[kind] : item.score)}</td><td>${work ? `@${esc(item.username)}<p class="help">${date(item.created)}</p>` : `${fmt(item.entries)} 件作品<p class="help">${fmt(item.authors)} 位作者 · ${fmt(item.challenges)} 道题</p>`}</td></tr>`;
+        const rankClass = index === 0
+            ? "top-1"
+            : index === 1
+                ? "top-2"
+                : index === 2
+                    ? "top-3"
+                    : "";
+        const rankBadge = `<span class="board-card-rank ${rankClass}" style="position: static; display: inline-block;">${index + 1}</span>`;
+        if (work) {
+            const title = challengeCopy[item.title]?.title ?? item.title;
+            const thumb = item.thumbnail_available
+                ? `<img class="board-row-thumb" src="/api/runs/${esc(item.id)}/thumbnail" alt="${esc(title)}" loading="lazy" width="44" height="32">`
+                : `<span class="board-row-thumb" style="display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted);">${icons.gallery}</span>`;
+            return `<tr>
+          <td class="rank" style="text-align: center;">${index < 3 ? rankBadge : index + 1}</td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="cursor: pointer; position: relative; flex-shrink: 0;" data-preview-id="${esc(item.id)}" data-preview-title="${esc(title)}" data-preview-model="${esc(item.model)}" title="点击即时预览">
+                ${thumb}
+              </div>
+              <div>
+                <div><a class="text-link" href="#/run/${esc(item.id)}">${esc(item.model)}</a> ${provBadge}</div>
+                <p class="help" style="margin: 2px 0 0;">${esc(title)} · v${item.version}</p>
+              </div>
+            </div>
+          </td>
+          <td>${badge(item.track)}</td>
+          <td class="score">${fmt(item[kind])}</td>
+          <td>@${esc(item.username)}<p class="help">${date(item.created)}</p></td>
+          <td style="text-align: right;">
+            <button type="button" class="btn-table-preview" data-preview-id="${esc(item.id)}" data-preview-title="${esc(title)}" data-preview-model="${esc(item.model)}">
+              <span aria-hidden="true">${icons.play}</span> 预览
+            </button>
+          </td>
+        </tr>`;
+        }
+        else {
+            return `<tr>
+          <td class="rank">${index + 1}</td>
+          <td><strong>${esc(item.model)}</strong> ${provBadge}<p class="help break-word">${esc(item.provider)}</p></td>
+          <td>${badge(item.track)}</td>
+          <td class="score">${fmt(item.score)}</td>
+          <td>${fmt(item.entries)} 件作品<p class="help">${fmt(item.authors)} 位作者 · ${fmt(item.challenges)} 道题</p></td>
+        </tr>`;
+        }
     })
         .join("");
-    const filterSelect = (id, label, options, current) => field(id, label, `<select id="${id}" name="${id.replace("board-", "")}">${options.map(([value, text]) => `<option value="${esc(value)}" ${value === current ? "selected" : ""}>${esc(text)}</option>`).join("")}</select>`);
+    const viewToggleHtml = group === "works"
+        ? `<div class="board-view-header">
+          <div class="board-view-toggle segmented-control" role="group" aria-label="展示视图切换">
+            <button type="button" class="segment-btn view-btn is-active" data-view="gallery" aria-pressed="true">
+              <span class="segment-icon" aria-hidden="true">${icons.gallery}</span>
+              <span>画廊模式</span>
+            </button>
+            <button type="button" class="segment-btn view-btn" data-view="table" aria-pressed="false">
+              <span class="segment-icon" aria-hidden="true">${icons.table}</span>
+              <span>表格模式</span>
+            </button>
+          </div>
+          <div class="board-view-summary">
+            <span class="summary-dot"></span>
+            <span>共 ${board.items.length} 个作品 · 点击卡片封面或按钮即可实时启动沙箱预览</span>
+          </div>
+        </div>`
+        : "";
+    const contentHtml = group === "works"
+        ? `<div class="board-gallery-view" id="board-gallery-view">
+          <div class="board-gallery-grid bento-grid">
+            ${galleryCards || '<p class="help">这个条件下还没有公开作品。换个筛选，或成为第一个参与者。</p>'}
+          </div>
+        </div>
+        <div class="board-table-view" id="board-table-view" hidden>
+          <div class="table" tabindex="0" role="region" aria-label="作品排行榜表格，可横向滚动">
+            <table>
+              <caption class="sr-only">作品${kind === "capability" ? "能力" : "趣味"}榜</caption>
+              <thead>
+                <tr>
+                  <th scope="col" style="text-align: center; width: 60px;">排名</th>
+                  <th scope="col">作品与模型</th>
+                  <th scope="col">赛道</th>
+                  <th scope="col">累计票数</th>
+                  <th scope="col">作者与时间</th>
+                  <th scope="col" style="text-align: right; width: 90px;">即时预览</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows || '<tr><td colspan="6">这个条件下还没有公开作品。换个筛选，或成为第一个参与者。</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </div>`
+        : `<div class="table" tabindex="0" role="region" aria-label="模型排行榜，可横向滚动">
+          <table>
+            <caption class="sr-only">模型${kind === "capability" ? "能力" : "趣味"}榜</caption>
+            <thead>
+              <tr>
+                <th scope="col">排名</th>
+                <th scope="col">服务商与模型</th>
+                <th scope="col">赛道</th>
+                <th scope="col">累计票数</th>
+                <th scope="col">有效样本</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows || '<tr><td colspan="5">这个条件下还没有公开作品。换个筛选，或成为第一个参与者。</td></tr>'}
+            </tbody>
+          </table>
+        </div>`;
+    const filtersHtml = `
+    <form class="board-segmented-filters" data-filters>
+      <div class="segmented-controls-grid">
+        ${renderSegmentedControl("group", "榜单模式", [
+        { value: "works", label: "作品大赏榜", icon: icons.gallery },
+        { value: "models", label: "模型天梯榜", icon: icons.cpu },
+    ], group)}
+        ${renderSegmentedControl("kind", "评价维度", [
+        { value: "capability", label: "能力维度", icon: icons.sparkles },
+        { value: "funny", label: "趣味维度", icon: icons.flame },
+    ], kind)}
+        ${renderSegmentedControl("provider_scope", "服务商来源", [
+        { value: "all", label: "全部来源" },
+        { value: "official", label: "官方直连" },
+        { value: "custom", label: "社区中转" },
+    ], providerScope)}
+        ${renderSegmentedControl("track", "实验赛道", [
+        { value: "standard", label: "标准赛道" },
+        { value: "open", label: "开放赛道" },
+    ], currentTrack)}
+        ${renderSegmentedControl("days", "作品创建时间", [
+        { value: "0", label: "全部时间" },
+        { value: "7", label: "近 7 天" },
+        { value: "30", label: "近 30 天" },
+    ], currentDays)}
+      </div>
+      ${tasks.items.length
+        ? `<div class="challenge-segmented-row">
+              <span class="segmented-control-label">精选题库</span>
+              <div class="challenge-capsule-scroller">
+                <input type="hidden" name="challenge" value="${esc(challenge?.id ?? "")}">
+                <button type="button" class="capsule-btn ${!challenge ? "is-active" : ""}" data-filter-name="challenge" data-filter-value="" aria-pressed="${!challenge}">
+                  全部题目
+                </button>
+                ${tasks.items
+            .map((item) => {
+            const tTitle = challengeCopy[item.title]?.title ?? item.title;
+            const isSelected = item.id === challenge?.id;
+            return `<button type="button" class="capsule-btn ${isSelected ? "is-active" : ""}" data-filter-name="challenge" data-filter-value="${esc(item.id)}" aria-pressed="${isSelected}">
+                      ${esc(tTitle)}
+                    </button>`;
+        })
+            .join("")}
+              </div>
+            </div>`
+        : ""}
+      ${challenge && challenge.versions.length > 1
+        ? `<div class="challenge-segmented-row">
+              <span class="segmented-control-label">题目版本</span>
+              <div class="challenge-capsule-scroller">
+                <input type="hidden" name="version" value="${esc(q.get("version") ?? challenge.versions[0].id)}">
+                ${challenge.versions
+            .map((item) => {
+            const isSelected = item.id === (q.get("version") ?? challenge.versions[0].id);
+            return `<button type="button" class="capsule-btn ${isSelected ? "is-active" : ""}" data-filter-name="version" data-filter-value="${esc(item.id)}" aria-pressed="${isSelected}">
+                      v${item.number}
+                    </button>`;
+        })
+            .join("")}
+              </div>
+            </div>`
+        : ""}
+    </form>
+  `;
     return {
         html: head("社区排行榜", "看大家更喜欢什么，而不是给模型贴上一个智力分数。") +
-            `<form class="filter-bar board-filters" data-filters>${filterSelect("board-group", "榜单", [
-                ["works", "作品榜"],
-                ["models", "模型榜"],
-            ], group)}${filterSelect("board-kind", "投票维度", [
-                ["capability", "能力"],
-                ["funny", "趣味"],
-            ], kind)}${filterSelect("board-track", "实验赛道", [
-                ["standard", "标准赛道"],
-                ["open", "开放赛道"],
-            ], params.get("track"))}${filterSelect("board-provider_scope", "服务商来源", [
-                ["all", "全网服务商（综合榜）"],
-                ["official", "官方直连源（标准榜）"],
-                ["custom", "社区中转/自建源"],
-            ], providerScope)}${filterSelect("board-days", "作品创建时间", [
-                ["0", "全部时间"],
-                ["7", "近 7 天新作"],
-                ["30", "近 30 天新作"],
-            ], params.get("days"))}${field("board-challenge", "题目", `<select id="board-challenge" name="challenge"><option value="">全部题目</option>${tasks.items.map((item) => `<option value="${esc(item.id)}" ${item.id === challenge?.id ? "selected" : ""}>${esc(challengeCopy[item.title]?.title ?? item.title)}</option>`).join("")}</select>`)}${challenge ? field("board-version", "题目版本", `<select id="board-version" name="version">${challenge.versions.map((item) => `<option value="${esc(item.id)}" ${item.id === (q.get("version") ?? challenge.versions[0].id) ? "selected" : ""}>v${item.number}</option>`).join("")}</select>`) : ""}<button class="btn outline" type="submit">应用筛选</button></form><div class="notice"><strong>${group === "models" ? "先去重，再汇总支持" : "只在一致条件下比较"}</strong><p>${group === "models" ? "每位作者在同题、同版本、同服务商模型下仅保留最高得票作品，再汇总票数。作者数不是投票人数，样本较少时请谨慎解读。" : "默认使用当前运行环境和题目最新版本；选择题目后可切换历史版本。标准与开放赛道分开查看。"} 时间筛选按作品创建时间计算，票数是这些作品的累计票数。</p></div><div class="table" tabindex="0" role="region" aria-label="排行榜，可横向滚动"><table><caption class="sr-only">${group === "models" ? "模型" : "作品"}${kind === "capability" ? "能力" : "趣味"}榜</caption><thead><tr><th scope="col">排名</th><th scope="col">${group === "models" ? "服务商与模型" : "作品与模型"}</th><th scope="col">赛道</th><th scope="col">累计票数</th><th scope="col">${group === "models" ? "有效样本" : "作者与时间"}</th></tr></thead><tbody>${rows || '<tr><td colspan="5">这个条件下还没有公开作品。换个筛选，或成为第一个参与者。</td></tr>'}</tbody></table></div><p class="help">显示当前条件下前 50 项。不同运行环境、版本与服务商不会被悄悄合并。</p>${footer()}`,
+            filtersHtml +
+            `<div class="notice"><strong>${group === "models" ? "先去重，再汇总支持" : "只在一致条件下比较"}</strong><p>${group === "models" ? "每位作者在同题、同版本、同服务商模型下仅保留最高得票作品，再汇总票数。作者数不是投票人数，样本较少时请谨慎解读。" : "默认使用当前运行环境和题目最新版本；选择题目后可切换历史版本。标准与开放赛道分开查看。"} 时间筛选按作品创建时间计算，票数是这些作品的累计票数。</p></div>` +
+            viewToggleHtml +
+            contentHtml +
+            `<p class="help" style="margin-top: 24px;">显示当前条件下前 50 项。不同运行环境、版本与服务商不会被悄悄合并。</p>${footer()}`,
         mount(root) {
-            const challengeSelect = root.querySelector("#board-challenge");
-            challengeSelect.addEventListener("change", () => {
-                const versionSelect = root.querySelector("#board-version");
-                if (versionSelect)
-                    versionSelect.disabled = true;
-            });
+            ensureCatalogStyles();
             bindFilter(root, "/leaderboard");
+            const viewBtns = root.querySelectorAll(".board-view-toggle .view-btn");
+            const galleryView = root.querySelector("#board-gallery-view");
+            const tableView = root.querySelector("#board-table-view");
+            viewBtns.forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const targetView = btn.dataset.view;
+                    viewBtns.forEach((b) => {
+                        const active = b === btn;
+                        b.classList.toggle("is-active", active);
+                        b.setAttribute("aria-pressed", String(active));
+                    });
+                    if (galleryView && tableView) {
+                        if (targetView === "gallery") {
+                            galleryView.hidden = false;
+                            tableView.hidden = true;
+                        }
+                        else {
+                            galleryView.hidden = true;
+                            tableView.hidden = false;
+                        }
+                    }
+                });
+            });
+            const disposePreview = bindLivePreviewDrawer(root);
+            const disposeHoverLive = bindHoverLiveMotion(root);
+            return () => {
+                disposePreview();
+                disposeHoverLive();
+            };
         },
     };
 }

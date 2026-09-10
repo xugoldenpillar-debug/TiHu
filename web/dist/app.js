@@ -2,6 +2,8 @@ import { api, mutate, state, refreshSession, esc, head, empty, footer, field, to
 import { explorePage, galleryPage, challengePage, leaderboardPage, newChallengePage, } from "./catalog.js";
 import { studioPage, runPage, comparePage } from "./lab.js";
 import { connectionsPage, skillsPage, promptsPage, adminPage, } from "./library.js";
+import { initGlobalMotions } from "./motion.js";
+import { iconCompass, iconImage, iconTrophy, iconFlask, iconHistory, iconKey, iconPuzzle, iconFileText, iconPlusCircle, iconPlus, iconShield, iconChevronRight, iconUser, iconLogOut, iconMenu, iconX, iconLock, iconLayers, } from "./icons.js";
 const app = document.querySelector("#app");
 const titles = {
     "/explore": "探索题目",
@@ -19,15 +21,34 @@ const titles = {
     "/admin": "管理中心",
 };
 const groups = [
-    { title: "发现", links: ["/explore", "/gallery", "/leaderboard"] },
     {
-        title: "我的实验空间",
+        title: "探索发现",
+        enTitle: "DISCOVERY",
+        links: ["/explore", "/gallery", "/leaderboard"],
+    },
+    {
+        title: "我的工作台",
+        enTitle: "WORKSPACE",
         links: ["/studio", "/my-runs", "/connections", "/skills", "/prompts"],
     },
 ];
+const routeIcons = {
+    "/explore": iconCompass,
+    "/gallery": iconImage,
+    "/leaderboard": iconTrophy,
+    "/studio": iconFlask,
+    "/my-runs": iconHistory,
+    "/connections": iconKey,
+    "/skills": iconPuzzle,
+    "/prompts": iconFileText,
+    "/new-challenge": iconPlusCircle,
+    "/compare": iconLayers,
+    "/admin": iconShield,
+};
 let disposePage;
 let renderId = 0;
 let navOpen = false;
+let navCloseTimer;
 const mobile = window.matchMedia("(max-width: 800px)");
 function navigation(open, focus = true) {
     navOpen = open && mobile.matches;
@@ -40,8 +61,22 @@ function navigation(open, focus = true) {
         return;
     sidebar.inert = mobile.matches && !navOpen;
     body.inert = navOpen;
-    backdrop.hidden = !navOpen;
-    sidebar.classList.toggle("open", navOpen);
+    clearTimeout(navCloseTimer);
+    if (navOpen) {
+        backdrop.hidden = false;
+        requestAnimationFrame(() => {
+            backdrop.classList.add("open");
+            sidebar.classList.add("open");
+        });
+    }
+    else {
+        backdrop.classList.remove("open");
+        sidebar.classList.remove("open");
+        navCloseTimer = window.setTimeout(() => {
+            if (!navOpen)
+                backdrop.hidden = true;
+        }, 280);
+    }
     button.setAttribute("aria-expanded", String(navOpen));
     if (focus) {
         if (navOpen)
@@ -52,6 +87,7 @@ function navigation(open, focus = true) {
             button.focus();
     }
 }
+let lastAuthUserId = "__init__";
 function shell(path) {
     const active = path.startsWith("/run/")
         ? "/my-runs"
@@ -65,7 +101,32 @@ function shell(path) {
                 ? "题目详情"
                 : "TiHu");
     document.title = title + " · TiHu";
-    app.innerHTML = `<a class="skip-link" href="#main">跳到主要内容</a><div class="shell"><aside class="sidebar" id="sidebar" aria-label="主导航"><div class="row between"><a class="brand" href="#/explore"><img src="/art/favicon.svg" width="38" height="38" alt=""><span>TiHu<small>模型实验场</small></span></a><button class="btn ghost mobile-menu" data-global="close-menu" aria-label="关闭导航">关闭</button></div>${groups.map((group) => `<div class="nav-label">${group.title}</div><nav class="nav" aria-label="${group.title}">${group.links.map((link) => `<a href="#${link}" ${active === link ? 'class="active" aria-current="page"' : ""}><span class="nav-dot" aria-hidden="true"></span>${titles[link]}</a>`).join("")}</nav>`).join("")}${state.user?.role === "admin" ? '<nav class="nav" aria-label="管理"><a href="#/admin">管理中心</a></nav>' : ""}<div class="sidebar-foot"><a class="btn outline full" href="#/new-challenge">＋ 创建一道题</a><details class="security-note"><summary>自己的 Key，隔离的实验</summary><p>Key 加密保存在服务端，由受信代理调用模型；不会进入模型沙箱。生成内容在独立预览站点打开。</p></details><a class="text-link" href="#/gallery">保持好奇，认真比较。</a></div></aside><button class="nav-backdrop" data-global="close-menu" aria-label="关闭导航" hidden></button><div class="body"><header class="topbar"><div class="row"><button class="btn ghost mobile-menu" data-global="menu" aria-controls="sidebar" aria-expanded="false" aria-label="打开导航">菜单</button><div class="crumb"><span>TiHu</span><span aria-hidden="true">/</span><strong>${esc(title)}</strong></div></div><div class="topuser">${state.user ? `<span class="avatar" aria-hidden="true">${esc(state.user.username.slice(0, 2).toUpperCase())}</span><span class="username">${esc(state.user.username)}</span><button class="btn ghost small" data-global="logout">退出</button>` : `<button class="btn ghost" data-global="login">登录</button>${state.config.registration ? '<button class="btn primary small" data-global="register">创建账号</button>' : ""}`}</div></header><main class="main" id="main" tabindex="-1" aria-busy="true">${verificationNotice()}<div class="loading" role="status"><span class="loading-dot"></span>正在加载${esc(title)}…</div></main></div></div>`;
+    const currentShell = app.querySelector(".shell");
+    const userChanged = lastAuthUserId !== state.user?.id;
+    lastAuthUserId = state.user?.id;
+    if (currentShell && !userChanged) {
+        // Incremental DOM update for silky smooth transitions
+        const links = currentShell.querySelectorAll(".nav-link");
+        links.forEach((a) => {
+            const href = a.getAttribute("href") ?? "";
+            const isLinkActive = href === `#${active}`;
+            a.classList.toggle("active", isLinkActive);
+            if (isLinkActive)
+                a.setAttribute("aria-current", "page");
+            else
+                a.removeAttribute("aria-current");
+        });
+        const crumbCurrent = currentShell.querySelector(".crumb-current");
+        if (crumbCurrent)
+            crumbCurrent.textContent = title;
+        navigation(false, false);
+        return;
+    }
+    app.innerHTML = `<a class="skip-link" href="#main">跳到主要内容</a><div class="shell"><aside class="sidebar" id="sidebar" aria-label="主导航"><div class="sidebar-header row between"><a class="brand" href="#/explore"><span class="brand-logo-frame"><img src="/art/favicon.svg" width="34" height="34" alt="TiHu" class="brand-logo"></span><span class="brand-text"><span class="brand-title-line"><span class="brand-name">TiHu</span><span class="brand-badge">v2.0</span></span><small class="brand-tagline">智汇沙箱 · 模型实验场</small></span></a><button class="btn ghost mobile-menu" data-global="close-menu" aria-label="关闭导航">${iconX(18)}</button></div><div class="sidebar-navs">${groups.map((group) => `<div class="nav-group"><div class="nav-label"><span class="nav-label-zh">${group.title}</span><span class="nav-label-en">${group.enTitle}</span></div><nav class="nav" aria-label="${group.title}">${group.links.map((link) => {
+        const iconFn = routeIcons[link] ?? iconCompass;
+        const isActive = active === link;
+        return `<a href="#${link}" class="nav-link${isActive ? ' active" aria-current="page' : '"'}><span class="nav-icon">${iconFn(18)}</span><span class="nav-text">${titles[link]}</span></a>`;
+    }).join("")}</nav></div>`).join("")}${state.user?.role === "admin" ? `<div class="nav-group"><div class="nav-label"><span class="nav-label-zh">系统管理</span><span class="nav-label-en">SYSTEM</span></div><nav class="nav" aria-label="管理"><a href="#/admin" class="nav-link${active === "/admin" ? ' active" aria-current="page' : '"'}><span class="nav-icon">${iconShield(18)}</span><span class="nav-text">管理中心</span></a></nav></div>` : ""}</div><div class="sidebar-foot"><div class="sidebar-action"><a class="btn primary full sidebar-create-btn btn-create-challenge" id="new-challenge-btn" href="#/new-challenge"><span class="btn-icon" aria-hidden="true">${iconPlus(16)}</span><span>创建一道题</span></a></div>${state.user ? `<div class="sidebar-user user-profile-pill"><span class="avatar user-pill-avatar" aria-hidden="true">${esc(state.user.username.slice(0, 2).toUpperCase())}</span><div class="user-pill-info"><span class="username user-pill-name" title="${esc(state.user.username)}">${esc(state.user.username)}</span><span class="user-pill-role">${state.user.role === "admin" ? "系统管理员" : "实验探索者"}</span></div><button class="btn ghost small user-pill-action icon-only" data-global="logout" title="退出登录" aria-label="退出登录">${iconLogOut(16)}</button></div>` : `<div class="sidebar-user sidebar-guest user-profile-pill"><button class="btn ghost small full user-login-btn" data-global="login"><span class="btn-icon" aria-hidden="true">${iconUser(15)}</span><span>登录</span></button>${state.config.registration ? `<button class="btn primary small full user-register-btn" data-global="register"><span class="btn-icon" aria-hidden="true">${iconPlus(15)}</span><span>注册</span></button>` : ""}</div>`}<details class="security-note"><summary><span class="summary-icon" aria-hidden="true">${iconLock(13)}</span><span>安全隔离沙箱</span></summary><p>Key 加密存储于安全内存中，由专用 Broker 代理调用，杜绝注入风险。生成网页在独立隔离域安全运行。</p></details><a class="text-link sidebar-motto" href="#/gallery">保持好奇，极致探索。</a></div></aside><button class="nav-backdrop" data-global="close-menu" aria-label="关闭导航" hidden></button><div class="body"><header class="topbar frosted-glass"><div class="row align-center"><button class="btn ghost mobile-menu" data-global="menu" aria-controls="sidebar" aria-expanded="false" aria-label="打开导航">${iconMenu(18)}<span>菜单</span></button><nav class="crumb" aria-label="当前路径"><a class="crumb-root" href="#/explore"><span class="crumb-icon" aria-hidden="true">${iconCompass(14)}</span><span>TiHu</span></a><span class="crumb-separator" aria-hidden="true">${iconChevronRight(12)}</span><strong class="crumb-current" aria-current="page">${esc(title)}</strong></nav></div><div class="topuser">${state.user ? `<div class="user-pill"><span class="avatar" aria-hidden="true">${esc(state.user.username.slice(0, 2).toUpperCase())}</span><span class="username">${esc(state.user.username)}</span>${state.user.role === "admin" ? '<span class="role-tag">Admin</span>' : ""}<button class="btn ghost small user-logout-btn" data-global="logout" title="退出登录" aria-label="退出登录">${iconLogOut(14)}<span>退出</span></button></div>` : `<button class="btn ghost small" data-global="login">${iconUser(14)}<span>登录</span></button>${state.config.registration ? `<button class="btn primary small" data-global="register">${iconPlus(14)}<span>创建账号</span></button>` : ""}`}</div></header><main class="main page-enter" id="main" tabindex="-1" aria-busy="true">${verificationNotice()}<div class="loading" role="status"><span class="loading-dot"></span>正在载入${esc(title)}…</div></main></div></div>`;
     navigation(false, false);
     app.querySelector(".skip-link")?.addEventListener("click", (event) => {
         event.preventDefault();
@@ -184,6 +245,10 @@ async function render() {
             (page.html.includes('data-global="resend-verification"')
                 ? ""
                 : verificationNotice()) + page.html;
+        root.classList.remove("page-enter");
+        void root.offsetWidth;
+        root.classList.add("page-enter");
+        window.scrollTo({ top: 0, behavior: "instant" });
         const cleanup = page.mount?.(root);
         if (cleanup)
             disposePage = cleanup;
@@ -216,9 +281,11 @@ app.addEventListener("click", async (event) => {
             navigation(false);
             return;
         case "login":
+            navigation(false, false);
             authenticate();
             return;
         case "register":
+            navigation(false, false);
             authenticate("register");
             return;
         case "refresh":
@@ -285,6 +352,7 @@ window.addEventListener("hashchange", () => {
 window.addEventListener("tihu-refresh", () => {
     void render();
 });
+initGlobalMotions();
 async function boot() {
     try {
         state.config = await api("/config");
