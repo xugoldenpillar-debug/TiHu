@@ -29,7 +29,8 @@ services:
       MAIL_FROM: ${MAIL_FROM:-TiHu <noreply@example.com>}
       REGISTRATION_OPEN: ${REGISTRATION_OPEN:-true}
       MAX_OUTPUT_TOKENS: ${MAX_OUTPUT_TOKENS:-16384}
-      RUN_SECONDS: ${RUN_SECONDS:-300}
+      RUN_SECONDS: ${RUN_SECONDS:-900}
+      MAX_MODEL_CALLS: ${MAX_MODEL_CALLS:-50}
     depends_on: {db: {condition: service_healthy}}
     command: ["sh","-c","python -m tihu.cli init && python -m tihu.cli seed && exec uvicorn tihu.api:app --host 0.0.0.0 --port 8000 --no-access-log"]
     healthcheck: {test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/config',timeout=3)"], interval: 5s, timeout: 4s, retries: 20}
@@ -69,7 +70,8 @@ services:
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
       PROVIDER_RESPONSE_LIMIT: ${PROVIDER_RESPONSE_LIMIT:-67108864}
       MAX_OUTPUT_TOKENS: ${MAX_OUTPUT_TOKENS:-16384}
-      RUN_SECONDS: ${RUN_SECONDS:-300}
+      RUN_SECONDS: ${RUN_SECONDS:-900}
+      MAX_MODEL_CALLS: ${MAX_MODEL_CALLS:-50}
     depends_on: {db: {condition: service_healthy}, api: {condition: service_healthy}}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

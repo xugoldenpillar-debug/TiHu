@@ -335,8 +335,8 @@ async def sandbox_output(process,spec):
             if size>limit:raise ValueError('sandbox_output_too_large')
             if keep:data.extend(chunk)
         return bytes(data)
-    tasks=[asyncio.create_task(send()),asyncio.create_task(collect(process.stdout,3*1024*1024,True)),
-           asyncio.create_task(collect(process.stderr,512*1024,False)),asyncio.create_task(process.wait())]
+    tasks=[asyncio.create_task(send()),asyncio.create_task(collect(process.stdout,32*1024*1024,True)),
+           asyncio.create_task(collect(process.stderr,8*1024*1024,False)),asyncio.create_task(process.wait())]
     try:
         results=await asyncio.gather(*tasks)
         return results[1]
@@ -373,7 +373,7 @@ async def execute(run):
         broker.key=unseal(key['sealed'],run['owner_id'],key['id'])
         Path(settings.broker_root).mkdir(parents=True,mode=0o700,exist_ok=True)
         socket_dir=tempfile.mkdtemp(prefix=run['id']+'-',dir=settings.broker_root);os.chmod(socket_dir,0o711)
-        application=web.Application(client_max_size=192*1024);application.router.add_route('*','/{tail:.*}',broker.handle)
+        application=web.Application(client_max_size=32*1024*1024);application.router.add_route('*','/{tail:.*}',broker.handle)
         server=web.AppRunner(application,access_log=None,shutdown_timeout=2);await server.setup();sock=socket_dir+'/bridge.sock';await web.UnixSite(server,sock).start();os.chown(sock,65532,65532);os.chmod(sock,0o600)
         broker.image_id=await image_id();spec={**run['snapshot'],'broker_token':broker.token};spec['base_url']='http://127.0.0.1:9090/v1'
         if not still_active(run):return
