@@ -215,7 +215,7 @@ export async function fetchConfig(): Promise<AppConfig> {
 }
 
 export async function fetchSession(): Promise<Session> {
-  const s = await api<Session>("/session");
+  const s = await api<Session>("/me");
   setCsrfToken(s.csrf);
   return s;
 }

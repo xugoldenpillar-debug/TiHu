@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { User, Quota, AppConfig, Session } from "../types";
-import { api, fetchConfig, fetchSession, errorText } from "../api/client";
+import { api, fetchConfig, fetchSession, errorText, setCsrfToken } from "../api/client";
 
 export interface ToastItem {
   id: string;
@@ -18,6 +18,7 @@ interface AppContextType {
   path: string;
   navigate: (path: string) => void;
   refreshSession: () => Promise<void>;
+  logout: () => Promise<void>;
   showToast: (message: string, type?: "info" | "success" | "warning" | "error") => void;
   openAuthModal: (mode?: "login" | "register") => void;
   authModalMode: "login" | "register" | null;
@@ -56,6 +57,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const navigate = useCallback((path: string) => {
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, "", path);
+      setActivePath(path);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await api("/auth/logout", { method: "POST" });
+    } catch {
+      // ignore
+    } finally {
+      setUser(null);
+      setQuota(null);
+      setVoteEligibleAt(null);
+      setCsrfToken(null);
+      showToast("已安全退出登录", "info");
+      navigate("/explore");
+    }
+  }, [navigate, showToast]);
+
+
   useEffect(() => {
     let mounted = true;
     async function init() {
@@ -83,13 +108,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, [showToast]);
 
-  const navigate = useCallback((path: string) => {
-    if (window.location.pathname !== path) {
-      window.history.pushState({}, "", path);
-      setActivePath(path);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }, []);
 
   const openAuthModal = useCallback((mode: "login" | "register" = "login") => {
     setAuthModalMode(mode);
@@ -111,6 +129,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         path: activePath,
         navigate,
         refreshSession,
+        logout,
         showToast,
         openAuthModal,
         authModalMode,

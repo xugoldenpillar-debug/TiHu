@@ -115,13 +115,13 @@ function Router() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppLayout>
-        <ErrorBoundary>
+    <ErrorBoundary>
+      <AppProvider>
+        <AppLayout>
           <Router />
-        </ErrorBoundary>
-      </AppLayout>
-      <AuthModal />
-    </AppProvider>
+        </AppLayout>
+        <AuthModal />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }

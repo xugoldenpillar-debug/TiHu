@@ -31,7 +31,7 @@ interface NavGroup {
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, quota, activePath, navigate, openAuthModal, refreshSession, showToast } = useApp();
+  const { user, quota, activePath, navigate, openAuthModal, logout } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const groups: NavGroup[] = [
@@ -74,14 +74,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const handleLogout = async () => {
-    try {
-      await fetch("/api/session", { method: "DELETE" });
-      await refreshSession();
-      showToast("已安全退出登录", "info");
-      navigate("/explore");
-    } catch {
-      showToast("退出登录失败，请刷新重试", "error");
-    }
+    await logout();
   };
 
   return (
