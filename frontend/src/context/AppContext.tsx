@@ -68,15 +68,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     try {
       await api("/auth/logout", { method: "POST" });
-    } catch {
-      // ignore
-    } finally {
       setUser(null);
       setQuota(null);
       setVoteEligibleAt(null);
       setCsrfToken(null);
       showToast("已安全退出登录", "info");
       navigate("/explore");
+    } catch {
+      showToast("退出登录失败，请刷新重试", "error");
     }
   }, [navigate, showToast]);
 
