@@ -147,19 +147,17 @@ def seed():
         if not system:
             system = {'id': db.uid()}; c.execute(insert(db.users).values(id=system['id'], username='tihu-system', email='system@tihu.invalid', password=password_hasher.hash(secrets.token_urlsafe(48)), role='system', verified=True, suspended=True, created=db.now()))
         tasks = [
-            ('鹈鹕骑行','The deceptively simple visual reasoning challenge. Anatomy, geometry, and a little personality.','SVG','创建一个自包含的 index.html，内容是用 SVG 绘制一个鹈鹕骑自行车的 2D 动画。鹈鹕必须清晰坐在自行车上，脚踩踏板，包含完整的车架、两个车轮与特征明显的鸟喙，且带有生动流畅的 2D 骑行动画。不要加载任何外部资源。\n\nCreate a self-contained index.html featuring an original SVG 2D animation of a pelican riding a bicycle. The pelican must visibly sit on the bicycle, with feet on pedals, two wheels, a coherent frame, a recognizable beak, and smooth 2D riding animation. Do not load external resources.','一眼能认出的鹈鹕；合理的车轮与车架结构；身体、脚踏板与座椅接触可信；流畅生动的 2D 骑行动画；画面细节与整体完成度。 / Recognizable pelican; coherent bicycle geometry; believable contact points; smooth 2D animation; visual craft.'),
-            ('秦始皇骑北极熊','The First Emperor of China riding a majestic polar bear. Historical majesty meets arctic beast in an animated SVG scene.','SVG','创建一个自包含的 index.html，内容是用 SVG 绘制秦始皇骑北极熊的 2D 动画。画面中秦始皇应具备鲜明的帝王特征（如冕旒、华丽黑金袍服、天子佩剑），威武地骑在强壮的北极熊背上，并包含生动流畅的 2D 运动动画。不得加载任何外部依赖与外部资源。\n\nCreate a self-contained index.html featuring an original SVG 2D animation of Emperor Qin Shi Huang riding a polar bear. The emperor should have recognizable imperial features (such as imperial crown and robes) riding atop a powerful polar bear, with smooth 2D motion animation. Do not load external resources.','辨识度高的秦始皇帝王特征；生动协调的北极熊造型；骑乘接触自然合理；流畅生动的 2D 动画；纯 SVG 与单文件自包含。 / Recognizable Qin Shi Huang imperial features; believable polar bear anatomy; natural riding contact; smooth 2D motion animation; self-contained SVG without dependencies.'),
-            ('微型生态循环','发挥创造性，使用HTML生成一个微型小世界','Interactive','Build a self-contained index.html of an interactive miniature ecosystem. Use Canvas or SVG, include plants and creatures, a day/night control, and a pause button. Work without external resources.','Interaction quality; visual coherence; accessible controls; working animation.'),
-            ('闹钟','用HTML生成一个有创造性用途的闹钟工具','Creative','Build a self-contained index.html with a surprising, playful clock. It must show the real local time accurately and offer a reduced-motion control. No external resources.','Correct time; originality; readability; reduced-motion support.')]
+            ('鹈鹕骑行', '经典视觉推理题目。用纯 SVG 绘制鹈鹕骑自行车的 2D 循环动画，考察模型对生物骨骼、机械几何与运动韵律的理解。', 'SVG', '创建一个HTML，内容是SVG绘制一个鹈鹕骑自行车的2D动画。', '一眼能认出的鹈鹕；合理的车轮与车架结构；身体、脚踏板与座椅接触可信；流畅生动的 2D 骑行动画；画面细节与整体完成度。'),
+            ('秦始皇骑北极熊', '千古一帝与极地巨兽的奇幻碰撞。用 SVG 考察模型对复杂人物服饰、动物骨骼与 2D 动态节奏的综合表现力。', 'SVG', '生成HtmL，内容是svg绘制秦始皇骑北极熊的动画，不用进行测试', '辨识度高的秦始皇帝王特征；生动协调的北极熊造型；骑乘接触自然合理；流畅生动的 2D 动画；纯 SVG 与单文件自包含。'),
+            ('微型生态循环', '发挥创造性，使用HTML生成一个微型小世界', 'Interactive', '发挥创造性，使用HTML生成一个微型小世界', '交互有效且容易理解；视觉风格协调；控件可访问；动画正常运行并可暂停。'),
+            ('闹钟', '用HTML生成一个有创造性用途的闹钟工具', 'Creative', '用HTML生成一个有创造性用途的闹钟工具', '准确显示当地时间；表达具有原创性；时间清晰可读；支持减少动态效果。')
+        ]
         for title, description, category, prompt, rubric in tasks:
             existing = db.row(c, select(db.challenges).where(db.challenges.c.title == title))
             if not existing:
                 cid = db.uid()
                 c.execute(insert(db.challenges).values(id=cid, owner_id=system['id'], title=title, description=description, category=category, current_version=1, created=db.now()))
                 c.execute(insert(db.versions).values(id=db.uid(), challenge_id=cid, number=1, prompt=prompt, rubric=rubric, sha256=stable_hash({'prompt': prompt, 'rubric': rubric}), created=db.now()))
-            else:
-                c.execute(update(db.challenges).where(db.challenges.c.id == existing['id']).values(description=description, category=category))
-                c.execute(update(db.versions).where(db.versions.c.challenge_id == existing['id'], db.versions.c.number == existing['current_version']).values(prompt=prompt, rubric=rubric, sha256=stable_hash({'prompt': prompt, 'rubric': rubric})))
         # Clean up legacy English titles if any
         legacy_titles = ['Pelican on a bicycle', 'Qin Shi Huang on a polar bear', 'A tiny living world', 'The impossible clock']
         legacies = db.rows(c, select(db.challenges.c.id).where(db.challenges.c.title.in_(legacy_titles)))
