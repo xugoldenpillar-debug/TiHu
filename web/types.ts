@@ -37,6 +37,7 @@ export interface AdminChallenge {
   category: string;
   current_version: number;
   archived: boolean;
+  art?: string | null;
   created: number;
   author: string;
   prompt: string;
@@ -89,6 +90,7 @@ export interface Challenge {
   current_version: number;
   created: number;
   archived: boolean;
+  art?: string | null;
 }
 export interface ChallengeVersion {
   id: string;

@@ -592,8 +592,12 @@ function mountPreview(container: HTMLElement, run: RunDetail): () => void {
       frame.src = url.href;
     } catch (err) {
       if (!disposed) {
-        error.textContent = errorText(err);
-        error.hidden = false;
+        if (err instanceof Error && (err.name === "AbortError" || err.message.includes("aborted"))) return;
+        const msg = errorText(err);
+        if (msg) {
+          error.textContent = msg;
+          error.hidden = false;
+        }
       }
     } finally {
       if (!disposed) {
@@ -902,7 +906,8 @@ export async function runPage(id: string): Promise<Page> {
             root.querySelector<HTMLElement>("#run-events")!.hidden = true;
           }
         } catch (error) {
-          if (!disposed) inlineError("#run-action-error", error);
+          // Transient network glitches during periodic background polling should not
+          // pop up alarming action errors.
         } finally {
           refreshPending = false;
           if (refreshQueued) {
@@ -1328,7 +1333,7 @@ export async function runPage(id: string): Promise<Page> {
         eventSource.addEventListener("error", () => {
           if (disposed || finalReceived) return;
           status.textContent =
-            "日志连接中断，正在自动重连；已显示的日志不会重复。运行状态会定期刷新，不会重新调用模型。";
+            "正在同步日志流… 实验在独立沙箱中持续运行，状态已保存。";
         });
       }
       if (active(run))

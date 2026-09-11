@@ -55,6 +55,20 @@ const challengeCopy: Record<string, ChallengeCopy> = {
       "画面细节与整体完成度",
     ],
   },
+  "鹈鹕骑行": {
+    title: "鹈鹕骑行",
+    description:
+      "经典视觉推理题目。用纯 SVG 绘制鹈鹕骑自行车的 2D 循环动画，考察模型对生物骨骼、机械几何与运动韵律的理解。",
+    art: "/art/challenge-pelican.svg",
+    alt: "戴着头盔的鹈鹕骑自行车",
+    rubric: [
+      "一眼能认出的鹈鹕与清晰鸟喙",
+      "合理的车轮与车架几何结构",
+      "身体、脚踏板与座椅接触可信",
+      "流畅生动的 2D 骑行动画",
+      "画面细节与整体完成度",
+    ],
+  },
   "Qin Shi Huang on a polar bear": {
     title: "秦始皇骑北极熊",
     description:
@@ -116,6 +130,208 @@ const categoryNames: Record<string, string> = {
   Creative: "创意表达",
   UI: "界面设计",
 };
+const categoryThemes: Record<
+  string,
+  { bg1: string; bg2: string; accent: string; accent2: string; label: string }
+> = {
+  SVG: {
+    bg1: "#042f2e",
+    bg2: "#021c1b",
+    accent: "#10b981",
+    accent2: "#34d399",
+    label: "SVG 绘图",
+  },
+  Interactive: {
+    bg1: "#1e1b4b",
+    bg2: "#0f172a",
+    accent: "#6366f1",
+    accent2: "#a5b4fc",
+    label: "交互体验",
+  },
+  Creative: {
+    bg1: "#3b0764",
+    bg2: "#18022e",
+    accent: "#d946ef",
+    accent2: "#f472b6",
+    label: "创意表达",
+  },
+  UI: {
+    bg1: "#082f49",
+    bg2: "#031a29",
+    accent: "#0ea5e9",
+    accent2: "#38bdf8",
+    label: "界面设计",
+  },
+};
+
+export function generateDynamicCoverSVG(title: string, category = "SVG"): string {
+  const theme = categoryThemes[category] ?? categoryThemes.SVG;
+  const safeTitle = esc(title.length > 20 ? title.slice(0, 18) + "…" : title);
+  const hash = Array.from(title).reduce((acc, c) => (acc * 31 + c.charCodeAt(0)) | 0, 0);
+  const angle = Math.abs(hash % 360);
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${theme.bg1}"/>
+      <stop offset="100%" stop-color="${theme.bg2}"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="${theme.accent}" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="${theme.accent2}" stop-opacity="0.2"/>
+    </linearGradient>
+    <radialGradient id="ambient" cx="70%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="${theme.accent}" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="${theme.accent}" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M 28 0 L 0 0 0 28" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="600" height="360" fill="url(#bg)"/>
+  <rect width="600" height="360" fill="url(#grid)"/>
+  <rect width="600" height="360" fill="url(#ambient)"/>
+  <g opacity="0.65" transform="translate(390, 145) rotate(${angle * 0.1})">
+    <circle cx="0" cy="0" r="115" fill="none" stroke="${theme.accent}" stroke-width="1.5" stroke-dasharray="4 8" opacity="0.4"/>
+    <circle cx="0" cy="0" r="80" fill="none" stroke="${theme.accent2}" stroke-width="1.2" opacity="0.6"/>
+    <circle cx="0" cy="0" r="44" fill="${theme.accent}" fill-opacity="0.1" stroke="${theme.accent}" stroke-width="2"/>
+    <polygon points="0,-44 38,22 -38,22" fill="none" stroke="${theme.accent2}" stroke-width="2" opacity="0.8"/>
+    <circle cx="0" cy="-44" r="4.5" fill="${theme.accent2}"/>
+    <circle cx="38" cy="22" r="4.5" fill="${theme.accent2}"/>
+    <circle cx="-38" cy="22" r="4.5" fill="${theme.accent2}"/>
+  </g>
+  <g transform="translate(44, 75)">
+    <rect x="0" y="0" width="94" height="26" rx="13" fill="${theme.accent}" fill-opacity="0.16" stroke="${theme.accent}" stroke-width="1"/>
+    <text x="47" y="17" fill="${theme.accent2}" font-size="12" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="600" text-anchor="middle">${theme.label}</text>
+    <text x="0" y="68" fill="#ffffff" font-size="28" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800" letter-spacing="-0.02em">${safeTitle}</text>
+    <text x="0" y="100" fill="rgba(255,255,255,0.5)" font-size="13" font-family="-apple-system,BlinkMacSystemFont,sans-serif">TIHU BENCHMARK · 极客挑战</text>
+  </g>
+  <path d="M 44 295 L 556 295" stroke="url(#glow)" stroke-width="1.5" opacity="0.6"/>
+  <text x="44" y="320" fill="rgba(255,255,255,0.4)" font-size="11" font-family="monospace">CODEGEN BENCHMARK // SANDBOX EVALUATION</text>
+  <text x="556" y="320" fill="${theme.accent2}" font-size="11" font-family="monospace" font-weight="600" text-anchor="end">TIHU ARENA</text>
+</svg>`;
+
+  return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+}
+
+export function resolveChallengeVisual(item: {
+  id?: string;
+  title: string;
+  category?: string;
+  description?: string;
+  art?: string | null;
+}): {
+  title: string;
+  description: string;
+  art: string;
+  alt: string;
+  rubric: string[];
+} {
+  const category = item.category ?? "SVG";
+  const normTitle = (item.title || "").toLowerCase().trim();
+
+  // 1. Explicit art assigned in database
+  if (item.art && item.art.trim()) {
+    return {
+      title: item.title,
+      description: item.description || "",
+      art: item.art.trim(),
+      alt: `${item.title} 封面插画`,
+      rubric: [],
+    };
+  }
+
+  // 2. Direct static copy match
+  if (challengeCopy[item.title]) {
+    const c = challengeCopy[item.title];
+    return {
+      title: c.title,
+      description: item.description || c.description,
+      art: c.art,
+      alt: c.alt,
+      rubric: c.rubric,
+    };
+  }
+
+  // 3. Keyword / semantic matching
+  if (
+    normTitle.includes("pelican") ||
+    normTitle.includes("鹈鹕") ||
+    normTitle.includes("单车") ||
+    normTitle.includes("骑行") ||
+    normTitle.includes("bicycle")
+  ) {
+    const p = challengeCopy["Pelican on a bicycle"];
+    return {
+      title: item.title,
+      description: item.description || p.description,
+      art: p.art,
+      alt: p.alt,
+      rubric: p.rubric,
+    };
+  }
+
+  if (
+    normTitle.includes("polar bear") ||
+    normTitle.includes("qin shi huang") ||
+    normTitle.includes("秦始皇") ||
+    normTitle.includes("北极熊") ||
+    normTitle.includes("始皇")
+  ) {
+    const b = challengeCopy["秦始皇骑北极熊"];
+    return {
+      title: item.title,
+      description: item.description || b.description,
+      art: b.art,
+      alt: b.alt,
+      rubric: b.rubric,
+    };
+  }
+
+  if (
+    normTitle.includes("clock") ||
+    normTitle.includes("时钟") ||
+    normTitle.includes("闹钟") ||
+    normTitle.includes("钟") ||
+    normTitle.includes("时间")
+  ) {
+    const c = challengeCopy["The impossible clock"];
+    return {
+      title: item.title,
+      description: item.description || c.description,
+      art: c.art,
+      alt: c.alt,
+      rubric: c.rubric,
+    };
+  }
+
+  if (
+    normTitle.includes("ecosystem") ||
+    normTitle.includes("living world") ||
+    normTitle.includes("生态") ||
+    normTitle.includes("小世界") ||
+    normTitle.includes("微观") ||
+    normTitle.includes("星球")
+  ) {
+    const e = challengeCopy["A tiny living world"];
+    return {
+      title: item.title,
+      description: item.description || e.description,
+      art: e.art,
+      alt: e.alt,
+      rubric: e.rubric,
+    };
+  }
+
+  // 4. Fallback: Dynamic generative high-aesthetic vector cover
+  return {
+    title: item.title,
+    description: item.description || "",
+    art: generateDynamicCoverSVG(item.title, category),
+    alt: `${item.title} 题目封面`,
+    rubric: [],
+  };
+}
 const icons = {
   arrowRight: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`,
   gallery: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>`,
@@ -135,21 +351,15 @@ function ensureCatalogStyles(): void {
 }
 
 function challengeCard(item: Challenge, index: number): string {
-  const copy = challengeCopy[item.title];
+  const visual = resolveChallengeVisual(item);
   const cat = item.category;
   const catName = categoryNames[cat] ?? cat;
-  const title = copy?.title ?? item.title;
-  const desc = copy?.description ?? item.description;
   const numStr = String(index + 1).padStart(2, "0");
 
   return `<article class="card challenge-card challenge-bento-card">
-    <a class="challenge-card-link" href="#/challenge/${esc(item.id)}" title="${esc(title)}">
+    <a class="challenge-card-link" href="#/challenge/${esc(item.id)}" title="${esc(visual.title)}">
       <div class="challenge-cover cover">
-        ${
-          copy
-            ? `<img src="${copy.art}" alt="${copy.alt}" loading="lazy" width="600" height="360">`
-            : `<div class="generated-mark" aria-hidden="true">${esc(cat)}</div>`
-        }
+        <img src="${visual.art}" alt="${esc(visual.alt)}" loading="lazy" width="600" height="360" class="challenge-cover-img">
         <span class="cover-num">题目 ${numStr}</span>
         <span class="cover-type category-capsule category-${esc(cat.toLowerCase())}">${esc(catName)}</span>
       </div>
@@ -158,8 +368,8 @@ function challengeCard(item: Challenge, index: number): string {
           <span class="badge-version">v${item.current_version} 固定评测</span>
           <span class="challenge-card-index">#${numStr}</span>
         </div>
-        <h3 class="challenge-card-title">${esc(title)}</h3>
-        <p class="challenge-card-desc">${esc(desc)}</p>
+        <h3 class="challenge-card-title">${esc(visual.title)}</h3>
+        <p class="challenge-card-desc">${esc(visual.description)}</p>
         <div class="challenge-card-footer meta">
           <span class="challenge-card-sub">标准评价基准</span>
           <span class="card-arrow btn-challenge-action">开始挑战 ${icons.arrowRight}</span>
@@ -168,9 +378,8 @@ function challengeCard(item: Challenge, index: number): string {
     </a>
   </article>`;
 }
-
 function workCard(item: RunSummary, mine = false): string {
-  const title = challengeCopy[item.title]?.title ?? item.title;
+  const title = resolveChallengeVisual({ title: item.title }).title;
   const userInitial = (item.username || "U").slice(0, 1).toUpperCase();
   const art = item.thumbnail_available
     ? `<img class="work-image" src="/api/runs/${esc(item.id)}/thumbnail" alt="${esc(title)}的生成作品预览" loading="lazy" width="960" height="540">`
@@ -848,19 +1057,12 @@ export async function challengePage(id: string): Promise<Page> {
           `<a class="btn outline" href="#/challenge/${esc(id)}">返回题目</a>`,
         ),
     };
-  const copy = challengeCopy[challenge.title];
+  const visual = resolveChallengeVisual(challenge);
   const url =
     "/runs?" +
     new URLSearchParams({ challenge: id, version: version.id, limit: "12" });
   const page = await api<PageResult<RunSummary>>(url);
-  const artMap: Record<string, string> = {
-    "Pelican on a bicycle": "/art/challenge-pelican.svg",
-    "Qin Shi Huang on a polar bear": "/art/challenge-polar-bear.svg",
-    "秦始皇骑北极熊": "/art/challenge-polar-bear.svg",
-    "Digital Clock in Single-file HTML": "/art/challenge-clock.svg",
-    "Ecosystem in HTML Canvas": "/art/challenge-ecosystem.svg",
-  };
-  const artSrc = artMap[challenge.title] ?? "/art/challenge-pelican.svg";
+  const artSrc = visual.art;
   return {
     html: `
       <section class="challenge-hero-card">
@@ -870,8 +1072,8 @@ export async function challengePage(id: string): Promise<Page> {
             <span class="badge version-pill">版本 v${version.number}</span>
             <span class="badge ${version.number === challenge.current_version ? "official" : "custom"}">${version.number === challenge.current_version ? "当前最新" : "历史版本"}</span>
           </div>
-          <h1 class="challenge-hero-title">${esc(copy?.title ?? challenge.title)}</h1>
-          <p class="challenge-hero-desc">${esc(copy?.description ?? challenge.description)}</p>
+          <h1 class="challenge-hero-title">${esc(visual.title)}</h1>
+          <p class="challenge-hero-desc">${esc(visual.description)}</p>
           <div class="challenge-hero-actions">
             <a class="btn primary btn-glow" href="#/studio?challenge=${esc(id)}&version=${esc(version.id)}">${icons.play} 挑战这道题</a>
             ${challenge.can_edit ? '<button class="btn outline" id="new-version">发布新版本</button>' : ""}
@@ -879,7 +1081,7 @@ export async function challengePage(id: string): Promise<Page> {
           </div>
         </div>
         <div class="challenge-hero-art">
-          <img src="${artSrc}" alt="${esc(challenge.title)}" width="200" height="160" class="challenge-hero-img">
+          <img src="${artSrc}" alt="${esc(visual.title)}" width="200" height="160" class="challenge-hero-img">
         </div>
       </section>
       <section class="panel challenge-detail">
@@ -887,7 +1089,7 @@ export async function challengePage(id: string): Promise<Page> {
           <span class="eyebrow">版本控制与详细规格</span>
           <form data-filters class="row align-center gap-8">${field("task-version", "查看版本", `<select id="task-version" name="version">${challenge.versions.map((item) => `<option value="${esc(item.id)}" ${item.id === version.id ? "selected" : ""}>v${item.number}${item.number === challenge.current_version ? " · 当前版本" : " · 历史版本"}</option>`).join("")}</select>`)}<button class="btn outline small" type="submit">切换版本</button></form>
         </div>
-        ${copy ? `<div class="rubric-box"><h3>评价时，留意这些细节</h3><ul class="rubric-list">${copy.rubric.map((line) => `<li>${esc(line)}</li>`).join("")}</ul><p class="help">以上为入门说明；实际执行以下冻结的任务原文和评价参考。</p></div>` : ""}
+        ${visual.rubric && visual.rubric.length ? `<div class="rubric-box"><h3>评价时，留意这些细节</h3><ul class="rubric-list">${visual.rubric.map((line) => `<li>${esc(line)}</li>`).join("")}</ul><p class="help">以上为入门说明；实际执行以下冻结的任务原文和评价参考。</p></div>` : ""}
         <details class="details-section"><summary>本版本任务原文</summary><pre class="mono code-block"><code>${esc(version.prompt)}</code></pre></details>
         <details class="details-section"><summary>评价参考原文</summary><pre class="mono code-block"><code>${esc(version.rubric)}</code></pre><p class="muted mono">版本指纹 ${esc(version.sha256)}</p></details>
       </section>

@@ -86,6 +86,7 @@ class AdminChallengeUpdate(Input):
     title: str = Field(min_length=1, max_length=100)
     description: str = Field(min_length=1, max_length=1500)
     category: str = Field(min_length=1, max_length=30)
+    art: str | None = Field(default=None, max_length=500)
     prompt: str | None = Field(default=None, min_length=1, max_length=6000)
     rubric: str | None = Field(default=None, min_length=1, max_length=3000)
 class AdminPromptUpdate(Input):
@@ -627,7 +628,7 @@ def admin_challenges(q:str=Query('',max_length=200),archived:bool|None=None,limi
     with db.engine.connect() as c:
         stmt=select(
             db.challenges.c.id,db.challenges.c.title,db.challenges.c.description,db.challenges.c.category,
-            db.challenges.c.current_version,db.challenges.c.archived,db.challenges.c.created,
+            db.challenges.c.current_version,db.challenges.c.archived,db.challenges.c.art,db.challenges.c.created,
             db.users.c.username.label('author'),db.versions.c.prompt,db.versions.c.rubric
         ).join(db.users,db.challenges.c.owner_id==db.users.c.id).join(
             db.versions,and_(db.versions.c.challenge_id==db.challenges.c.id,db.versions.c.number==db.challenges.c.current_version)
@@ -641,7 +642,9 @@ def admin_update_challenge(ident:str,body:AdminChallengeUpdate,who=Depends(admin
     with db.engine.begin() as c:
         domain.admission_lock(c)
         task=domain.require_row(c,db.challenges,ident)
-        c.execute(update(db.challenges).where(db.challenges.c.id==ident).values(title=body.title.strip(),description=body.description.strip(),category=body.category.strip()))
+        vals={'title':body.title.strip(),'description':body.description.strip(),'category':body.category.strip()}
+        if body.art is not None: vals['art']=body.art.strip() or None
+        c.execute(update(db.challenges).where(db.challenges.c.id==ident).values(**vals))
         if body.prompt is not None and body.rubric is not None:
             p=body.prompt.strip();r=body.rubric.strip()
             c.execute(update(db.versions).where(db.versions.c.challenge_id==ident,db.versions.c.number==task['current_version']).values(prompt=p,rubric=r,sha256=stable_hash({'prompt':p,'rubric':r})))

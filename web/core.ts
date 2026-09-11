@@ -230,13 +230,16 @@ export function errorText(error: unknown): string {
       errors[error] ??
       (error.match(/[\u3400-\u9fff]/) ? error : errors.runner_failure)
     );
-  if (error instanceof Error)
+  if (error instanceof Error) {
+    if (error.name === "AbortError" || error.message.includes("aborted"))
+      return "";
     return (
       errors[error.message] ??
       (error.message.match(/[\u3400-\u9fff]/)
         ? error.message
         : "连接暂时中断，请检查网络后重试。")
     );
+  }
   return "操作未完成，请稍后重试。";
 }
 

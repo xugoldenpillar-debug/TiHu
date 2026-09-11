@@ -1113,6 +1113,18 @@ export async function adminPage() {
                         showDialog("编辑题目与 Prompt", `<form id="edit-ch-form" class="stack">
                 ${field("ec-title", "题目名称", `<input id="ec-title" name="title" required minlength="1" maxlength="100" value="${esc(ch.title)}">`)}
                 ${field("ec-category", "分类", `<input id="ec-category" name="category" required minlength="1" maxlength="30" value="${esc(ch.category)}">`)}
+                ${field("ec-art", "题目封面插画 (留空将自动智能匹配或动态生成艺术封面)", `
+                  <div style="display:flex;gap:8px;align-items:center;">
+                    <input id="ec-art" name="art" maxlength="500" placeholder="例如 /art/challenge-polar-bear.svg 或图片链接" value="${esc(ch.art || "")}" style="flex:1;">
+                    <select id="ec-art-preset" class="btn outline small" style="width:auto;padding:6px 10px;">
+                      <option value="">快速套用插画模板…</option>
+                      <option value="/art/challenge-pelican.svg">鹈鹕骑行 (SVG)</option>
+                      <option value="/art/challenge-polar-bear.svg">秦始皇骑北极熊 (SVG)</option>
+                      <option value="/art/challenge-clock.svg">不可能的时钟 (SVG)</option>
+                      <option value="/art/challenge-ecosystem.svg">掌心微观世界 (SVG)</option>
+                    </select>
+                  </div>
+                `, "支持填入系统内部静态插画路径、外部图片 URL，或留空使用自适应动态生成封面。")}
                 ${field("ec-desc", "题目描述", `<textarea id="ec-desc" name="description" rows="3" required minlength="1" maxlength="1500">${esc(ch.description)}</textarea>`)}
                 ${field("ec-prompt", "当前引导语 (Prompt)", `<textarea id="ec-prompt" name="prompt" rows="6" required minlength="1" maxlength="6000">${esc(ch.prompt || "")}</textarea>`, "可直接在此微调 Prompt，保存后立即对新评测生效。")}
                 ${field("ec-rubric", "评判标准 (Rubric)", `<textarea id="ec-rubric" name="rubric" rows="4" required minlength="1" maxlength="3000">${esc(ch.rubric || "")}</textarea>`)}
@@ -1122,6 +1134,14 @@ export async function adminPage() {
                 </div>
               </form>`, (dialog) => {
                             dialog.querySelector("[data-dialog-cancel]")?.addEventListener("click", () => closeDialog());
+                            dialog.querySelector("#ec-art-preset")?.addEventListener("change", (e) => {
+                                const val = e.target.value;
+                                if (val) {
+                                    const input = dialog.querySelector("#ec-art");
+                                    if (input)
+                                        input.value = val;
+                                }
+                            });
                             const form = dialog.querySelector("form");
                             form.addEventListener("submit", async (e) => {
                                 e.preventDefault();
@@ -1129,6 +1149,7 @@ export async function adminPage() {
                                 await mutate(`/admin/challenges/${id}`, "PUT", {
                                     title: String(fd.get("title") || "").trim(),
                                     category: String(fd.get("category") || "").trim(),
+                                    art: String(fd.get("art") || "").trim() || null,
                                     description: String(fd.get("description") || "").trim(),
                                     prompt: String(fd.get("prompt") || "").trim(),
                                     rubric: String(fd.get("rubric") || "").trim(),
