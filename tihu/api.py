@@ -117,8 +117,16 @@ async def boundaries(request: Request, call_next):
         return JSONResponse({'detail':'body_too_large'}, status_code=413)
     if request.method not in ('GET','HEAD','OPTIONS'):
         origin=request.headers.get('origin')
-        if origin and origin.rstrip('/') != settings.app_origin:
-            if settings.production or origin.rstrip('/') not in (settings.app_origin, 'http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:8000', 'http://127.0.0.1:8000'):
+        if origin:
+            clean_origin = origin.rstrip('/')
+            is_valid = (clean_origin == settings.app_origin)
+            if not is_valid and not settings.production:
+                is_valid = (
+                    clean_origin.endswith('.trycloudflare.com')
+                    or clean_origin.startswith(('http://localhost:', 'http://127.0.0.1:'))
+                    or clean_origin in ('http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:8000', 'http://127.0.0.1:8000')
+                )
+            if not is_valid:
                 return JSONResponse({'detail':'origin_denied'}, status_code=403)
         # Cookie-authenticated mutations require a CSRF token, except login/register/reset token flows.
         if request.cookies.get(settings.cookie) and request.url.path not in ('/api/auth/login','/api/auth/register','/api/auth/reset','/api/auth/verify'):
