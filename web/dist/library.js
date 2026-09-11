@@ -1,4 +1,4 @@
-import { api, mutate, state, esc, date, head, empty, field, footer, authGate, verificationNotice, toast, formError, clearFormError, confirmDialog, errorText, icons, } from "./core.js";
+import { api, mutate, state, esc, date, head, empty, field, footer, authGate, verificationNotice, toast, formError, clearFormError, confirmDialog, errorText, icons, detectVendor, vendorSvgs, } from "./core.js";
 function mountScope(root, setup) {
     const controller = new AbortController();
     setup({ live: () => !controller.signal.aborted, signal: controller.signal });
@@ -132,7 +132,7 @@ function connectionHtml(key) {
     <div class="card-header">
       <div class="card-title-group">
         <div class="card-icon-title">
-          <span class="card-badge-icon" aria-hidden="true">${icons.key}</span>
+          <span class="card-badge-icon" aria-hidden="true">${vendorSvgs[detectVendor(key.label + " " + key.base_url).key] ?? icons.key}</span>
           <h3 class="card-title">${esc(key.label)}</h3>
         </div>
         <div class="card-badges">

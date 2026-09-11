@@ -16,6 +16,8 @@ import {
   confirmDialog,
   errorText,
   icons,
+  detectVendor,
+  vendorSvgs,
   type Page,
 } from "./core.js";
 
@@ -225,7 +227,7 @@ function connectionHtml(key: Connection): string {
     <div class="card-header">
       <div class="card-title-group">
         <div class="card-icon-title">
-          <span class="card-badge-icon" aria-hidden="true">${icons.key}</span>
+          <span class="card-badge-icon" aria-hidden="true">${vendorSvgs[detectVendor(key.label + " " + key.base_url).key] ?? icons.key}</span>
           <h3 class="card-title">${esc(key.label)}</h3>
         </div>
         <div class="card-badges">

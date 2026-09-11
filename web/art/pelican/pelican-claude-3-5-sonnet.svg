@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="c-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="c-pouch" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="c-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <rect width="500" height="360" rx="16" fill="url(#c-bg)"/>
+  <!-- Cyber grid -->
+  <g opacity="0.12" stroke="#38bdf8" stroke-width="1">
+    <line x1="0" y1="90" x2="500" y2="90"/>
+    <line x1="0" y1="180" x2="500" y2="180"/>
+    <line x1="0" y1="270" x2="500" y2="270"/>
+    <line x1="100" y1="0" x2="100" y2="360"/>
+    <line x1="250" y1="0" x2="250" y2="360"/>
+    <line x1="400" y1="0" x2="400" y2="360"/>
+  </g>
+
+  <!-- Speed lines -->
+  <path d="M40 280 L120 280 M60 295 L140 295 M20 265 L90 265" stroke="#14b8a6" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- Bicycle Wheels -->
+  <!-- Rear Wheel -->
+  <circle cx="150" cy="255" r="58" fill="none" stroke="#334155" stroke-width="6"/>
+  <circle cx="150" cy="255" r="54" fill="none" stroke="#0d9488" stroke-width="2" opacity="0.8"/>
+  <circle cx="150" cy="255" r="10" fill="#1e293b" stroke="#14b8a6" stroke-width="3"/>
+  <!-- Spokes -->
+  <path d="M150 197 L150 313 M92 255 L208 255 M109 214 L191 296 M109 296 L191 214" stroke="#475569" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- Front Wheel -->
+  <circle cx="360" cy="255" r="58" fill="none" stroke="#334155" stroke-width="6"/>
+  <circle cx="360" cy="255" r="54" fill="none" stroke="#0d9488" stroke-width="2" opacity="0.8"/>
+  <circle cx="360" cy="255" r="10" fill="#1e293b" stroke="#14b8a6" stroke-width="3"/>
+  <!-- Front Spokes -->
+  <path d="M360 197 L360 313 M302 255 L418 255 M319 214 L401 296 M319 296 L401 214" stroke="#475569" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- Bicycle Frame (Diamond Aero) -->
+  <g stroke="url(#c-cyan)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Bottom bracket to rear hub -->
+    <path d="M235 255 L150 255"/>
+    <!-- Rear hub to seat post -->
+    <path d="M150 255 L220 165"/>
+    <!-- Bottom bracket to seat post -->
+    <path d="M235 255 L220 165"/>
+    <!-- Bottom bracket to head tube -->
+    <path d="M235 255 L325 155"/>
+    <!-- Seat post to head tube (top tube) -->
+    <path d="M220 165 L325 155"/>
+    <!-- Head tube to front hub (fork) -->
+    <path d="M325 155 L360 255"/>
+    <!-- Handlebars drop -->
+    <path d="M325 155 L335 130 L355 138" stroke="#f1f5f9" stroke-width="4"/>
+  </g>
+  <!-- Saddle -->
+  <path d="M200 162 C210 158, 235 158, 245 163 C235 167, 215 167, 200 162 Z" fill="#0f172a" stroke="#f8fafc" stroke-width="2"/>
+  <!-- Pedals & Chain ring -->
+  <circle cx="235" cy="255" r="16" fill="#0f172a" stroke="#f59e0b" stroke-width="3"/>
+  <path d="M235 242 L235 268 M225 242 L245 242 M225 268 L245 268" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Pelican Body & Wings -->
+  <!-- Pelican Tail & Body -->
+  <path d="M205 185 C190 180, 185 150, 215 130 C245 110, 275 125, 270 165 C265 195, 225 200, 205 185 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <!-- Pelican Wing (Swept aerodynamic) -->
+  <path d="M225 140 C200 120, 190 85, 235 95 C270 102, 285 145, 255 165 C240 160, 235 150, 225 140 Z" fill="#e2e8f0" stroke="#0ea5e9" stroke-width="2"/>
+  
+  <!-- Pelican Neck & Head -->
+  <path d="M260 135 C275 110, 290 80, 315 75 C335 70, 345 85, 335 105 C320 125, 295 145, 260 135 Z" fill="#f8fafc"/>
+  
+  <!-- Pelican Eye & Cap -->
+  <circle cx="328" cy="84" r="5" fill="#0f172a"/>
+  <circle cx="330" cy="82" r="1.5" fill="#ffffff"/>
+  <!-- Cycling Cap (Retro Teal) -->
+  <path d="M312 76 C318 64, 338 64, 344 76 L356 74 C350 78, 342 80, 335 80 Z" fill="#0d9488"/>
+
+  <!-- Golden Pouch (Simon Willison Signature LLM Benchmark Trait) -->
+  <!-- Upper beak -->
+  <path d="M335 82 L425 90 C420 96, 395 100, 350 96 Z" fill="#f59e0b" stroke="#d97706" stroke-width="2"/>
+  <!-- Expansive glowing pouch holding code container -->
+  <path d="M340 96 C365 145, 410 150, 425 90 C395 115, 360 115, 340 96 Z" fill="url(#c-pouch)" stroke="#b45309" stroke-width="2" filter="url(#glow)" opacity="0.95"/>
+  <!-- Code packet glowing inside the throat pouch -->
+  <rect x="365" y="104" width="36" height="22" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+  <text x="372" y="119" fill="#38bdf8" font-size="10" font-family="monospace" font-weight="bold">&lt;/&gt;</text>
+
+  <!-- Pelican Legs to pedals -->
+  <path d="M225 180 L235 242 M240 180 L235 268" stroke="#d97706" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Benchmark Tag Badge -->
+  <rect x="20" y="20" width="155" height="28" rx="14" fill="rgba(15,23,42,0.85)" stroke="#38bdf8" stroke-width="1"/>
+  <circle cx="34" cy="34" r="5" fill="#10b981"/>
+  <text x="46" y="38" fill="#f8fafc" font-size="12" font-family="sans-serif" font-weight="600">Claude 3.5 Sonnet</text>
+</svg>

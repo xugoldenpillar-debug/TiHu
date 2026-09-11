@@ -1,1 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#294616"/><path d="M15 39c9-3 9-16 18-18 8-2 14 4 14 11 0 11-9 17-19 17-7 0-12-3-13-10Z" fill="#e9f3bf"/><path d="M31 27 51 22 39 32Z" fill="#e7a84e"/><circle cx="34" cy="23" r="2" fill="#294616"/><path d="M23 47c-2 5-5 7-8 8M34 47c2 5 5 7 8 8" stroke="#e7a84e" stroke-width="3" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="fav-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="fav-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#fav-bg)"/>
+  <rect width="60" height="60" x="2" y="2" rx="14" fill="none" stroke="#2dd4bf" stroke-width="1.5" opacity="0.4"/>
+  <!-- Pelican Head & Body Silhouette -->
+  <path d="M16 42 C12 36, 14 26, 24 23 C32 20, 38 24, 39 30 C39 38, 28 45, 16 42 Z" fill="#f8fafc"/>
+  <!-- Swept Cyan Wing -->
+  <path d="M19 32 C22 25, 30 25, 32 34 C28 37, 22 36, 19 32 Z" fill="#0d9488"/>
+  <!-- Beak & Golden Pouch -->
+  <path d="M36 26 L52 28 C48 34, 40 36, 37 32 Z" fill="url(#fav-gold)"/>
+  <path d="M37 32 C41 42, 48 43, 52 28 C46 36, 40 37, 37 32 Z" fill="#f59e0b" opacity="0.9"/>
+  <!-- Cyan Cyber Eye -->
+  <circle cx="33" cy="27" r="2.5" fill="#2dd4bf"/>
+</svg>

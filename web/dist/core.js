@@ -1,6 +1,8 @@
 import { validResponse, record, } from "./types.js";
 import { burstParticles, celebrate, } from "./particles.js";
 export { burstParticles, celebrate };
+import { renderVendorBadge, detectVendor, vendorSvgs, iconMedal, iconAgent, iconToken, iconSandbox, } from "./icons.js";
+export { renderVendorBadge, detectVendor, vendorSvgs, iconMedal, iconAgent, iconToken, iconSandbox };
 export const state = {
     user: null,
     csrf: null,

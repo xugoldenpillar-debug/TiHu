@@ -12,6 +12,16 @@ import {
   type ParticleOptions,
 } from "./particles.js";
 export { burstParticles, celebrate, type ParticleOptions };
+import {
+  renderVendorBadge,
+  detectVendor,
+  vendorSvgs,
+  iconMedal,
+  iconAgent,
+  iconToken,
+  iconSandbox,
+} from "./icons.js";
+export { renderVendorBadge, detectVendor, vendorSvgs, iconMedal, iconAgent, iconToken, iconSandbox };
 export type Obj = Record<string, unknown>;
 export interface Page {
   html: string;

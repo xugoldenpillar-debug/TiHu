@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="gpt-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#091e17"/>
+      <stop offset="100%" stop-color="#113224"/>
+    </linearGradient>
+    <linearGradient id="gpt-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="gpt-frame" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="50%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="500" height="360" rx="16" fill="url(#gpt-bg)"/>
+
+  <!-- Matrix subtle rain grid -->
+  <g opacity="0.1" stroke="#34d399" stroke-width="1" stroke-dasharray="4 8">
+    <line x1="50" y1="0" x2="50" y2="360"/>
+    <line x1="150" y1="0" x2="150" y2="360"/>
+    <line x1="250" y1="0" x2="250" y2="360"/>
+    <line x1="350" y1="0" x2="350" y2="360"/>
+    <line x1="450" y1="0" x2="450" y2="360"/>
+  </g>
+
+  <!-- Wheels with emerald rims -->
+  <circle cx="140" cy="250" r="56" fill="#061b13" stroke="#10b981" stroke-width="5"/>
+  <circle cx="140" cy="250" r="12" fill="#047857" stroke="#34d399" stroke-width="2"/>
+  <path d="M140 194 L140 306 M84 250 L196 250 M100 210 L180 290 M100 290 L180 210" stroke="#059669" stroke-width="1.5" opacity="0.7"/>
+
+  <circle cx="350" cy="250" r="56" fill="#061b13" stroke="#10b981" stroke-width="5"/>
+  <circle cx="350" cy="250" r="12" fill="#047857" stroke="#34d399" stroke-width="2"/>
+  <path d="M350 194 L350 306 M294 250 L406 250 M310 210 L390 290 M310 290 L390 210" stroke="#059669" stroke-width="1.5" opacity="0.7"/>
+
+  <!-- Frame -->
+  <g stroke="url(#gpt-frame)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M225 250 L140 250 L210 160 L315 150 L225 250"/>
+    <path d="M210 160 L225 250"/>
+    <path d="M315 150 L350 250"/>
+    <path d="M315 150 L320 120 L345 125"/>
+  </g>
+  <path d="M190 158 C200 155, 225 155, 235 160 Z" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+
+  <!-- Pedals -->
+  <circle cx="225" cy="250" r="14" fill="#064e3b" stroke="#fbbf24" stroke-width="2"/>
+  <line x1="225" y1="235" x2="225" y2="265" stroke="#fbbf24" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Pelican (Stylized GPT-4o Vector Master) -->
+  <path d="M190 180 C180 150, 195 120, 230 115 C260 110, 280 140, 265 180 C245 200, 205 195, 190 180 Z" fill="#f0fdf4" stroke="#a7f3d0" stroke-width="2"/>
+  <!-- Wing -->
+  <path d="M215 135 C190 120, 185 80, 235 85 C270 90, 275 135, 245 155 Z" fill="#bbf7d0" stroke="#10b981" stroke-width="2"/>
+
+  <!-- Head and Beak -->
+  <path d="M255 120 C270 100, 285 75, 310 70 C330 65, 340 80, 325 100 C305 125, 280 135, 255 120 Z" fill="#f0fdf4"/>
+  <circle cx="320" cy="78" r="4.5" fill="#064e3b"/>
+  <circle cx="321.5" cy="76.5" r="1.5" fill="#ffffff"/>
+
+  <!-- Giant Pelican Beak & Pouch -->
+  <path d="M325 76 L420 86 C405 94, 380 96, 335 90 Z" fill="#f59e0b" stroke="#d97706" stroke-width="2"/>
+  <path d="M335 90 C360 140, 400 145, 420 86 C385 110, 355 110, 335 90 Z" fill="url(#gpt-gold)" stroke="#b45309" stroke-width="2"/>
+
+  <!-- Floating Artifacts (HTML/CSS tags escaping the pouch) -->
+  <g fill="#34d399" font-family="monospace" font-size="11" font-weight="bold" opacity="0.9">
+    <text x="375" y="115">&lt;div&gt;</text>
+    <text x="400" y="138">{ }</text>
+    <text x="350" y="145">#pi</text>
+  </g>
+
+  <!-- Legs -->
+  <path d="M215 180 L225 235 M235 180 L225 265" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Benchmark Badge -->
+  <rect x="20" y="20" width="105" height="28" rx="14" fill="rgba(6,78,59,0.9)" stroke="#34d399" stroke-width="1"/>
+  <circle cx="34" cy="34" r="5" fill="#10b981"/>
+  <text x="46" y="38" fill="#f0fdf4" font-size="12" font-family="sans-serif" font-weight="600">GPT-4o</text>
+</svg>

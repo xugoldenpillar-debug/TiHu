@@ -1,27 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" role="img" aria-labelledby="title desc">
-  <title id="title">鹈鹕骑自行车</title><desc id="desc">一只戴着绿色头盔的鹈鹕骑着深绿色自行车</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" width="100%" height="100%">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eef5d2"/><stop offset="1" stop-color="#dbe9af"/></linearGradient>
-    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.6" fill="#91a96f" opacity=".2"/></pattern>
+    <linearGradient id="cp-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="cp-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+    <linearGradient id="cp-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
   </defs>
-  <rect width="720" height="420" fill="url(#bg)"/>
-  <rect width="720" height="420" fill="url(#dots)"/>
-  <circle cx="590" cy="92" r="61" fill="#d7e889" opacity=".82"/><path d="m590 14 8 23 24 1-19 14 7 23-20-14-20 14 7-23-19-14 24-1Z" fill="#8ba25d" opacity=".75"/>
-  <g fill="none" stroke="#41632f" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="220" cy="310" r="78" stroke-width="10"/><circle cx="510" cy="310" r="78" stroke-width="10"/>
-    <path d="m220 310 112-118 82 118H220l72-118h111l107 118" stroke-width="11"/>
-    <path d="m332 192 21-35m-54 34h84" stroke-width="10"/>
-    <circle cx="374" cy="310" r="17" stroke-width="7"/><path d="m374 310 47 31m-47-31-37-36" stroke-width="7"/>
+  <rect width="720" height="420" fill="url(#cp-bg)"/>
+  <g opacity="0.08" stroke="#38bdf8" stroke-width="1">
+    <line x1="0" y1="140" x2="720" y2="140"/>
+    <line x1="0" y1="280" x2="720" y2="280"/>
+    <line x1="180" y1="0" x2="180" y2="420"/>
+    <line x1="360" y1="0" x2="360" y2="420"/>
+    <line x1="540" y1="0" x2="540" y2="420"/>
   </g>
-  <g stroke-linejoin="round">
-    <path d="M366 221c-76-24-105-62-83-97 18-29 63-18 94 15 15-70 36-113 78-116 54-4 81 50 55 89-20 29-55 36-87 24-8 31-5 68 13 105-18 17-46 18-70-20Z" fill="#fbfcf2" stroke="#738965" stroke-width="6"/>
-    <path d="M417 65c10-39 42-59 75-42 18 9 30 30 27 51-27-18-65-22-102-9Z" fill="#58745a" stroke="#415b45" stroke-width="5"/>
-    <path d="m511 83 154 16-136 48c-37 13-54-37-18-64Z" fill="#e7a654" stroke="#4a5f3c" stroke-width="6"/>
-    <circle cx="490" cy="72" r="7" fill="#314c2d"/>
-    <path d="m364 219-38 55m101-38 38 62" fill="none" stroke="#d39044" stroke-width="12" stroke-linecap="round"/>
-    <path d="m315 276 35 7m104 18 38 3" fill="none" stroke="#314c2d" stroke-width="9" stroke-linecap="round"/>
-    <path d="M292 150c-12 35-3 64 31 87" fill="none" stroke="#9caf7e" stroke-width="5" stroke-linecap="round"/>
+  <!-- Cyber Pelican on Bike -->
+  <circle cx="220" cy="310" r="78" fill="none" stroke="#1e293b" stroke-width="8"/>
+  <circle cx="220" cy="310" r="72" fill="none" stroke="url(#cp-cyan)" stroke-width="2.5"/>
+  <circle cx="510" cy="310" r="78" fill="none" stroke="#1e293b" stroke-width="8"/>
+  <circle cx="510" cy="310" r="72" fill="none" stroke="url(#cp-cyan)" stroke-width="2.5"/>
+  <g fill="none" stroke="url(#cp-cyan)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m220 310 112-118 82 118H220l72-118h111l107 118"/>
+    <path d="m332 192 21-35m-54 34h84"/>
   </g>
-  <path d="M84 330h72M71 354h105M544 371h90" stroke="#88a26d" stroke-width="4" stroke-linecap="round" opacity=".65"/>
-  <text x="38" y="47" font-family="ui-monospace,monospace" font-size="14" font-weight="700" letter-spacing="3" fill="#607b4a">VISUAL REASONING</text>
+  <path d="m368 220c-15-70-10-126 26-162 47-46 103-16 108 28 5 51-44 74-88 60-18 38-14 76-6 108" fill="#f8fafc" stroke="#cbd5e1" stroke-width="4"/>
+  <!-- Beak & Pouch -->
+  <path d="m428 85 155-18-107 51c-35 16-63-5-48-33Z" fill="url(#cp-gold)"/>
+  <path d="M448 105 C480 170, 540 175, 565 88 C525 130, 480 130, 448 105 Z" fill="#f59e0b" opacity="0.9"/>
+  <!-- Cyber Eye -->
+  <circle cx="438" cy="72" r="4.5" fill="#2dd4bf"/>
+  <text x="30" y="50" fill="#f8fafc" font-size="20" font-family="sans-serif" font-weight="700">Pelican on a Bicycle</text>
+  <text x="30" y="76" fill="#0d9488" font-size="14" font-family="monospace">LLM_BENCHMARK_STANDARD</text>
 </svg>

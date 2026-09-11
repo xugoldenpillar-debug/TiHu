@@ -1,49 +1,59 @@
 /**
- * TiHu · 智汇沙箱与自然书卷现代设计系统 (Modern Nordic & Silicon Design System)
+ * TiHu · 极客沙箱与深海金羽现代设计系统 (Studio Cyber-Pelican Design System)
  * 
  * 核心美学：
- * - 翡翠冷杉与极客曜石配色体系 (Emerald & Obsidian)
- * - 纯净现代微漫反射表面 (Reflective Clean Surfaces & Subtle Double-borders)
- * - 苹果与 Linear 级物理阻尼弹簧微动效 (Spring Cubic Easing)
- * - 零 CSP 冲突的标准静态样式体系
+ * - 极客曜石黑 (Obsidian Slate #0B0F19) 与 极光通透白阶画布 (Studio Canvas #F8FAFC)
+ * - 鹈鹕暖金 (Pelican Honey #F59E0B / #D97706) 喉囊、金牌与灵动光效点缀
+ * - 灵动海湾碧蓝 (Lagoon Cyan #0D9488 / #10B981) 沙箱就绪、执行态与主触点
+ * - 磨砂玻璃 (Frosted Glass rgba(255,255,255,0.85) + blur(12px)) 与微漫双层边框
+ * - 清晰通透的高对比排版 (Geist / Inter / SF Pro + #475569 次级文本，满足 WCAG AA)
  */
 
 :root {
-  /* 基础色彩：纯净晨曦纸韵与曜石文字 */
-  --bg: #f8faf9;
-  --bg-subtle: #f1f5f3;
+  /* 基础色彩：极光通透底色与曜石文字 (Studio Canvas & Obsidian Slate) */
+  --bg: #f8fafc;
+  --bg-subtle: #f1f5f9;
   --paper: #ffffff;
   --surface-raised: #ffffff;
   --surface-glass: rgba(255, 255, 255, 0.85);
   
-  --ink: #0f172a;
-  --ink-heading: #022c22;
+  --ink: #0b0f19;
+  --ink-heading: #0b0f19;
   --muted: #475569;
-  --muted-light: #94a3b8;
+  --muted-light: #64748b;
   
   --line: #e2e8f0;
   --line-strong: #cbd5e1;
   --line-subtle: #f1f5f9;
 
-  /* 核心强调色：高定自然冷杉翡翠 (Emerald) */
-  --green: #059669;
-  --green2: #047857;
-  --green-dark: #064e3b;
-  --green-light: #10b981;
-  --green-soft: #ecfdf5;
-  --green-dim: rgba(5, 150, 105, 0.08);
-  --green-dimmer: rgba(5, 150, 105, 0.04);
-  --green-border: rgba(5, 150, 105, 0.2);
-  --green-glow: rgba(5, 150, 105, 0.25);
-  --lime: #d1fae5;
+  /* 核心强调色：灵动海湾碧蓝 (Lagoon Cyan) */
+  --green: #0d9488;
+  --green2: #0f766e;
+  --green-dark: #115e59;
+  --green-light: #14b8a6;
+  --green-soft: #f0fdfa;
+  --green-dim: rgba(13, 148, 136, 0.08);
+  --green-dimmer: rgba(13, 148, 136, 0.04);
+  --green-border: rgba(13, 148, 136, 0.22);
+  --green-glow: rgba(13, 148, 136, 0.28);
+  --lime: #ccfbf1;
 
-  /* 暖琥珀与金牌点缀 (Amber & Gold) */
-  --accent-amber: #d97706;
-  --orange: var(--accent-amber);
+  /* 鹈鹕暖金 (Pelican Honey & Gold) */
+  --accent-amber: #f59e0b;
+  --orange: #f59e0b;
+  --amber-dark: #d97706;
   --amber-soft: #fffbeb;
   --amber-line: #fde68a;
   --amber-ink: #b45309;
-  --gold-glow: rgba(217, 119, 6, 0.28);
+  --gold-glow: rgba(245, 158, 11, 0.3);
+
+  /* 曜石深夜强调 (Obsidian Slate & Cyber accents) */
+  --obsidian: #0b0f19;
+  --obsidian-surface: #111827;
+  --obsidian-card: #182234;
+  --cyber-blue: #0284c7;
+  --cyber-blue-soft: #f0f9ff;
+  --cyber-blue-border: rgba(56, 189, 248, 0.28);
 
   /* 警示与危险 (Rose Red) */
   --red: #e11d48;
@@ -51,15 +61,16 @@
   --red-border: #fecdd3;
   --red-ink: #be123c;
 
-  /* 物理软阴影与双层微漫反射 */
-  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
-  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
-  --shadow-md: 0 4px 14px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.03);
-  --shadow-lg: 0 12px 28px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
-  --shadow-xl: 0 20px 40px -8px rgba(15, 23, 42, 0.1), 0 8px 16px -4px rgba(15, 23, 42, 0.04);
-  --shadow-soft: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+  /* 物理软阴影与微漫反射 */
+  --shadow-xs: 0 1px 2px 0 rgba(11, 15, 25, 0.03);
+  --shadow-sm: 0 1px 3px 0 rgba(11, 15, 25, 0.04), 0 1px 2px -1px rgba(11, 15, 25, 0.03);
+  --shadow-md: 0 4px 14px -2px rgba(11, 15, 25, 0.06), 0 2px 6px -2px rgba(11, 15, 25, 0.03);
+  --shadow-lg: 0 12px 28px -4px rgba(11, 15, 25, 0.08), 0 4px 12px -2px rgba(11, 15, 25, 0.03);
+  --shadow-xl: 0 20px 40px -8px rgba(11, 15, 25, 0.1), 0 8px 16px -4px rgba(11, 15, 25, 0.04);
+  --shadow-soft: 0 4px 20px -2px rgba(11, 15, 25, 0.05), 0 1px 3px 0 rgba(11, 15, 25, 0.03);
   --shadow: var(--shadow-soft);
-  --shadow-emerald: 0 12px 32px -4px rgba(5, 150, 105, 0.14), 0 4px 12px -2px rgba(5, 150, 105, 0.06);
+  --shadow-emerald: 0 12px 32px -4px rgba(13, 148, 136, 0.16), 0 4px 12px -2px rgba(13, 148, 136, 0.08);
+  --shadow-gold: 0 12px 32px -4px rgba(245, 158, 11, 0.18), 0 4px 12px -2px rgba(245, 158, 11, 0.08);
 
   /* 圆角规范 */
   --radius-xs: 6px;
@@ -77,15 +88,14 @@
   --duration-slow: 0.4s;
 }
 
-/* 全局抗锯齿与排版 */
+/* 全局抗锯齿与现代字体排版体系 */
 html {
   background-color: var(--bg);
   color: var(--ink);
   accent-color: var(--green);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Geist", "Inter", "SF Pro Text", "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", system-ui, sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
@@ -2143,17 +2153,32 @@ select:focus {
   .sidebar.open {
     transform: translateX(0);
   }
-  [data-global="close-menu"] {
+  .sidebar [data-global="close-menu"] {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
+    border-radius: 8px;
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
     color: var(--muted);
-    background: var(--bg);
+    background: var(--bg-subtle, #f8fafc);
     border: 1px solid var(--line);
     padding: 0;
+  }
+  .sidebar [data-global="close-menu"]:hover {
+    background: var(--line-subtle);
+    color: var(--ink);
+  }
+  .nav-backdrop {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    border: none;
+    z-index: 90;
   }
   .body {
     margin-left: 0;
@@ -2346,5 +2371,646 @@ select:focus {
   justify-content: space-between;
   margin-top: 24px;
   animation: toastIn 0.24s var(--ease-spring) both;
+}
+
+/* ==========================================================================
+   AI 厂商官方徽标体系 (Official AI Vendor Badges & Tokens)
+   ========================================================================== */
+
+.vendor-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  transition: all 0.2s var(--ease-spring);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.vendor-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.vendor-badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.vendor-badge-icon svg,
+.vendor-badge-icon img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+/* 厂商个性化色彩 */
+.vendor-badge.openai,
+.vendor-openai {
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.2);
+  background: #f8fafc;
+}
+
+.vendor-badge.anthropic,
+.vendor-badge.claude,
+.vendor-anthropic {
+  color: #b45309;
+  border-color: rgba(217, 119, 6, 0.3);
+  background: #fffbeb;
+}
+
+.vendor-badge.deepseek,
+.vendor-deepseek {
+  color: #1d4ed8;
+  border-color: rgba(29, 78, 216, 0.3);
+  background: #eff6ff;
+}
+
+.vendor-badge.gemini,
+.vendor-badge.google,
+.vendor-gemini {
+  color: #7c3aed;
+  border-color: rgba(124, 58, 237, 0.3);
+  background: #f5f3ff;
+}
+
+.vendor-badge.mistral,
+.vendor-mistral {
+  color: #ea580c;
+  border-color: rgba(234, 88, 12, 0.3);
+  background: #fff7ed;
+}
+
+.vendor-badge.meta,
+.vendor-badge.llama,
+.vendor-meta {
+  color: #0284c7;
+  border-color: rgba(2, 132, 199, 0.3);
+  background: #f0f9ff;
+}
+
+.vendor-badge.groq,
+.vendor-groq {
+  color: #e11d48;
+  border-color: rgba(225, 29, 72, 0.3);
+  background: #fff1f2;
+}
+
+.vendor-badge.ollama,
+.vendor-ollama {
+  color: #334155;
+  border-color: rgba(51, 65, 85, 0.3);
+  background: #f8fafc;
+}
+
+/* ==========================================================================
+   Bento Hero 多模型交互展台 (Multi-Model Pelican Benchmark Showcase)
+   ========================================================================== */
+
+.hero-showcase-box {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  border-radius: 20px;
+  background: rgba(11, 15, 25, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(45, 212, 191, 0.25);
+  box-shadow: 0 20px 50px -10px rgba(11, 15, 25, 0.4), 0 0 30px -5px rgba(13, 148, 136, 0.25);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部模型切换 Tab */
+.hero-showcase-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: rgba(15, 23, 42, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.hero-showcase-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.hero-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: 11.5px;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.hero-tab-btn:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.hero-tab-btn.active {
+  background: rgba(13, 148, 136, 0.2);
+  color: #2dd4bf;
+  border-color: rgba(45, 212, 191, 0.4);
+  box-shadow: 0 0 12px rgba(45, 212, 191, 0.2);
+}
+
+.hero-tab-icon {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+}
+
+.hero-tab-icon svg,
+.hero-tab-icon img {
+  width: 14px;
+  height: 14px;
+}
+
+/* 中间艺术展示视窗 */
+.hero-showcase-screen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0b0f19;
+  overflow: hidden;
+}
+
+.hero-screen-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: heroFadeIn 0.35s var(--ease-spring);
+}
+
+@keyframes heroFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 底部 Benchmark 说明条 */
+.hero-showcase-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(15, 23, 42, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+.hero-footer-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.hero-footer-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2dd4bf;
+}
+
+.hero-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse 1.8s infinite;
+}
+
+/* ==========================================================================
+   立体领奖台立体奖牌系统 (3D Metallic Podium Medals)
+   ========================================================================== */
+
+.board-card-medal {
+  position: absolute !important;
+  top: 12px !important;
+  left: 12px !important;
+  z-index: 10 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 11px !important;
+  border-radius: var(--radius-full) !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+  letter-spacing: 0.02em !important;
+  transition: transform 0.25s var(--ease-spring), box-shadow 0.25s var(--ease-spring) !important;
+}
+
+.board-card-medal:hover {
+  transform: scale(1.06) translateY(-1px) !important;
+}
+
+/* 金牌 */
+.board-card-medal.rank-1 {
+  background: linear-gradient(135deg, #fef08a 0%, #f59e0b 50%, #b45309 100%) !important;
+  color: #451a03 !important;
+  border: 1.5px solid #fef3c7 !important;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 银牌 */
+.board-card-medal.rank-2 {
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #64748b 100%) !important;
+  color: #0f172a !important;
+  border: 1.5px solid #f8fafc !important;
+  box-shadow: 0 4px 14px rgba(100, 116, 139, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 铜牌 */
+.board-card-medal.rank-3 {
+  background: linear-gradient(135deg, #fed7aa 0%, #ea580c 50%, #7c2d12 100%) !important;
+  color: #fff7ed !important;
+  border: 1.5px solid #ffedd5 !important;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+}
+
+/* 其它排名 */
+.board-card-medal.rank-other {
+  background: rgba(15, 23, 42, 0.8) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* ==========================================================================
+   沙箱实时运行控制台 HUD (Modern Sandbox HUD & Log Stream)
+   ========================================================================== */
+
+.sandbox-hud {
+  border-radius: 16px;
+  background: #0b0f19;
+  border: 1px solid #1e293b;
+  box-shadow: 0 12px 36px -4px rgba(11, 15, 25, 0.3);
+  overflow: hidden;
+  color: #f8fafc;
+}
+
+.sandbox-hud-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #111827;
+  border-bottom: 1px solid #1f2937;
+  font-size: 12px;
+}
+
+.sandbox-hud-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(13, 148, 136, 0.15);
+  color: #2dd4bf;
+  border: 1px solid rgba(45, 212, 191, 0.3);
+}
+
+.sandbox-hud-logs {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.65;
+  padding: 16px;
+  max-height: 380px;
+  overflow-y: auto;
+  color: #cbd5e1;
+}
+
+.sandbox-hud-line {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.sandbox-hud-time {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.sandbox-hud-text {
+  color: #f1f5f9;
+  word-break: break-word;
+}
+
+.sandbox-hud-text.success {
+  color: #34d399;
+}
+
+.sandbox-hud-text.warn {
+  color: #fbbf24;
+}
+
+.sandbox-hud-text.error {
+  color: #f87171;
+}
+
+/* ==========================================================================
+   双人作品交互式并排对比 (Split Comparison Slider)
+   ========================================================================== */
+
+.compare-slider-box {
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+  background: #0f172a;
+}
+
+.compare-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+
+.compare-model-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+
+/* ==========================================================================
+   资源库卡片与模型连接管理 (Library Cards & Connection UI)
+   ========================================================================== */
+
+.library-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.library-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--line-strong);
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.card-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-icon-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-icon-title .card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.card-badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  flex-shrink: 0;
+}
+
+.card-badge-icon svg,
+.card-icon-title svg {
+  width: 18px;
+  height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  display: block;
+}
+
+.card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.connection-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--line-subtle);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.connection-key-badge,
+.connection-url-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.connection-key-badge svg,
+.connection-url-line svg {
+  width: 14px;
+  height: 14px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.key-mask {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.key-status-label {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: rgba(13, 148, 136, 0.1);
+  color: var(--pelican-lagoon);
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.connection-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   题目详情 Hero 展台与规格卡片 (Challenge Detail Hero)
+   ========================================================================== */
+
+.challenge-hero-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.challenge-hero-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--pelican-gold), var(--pelican-lagoon));
+}
+
+.challenge-hero-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.challenge-hero-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.challenge-hero-title {
+  margin: 0;
+  font-size: clamp(24px, 2.5vw, 32px);
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.challenge-hero-desc {
+  margin: 0;
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 680px;
+}
+
+.challenge-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.challenge-hero-art {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: radial-gradient(circle at center, rgba(13, 148, 136, 0.08) 0%, transparent 70%);
+  border-radius: 16px;
+}
+
+.challenge-hero-img {
+  max-width: 200px;
+  max-height: 160px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(11, 15, 25, 0.08));
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.challenge-hero-card:hover .challenge-hero-img {
+  transform: scale(1.04) rotate(-1deg);
+}
+
+.rubric-box {
+  margin: 16px 0;
+  padding: 16px 20px;
+  background: var(--bg-subtle);
+  border-left: 3px solid var(--pelican-gold);
+  border-radius: 8px;
+}
+
+.rubric-box h3 {
+  margin: 0 0 10px 0;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+@media (max-width: 800px) {
+  .challenge-hero-card {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    padding: 24px;
+  }
+  .challenge-hero-art {
+    justify-content: center;
+  }
 }
 

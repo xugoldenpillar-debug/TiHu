@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="100%" height="100%">
+  <!-- Cyber Monocle Search Empty State -->
+  <circle cx="110" cy="85" r="42" fill="none" stroke="#0d9488" stroke-width="4" stroke-dasharray="6 4"/>
+  <circle cx="110" cy="85" r="32" fill="rgba(13,148,136,0.06)" stroke="#cbd5e1" stroke-width="1.5"/>
+  <line x1="138" y1="113" x2="175" y2="150" stroke="#0d9488" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Scanning Pelican Eye -->
+  <circle cx="110" cy="85" r="14" fill="#0b0f19"/>
+  <circle cx="110" cy="85" r="6" fill="#f59e0b"/>
+  <circle cx="112" cy="83" r="2" fill="#ffffff"/>
+
+  <!-- Radar wave -->
+  <path d="M90 65 A30 30 0 0 1 130 65" fill="none" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+  <text x="75" y="170" fill="#64748b" font-size="12" font-family="sans-serif" font-weight="500">未找到匹配的内容</text>
+</svg>

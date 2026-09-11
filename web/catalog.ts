@@ -19,6 +19,9 @@ import {
   clearFormError,
   showDialog,
   closeDialog,
+  renderVendorBadge,
+  detectVendor,
+  vendorSvgs,
   type Page,
   type PageResult,
 } from "./core.js";
@@ -170,8 +173,8 @@ function workCard(item: RunSummary, mine = false): string {
         <a href="#/run/${esc(item.id)}" title="${esc(title)}">${esc(title)}</a>
       </h3>
       <div class="work-model-pill">
-        <span class="model-icon">${icons.cpu}</span>
-        <span class="model-text" title="${esc(item.model)}">${esc(item.model)}</span>
+        ${renderVendorBadge(item.model)}
+        <span class="model-text mono" title="${esc(item.model)}">${esc(item.model)}</span>
       </div>
       <div class="work-footer-meta row between">
         <div class="work-author">
@@ -374,6 +377,100 @@ function bindComparison(root: HTMLElement): () => void {
   return () => controller.abort();
 }
 
+const showcaseModels = [
+  {
+    id: "flagship",
+    name: "TiHu 极客鹈鹕",
+    vendor: "openai",
+    src: "/art/pelican/pelican-hero.svg",
+    tag: "Studio Cyber-Pelican · 旗舰级纳藏万物代码",
+    tech: "gVisor 毫秒安全沙箱",
+  },
+  {
+    id: "claude",
+    name: "Claude 3.5 Sonnet",
+    vendor: "anthropic",
+    src: "/art/pelican/pelican-claude-3-5-sonnet.svg",
+    tag: "Simon Willison 经典 Benchmark: Pelican on a Bicycle",
+    tech: "Anthropic 官方直连",
+  },
+  {
+    id: "gpt4o",
+    name: "GPT-4o",
+    vendor: "openai",
+    src: "/art/pelican/pelican-gpt-4o.svg",
+    tag: "代码即画布: 纯 SVG 代码生成的矢量骑行者",
+    tech: "OpenAI 官方直连",
+  },
+  {
+    id: "o1",
+    name: "OpenAI o1",
+    vendor: "openai",
+    src: "/art/pelican/pelican-o1.svg",
+    tag: "高维空间思维树 · 极简几何空气动力学",
+    tech: "深度推理架构",
+  },
+  {
+    id: "gemini",
+    name: "Gemini 1.5 Pro",
+    vendor: "gemini",
+    src: "/art/pelican/pelican-gemini-pro.svg",
+    tag: "灵动霓虹海湾 · 超长上下文跨域呈现",
+    tech: "Google 原生多模态",
+  },
+];
+
+function initHeroShowcase(root: HTMLElement): () => void {
+  const tabs = root.querySelectorAll<HTMLButtonElement>("[data-hero-model]");
+  const img = root.querySelector<HTMLImageElement>("#hero-pelican-stage");
+  const tagEl = root.querySelector<HTMLElement>("#hero-pelican-tag");
+  const techEl = root.querySelector<HTMLElement>("#hero-pelican-tech");
+  if (!tabs.length || !img) return () => {};
+
+  let currentIndex = 0;
+  let timer: number | null = null;
+  let isHovered = false;
+
+  const selectModel = (index: number) => {
+    currentIndex = index;
+    const model = showcaseModels[index];
+    if (!model) return;
+    tabs.forEach((tab, i) => {
+      tab.classList.toggle("active", i === index);
+      tab.setAttribute("aria-pressed", String(i === index));
+    });
+    img.src = model.src;
+    img.alt = model.name;
+    img.classList.remove("hero-screen-img");
+    void img.offsetWidth;
+    img.classList.add("hero-screen-img");
+    if (tagEl) tagEl.innerHTML = `${icons.sparkles} <span>${esc(model.tag)}</span>`;
+    if (techEl) techEl.innerHTML = `<span class="hero-pulse-dot"></span> <span>${esc(model.tech)}</span>`;
+  };
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => {
+      selectModel(index);
+    });
+  });
+
+  const box = root.querySelector(".hero-showcase-box");
+  if (box) {
+    box.addEventListener("mouseenter", () => { isHovered = true; });
+    box.addEventListener("mouseleave", () => { isHovered = false; });
+  }
+
+  timer = window.setInterval(() => {
+    if (isHovered) return;
+    currentIndex = (currentIndex + 1) % showcaseModels.length;
+    selectModel(currentIndex);
+  }, 4500);
+
+  return () => {
+    clearInterval(timer);
+  };
+}
+
 export async function explorePage(): Promise<Page> {
   const q = query();
   const currentCat = q.get("category") ?? "";
@@ -393,10 +490,10 @@ export async function explorePage(): Promise<Page> {
       <div class="bento-hero-main">
         <div class="bento-hero-eyebrow">
           <span class="eyebrow-dot"></span>
-          <span>TIHU · 现代大语言模型前沿大赏</span>
+          <span>TIHU · 极客沙箱与大语言模型大赏</span>
         </div>
-        <h1 class="bento-hero-title" tabindex="-1">同一道题目，<br><span class="highlight-text">让模型各显其能。</span></h1>
-        <p class="bento-hero-desc">接上你喜爱的模型，在标准沙箱中完成一次真实构建。先私下安全预览，再把令人惊叹的成果带给社区评赏。</p>
+        <h1 class="bento-hero-title" tabindex="-1">同一道题目，<br><span class="highlight-text">让各家模型各显神通。</span></h1>
+        <p class="bento-hero-desc">BYOK 自由连接模型生态。在 gVisor 独立沙箱中安全运行，私下毫秒级预览，再将令人惊叹的代码生成成果带给社区评赏。</p>
         <div class="bento-hero-actions">
           <a class="btn primary btn-hero-primary" href="#/studio">
             <span>开始一次实验</span>
@@ -404,21 +501,36 @@ export async function explorePage(): Promise<Page> {
           </a>
           <a class="btn light btn-hero-secondary" href="#/gallery">
             ${icons.gallery}
-            <span>浏览社区作品</span>
+            <span>浏览社区大赏</span>
           </a>
         </div>
       </div>
       <div class="bento-hero-visual">
-        <div class="hero-visual-glow" aria-hidden="true"></div>
-        <div class="hero-visual-frame">
-          <img src="/art/pelican.svg" alt="TiHu 的鹈鹕骑着自行车驶入模型实验场" width="700" height="480" class="hero-pelican-img">
-          <div class="hero-visual-badge hero-badge-top">
-            <span class="badge-dot-pulse"></span>
-            <span>独立安全沙箱 · 毫秒级构建</span>
+        <div class="hero-showcase-box" aria-label="Simon Willison 鹈鹕代码 Benchmark 互动展台">
+          <div class="hero-showcase-tabs" role="tablist">
+            ${showcaseModels
+              .map(
+                (m, i) => `
+              <button type="button" class="hero-tab-btn ${i === 0 ? "active" : ""}" data-hero-model="${esc(m.id)}" role="tab" aria-pressed="${i === 0}">
+                <span class="hero-tab-icon">${vendorSvgs[m.vendor] ?? icons.cpu}</span>
+                <span>${esc(m.name)}</span>
+              </button>
+            `,
+              )
+              .join("")}
           </div>
-          <div class="hero-visual-badge hero-badge-bottom">
-            ${icons.sparkles}
-            <span>双盲投票 · 真实社区大赏</span>
+          <div class="hero-showcase-screen">
+            <img id="hero-pelican-stage" class="hero-screen-img" src="${showcaseModels[0].src}" alt="${showcaseModels[0].name}" width="500" height="360">
+          </div>
+          <div class="hero-showcase-footer">
+            <div class="hero-footer-tag" id="hero-pelican-tag">
+              ${icons.sparkles}
+              <span>${esc(showcaseModels[0].tag)}</span>
+            </div>
+            <div class="hero-footer-status" id="hero-pelican-tech">
+              <span class="hero-pulse-dot"></span>
+              <span>${esc(showcaseModels[0].tech)}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -511,7 +623,12 @@ export async function explorePage(): Promise<Page> {
     mount(root) {
       ensureCatalogStyles();
       bindFilter(root, "/explore");
-      return mountFeed(root, url, page, challengeCard);
+      const stopHero = initHeroShowcase(root);
+      const stopFeed = mountFeed(root, url, page, challengeCard);
+      return () => {
+        stopHero();
+        stopFeed();
+      };
     },
   };
 }
@@ -666,14 +783,55 @@ export async function challengePage(id: string): Promise<Page> {
     "/runs?" +
     new URLSearchParams({ challenge: id, version: version.id, limit: "12" });
   const page = await api<PageResult<RunSummary>>(url);
+  const artMap: Record<string, string> = {
+    "Pelican on a bicycle": "/art/challenge-pelican.svg",
+    "Digital Clock in Single-file HTML": "/art/challenge-clock.svg",
+    "Ecosystem in HTML Canvas": "/art/challenge-ecosystem.svg",
+  };
+  const artSrc = artMap[challenge.title] ?? "/art/challenge-pelican.svg";
   return {
-    html:
-      head(
-        copy?.title ?? challenge.title,
-        copy?.description ?? challenge.description,
-        `<a class="btn primary" href="#/studio?challenge=${esc(id)}&version=${esc(version.id)}">挑战这道题</a>${challenge.can_edit ? '<button class="btn outline" id="new-version">发布新版本</button>' : ""}`,
-      ) +
-      `<section class="panel challenge-detail"><div class="row between"><div class="row">${badge(challenge.category)}${badge("v" + version.number, "版本 " + version.number)}</div><form data-filters>${field("task-version", "查看版本", `<select id="task-version" name="version">${challenge.versions.map((item) => `<option value="${esc(item.id)}" ${item.id === version.id ? "selected" : ""}>v${item.number}${item.number === challenge.current_version ? " · 当前版本" : " · 历史版本"}</option>`).join("")}</select>`)}<button class="btn outline small" type="submit">查看版本</button></form></div>${copy ? `<h2>评价时，留意这些细节</h2><ul class="rubric-list">${copy.rubric.map((line) => `<li>${esc(line)}</li>`).join("")}</ul><p class="help">以上为入门说明；实际执行以下冻结的任务原文和评价参考。</p>` : ""}<details class="details" open><summary>本版本任务原文</summary><pre class="code">${esc(version.prompt)}</pre><h3>评价参考原文</h3><p class="break-word">${esc(version.rubric)}</p><p class="help mono">版本指纹 ${esc(version.sha256)}</p></details></section><div class="section-head"><div><h2>这个版本的作品</h2><p>当前查看 v${version.number}，可随时切换历史版本。</p></div><a class="btn outline" href="#/leaderboard?challenge=${esc(id)}&version=${esc(version.id)}">查看同题榜单</a></div><div class="grid" id="feed">${page.items.length ? page.items.map((item) => workCard(item)).join("") : empty("这个版本还没有公开作品", "完成一次实验，先私下预览，再决定是否分享。", `<a class="btn primary" href="#/studio?challenge=${esc(id)}&version=${esc(version.id)}">成为第一位挑战者</a>`)}</div>${pageControls(page)}${compareBar()}${footer()}`,
+    html: `
+      <section class="challenge-hero-card">
+        <div class="challenge-hero-content">
+          <div class="challenge-hero-tags">
+            ${badge(challenge.category)}
+            <span class="badge version-pill">版本 v${version.number}</span>
+            <span class="badge ${version.number === challenge.current_version ? "official" : "custom"}">${version.number === challenge.current_version ? "当前最新" : "历史版本"}</span>
+          </div>
+          <h1 class="challenge-hero-title">${esc(copy?.title ?? challenge.title)}</h1>
+          <p class="challenge-hero-desc">${esc(copy?.description ?? challenge.description)}</p>
+          <div class="challenge-hero-actions">
+            <a class="btn primary btn-glow" href="#/studio?challenge=${esc(id)}&version=${esc(version.id)}">${icons.play} 挑战这道题</a>
+            ${challenge.can_edit ? '<button class="btn outline" id="new-version">发布新版本</button>' : ""}
+            <a class="btn ghost" href="#/explore">返回探索</a>
+          </div>
+        </div>
+        <div class="challenge-hero-art">
+          <img src="${artSrc}" alt="${esc(challenge.title)}" width="200" height="160" class="challenge-hero-img">
+        </div>
+      </section>
+      <section class="panel challenge-detail">
+        <div class="row between align-center">
+          <span class="eyebrow">版本控制与详细规格</span>
+          <form data-filters class="row align-center gap-8">${field("task-version", "查看版本", `<select id="task-version" name="version">${challenge.versions.map((item) => `<option value="${esc(item.id)}" ${item.id === version.id ? "selected" : ""}>v${item.number}${item.number === challenge.current_version ? " · 当前版本" : " · 历史版本"}</option>`).join("")}</select>`)}<button class="btn outline small" type="submit">切换版本</button></form>
+        </div>
+        ${copy ? `<div class="rubric-box"><h3>评价时，留意这些细节</h3><ul class="rubric-list">${copy.rubric.map((line) => `<li>${esc(line)}</li>`).join("")}</ul><p class="help">以上为入门说明；实际执行以下冻结的任务原文和评价参考。</p></div>` : ""}
+        <details class="details-section"><summary>本版本任务原文</summary><pre class="mono code-block"><code>${esc(version.prompt)}</code></pre></details>
+        <details class="details-section"><summary>评价参考原文</summary><pre class="mono code-block"><code>${esc(version.rubric)}</code></pre><p class="muted mono">版本指纹 ${esc(version.sha256)}</p></details>
+      </section>
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>这个版本的作品</h2>
+            <p class="muted">当前查看 v${version.number}，可随时切换历史版本查看更多实机成果。</p>
+          </div>
+          <a class="btn outline small" href="#/leaderboard?challenge=${esc(id)}">查看同题榜单</a>
+        </div>
+        <div class="feed-grid" id="feed">${page.items.length ? page.items.map((item) => workCard(item)).join("") : empty("暂无作品", "成为第一个完成此题的人。", `<a class="btn primary" href="#/studio?challenge=${esc(id)}&version=${esc(version.id)}">挑战这道题</a>`)}</div>
+        ${pageControls(page)}
+      </section>
+      ${footer()}
+    `,
     mount(root) {
       bindFilter(root, "/challenge/" + id);
       const disposeFeed = mountFeed(root, url, page, (item) => workCard(item));
@@ -1143,24 +1301,24 @@ export async function leaderboardPage(): Promise<Page> {
 
   const rankMedal = (index: number) => {
     if (index === 0) {
-      return `<div class="board-card-medal medal-top-1" title="Top 1 冠绝榜首">
+      return `<div class="board-card-medal rank-1" title="Top 1 冠绝榜首">
         <span class="medal-icon">${icons.trophy}</span>
         <span class="medal-label">TOP 1</span>
       </div>`;
     }
     if (index === 1) {
-      return `<div class="board-card-medal medal-top-2" title="Top 2 银榜生辉">
+      return `<div class="board-card-medal rank-2" title="Top 2 银榜生辉">
         <span class="medal-icon">${icons.trophy}</span>
         <span class="medal-label">TOP 2</span>
       </div>`;
     }
     if (index === 2) {
-      return `<div class="board-card-medal medal-top-3" title="Top 3 铜章俊秀">
+      return `<div class="board-card-medal rank-3" title="Top 3 铜章俊秀">
         <span class="medal-icon">${icons.trophy}</span>
         <span class="medal-label">TOP 3</span>
       </div>`;
     }
-    return `<div class="board-card-medal medal-normal">
+    return `<div class="board-card-medal rank-other">
       <span class="medal-label">#${index + 1}</span>
     </div>`;
   };
@@ -1214,8 +1372,8 @@ export async function leaderboardPage(): Promise<Page> {
                   <a href="#/run/${esc(item.id)}" title="${esc(title)}">${esc(title)}</a>
                 </h4>
                 <div class="board-card-model">
-                  <span class="model-icon">${icons.cpu}</span>
-                  <span class="model-name-text">${esc(item.model)}</span>
+                  ${renderVendorBadge(item.model)}
+                  <span class="model-name-text mono">${esc(item.model)}</span>
                 </div>
                 <div class="board-card-meta row between">
                   <div class="board-card-author">

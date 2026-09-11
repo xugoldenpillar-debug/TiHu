@@ -1,32 +1,34 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 480" width="100%" height="100%">
   <defs>
-    <linearGradient id="p-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="hero-bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0b0f19"/>
       <stop offset="60%" stop-color="#111827"/>
       <stop offset="100%" stop-color="#1e293b"/>
     </linearGradient>
-    <linearGradient id="p-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="hero-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#2dd4bf"/>
       <stop offset="100%" stop-color="#0d9488"/>
     </linearGradient>
-    <linearGradient id="p-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="hero-gold" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#fbbf24"/>
       <stop offset="50%" stop-color="#f59e0b"/>
       <stop offset="100%" stop-color="#d97706"/>
     </linearGradient>
-    <linearGradient id="p-pouch" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="hero-pouch" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#fef3c7"/>
       <stop offset="40%" stop-color="#f59e0b"/>
       <stop offset="100%" stop-color="#b45309"/>
     </linearGradient>
-    <filter id="p-glow" x="-20%" y="-20%" width="140%" height="140%">
+    <filter id="hero-glow" x="-20%" y="-20%" width="140%" height="140%">
       <feGaussianBlur stdDeviation="8" result="blur"/>
       <feComposite in="SourceGraphic" in2="blur" operator="over"/>
     </filter>
   </defs>
 
-  <rect width="700" height="480" rx="24" fill="url(#p-bg)"/>
+  <!-- Background -->
+  <rect width="700" height="480" rx="24" fill="url(#hero-bg)"/>
 
+  <!-- Subtle Studio Grid & Horizon -->
   <g opacity="0.08" stroke="#38bdf8" stroke-width="1">
     <line x1="0" y1="120" x2="700" y2="120"/>
     <line x1="0" y1="240" x2="700" y2="240"/>
@@ -37,39 +39,65 @@
     <line x1="560" y1="0" x2="560" y2="480"/>
   </g>
 
-  <!-- Wheels -->
+  <!-- Speed and Data Particles -->
+  <g opacity="0.3" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round">
+    <line x1="40" y1="380" x2="140" y2="380"/>
+    <line x1="80" y1="400" x2="200" y2="400"/>
+    <line x1="20" y1="350" x2="100" y2="350"/>
+  </g>
+
+  <!-- Rear Wheel -->
   <circle cx="210" cy="340" r="82" fill="none" stroke="#1e293b" stroke-width="8"/>
-  <circle cx="210" cy="340" r="76" fill="none" stroke="url(#p-cyan)" stroke-width="3" filter="url(#p-glow)"/>
+  <circle cx="210" cy="340" r="76" fill="none" stroke="url(#hero-cyan)" stroke-width="3" filter="url(#hero-glow)"/>
   <circle cx="210" cy="340" r="14" fill="#0f172a" stroke="#2dd4bf" stroke-width="4"/>
+  <!-- Spokes -->
   <path d="M210 258 L210 422 M128 340 L292 340 M152 282 L268 398 M152 398 L268 282" stroke="#475569" stroke-width="2" opacity="0.5"/>
 
+  <!-- Front Wheel -->
   <circle cx="510" cy="340" r="82" fill="none" stroke="#1e293b" stroke-width="8"/>
-  <circle cx="510" cy="340" r="76" fill="none" stroke="url(#p-cyan)" stroke-width="3" filter="url(#p-glow)"/>
+  <circle cx="510" cy="340" r="76" fill="none" stroke="url(#hero-cyan)" stroke-width="3" filter="url(#hero-glow)"/>
   <circle cx="510" cy="340" r="14" fill="#0f172a" stroke="#2dd4bf" stroke-width="4"/>
+  <!-- Front Spokes -->
   <path d="M510 258 L510 422 M428 340 L592 340 M452 282 L568 398 M452 398 L568 282" stroke="#475569" stroke-width="2" opacity="0.5"/>
 
-  <!-- Bike Frame -->
-  <g stroke="url(#p-cyan)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+  <!-- High-Tech Bike Frame -->
+  <g stroke="url(#hero-cyan)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none">
     <path d="M330 340 L210 340 L310 215 L460 200 L330 340"/>
     <path d="M310 215 L330 340"/>
     <path d="M460 200 L510 340"/>
     <path d="M460 200 L475 160 L505 170" stroke="#f8fafc" stroke-width="6"/>
   </g>
 
-  <!-- Pelican Character -->
-  <path d="M285 240 C265 195, 275 150, 325 145 C370 140, 400 185, 385 240 C355 268, 305 265, 285 240 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3"/>
-  <path d="M315 175 C275 155, 260 100, 335 110 C380 115, 395 175, 355 210 C335 200, 325 190, 315 175 Z" fill="#e2e8f0" stroke="#0ea5e9" stroke-width="3"/>
+  <!-- Saddle -->
+  <path d="M280 210 C295 204, 330 204, 345 212 C330 218, 300 218, 280 210 Z" fill="#0f172a" stroke="#2dd4bf" stroke-width="3"/>
 
-  <!-- Neck & Beak -->
+  <!-- Crankset & Pedals -->
+  <circle cx="330" cy="340" r="22" fill="#0f172a" stroke="#f59e0b" stroke-width="4"/>
+  <line x1="330" y1="318" x2="330" y2="362" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Cyber Pelican Character -->
+  <!-- Body & Feathers -->
+  <path d="M285 240 C265 195, 275 150, 325 145 C370 140, 400 185, 385 240 C355 268, 305 265, 285 240 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3"/>
+  
+  <!-- Swept Titanium Cyber Wing -->
+  <path d="M315 175 C275 155, 260 100, 335 110 C380 115, 395 175, 355 210 C335 200, 325 190, 315 175 Z" fill="#e2e8f0" stroke="#0ea5e9" stroke-width="3"/>
+  <path d="M305 155 L350 140 M315 170 L360 160" stroke="#38bdf8" stroke-width="2"/>
+
+  <!-- Neck -->
   <path d="M370 170 C395 135, 415 100, 450 90 C480 85, 495 105, 475 135 C450 165, 415 190, 370 170 Z" fill="#f8fafc"/>
+
+  <!-- Cyber Sunglasses / HUD Visor -->
   <polygon points="460,98 488,94 485,108 456,110" fill="#0f172a" stroke="#2dd4bf" stroke-width="2"/>
   <line x1="462" y1="104" x2="482" y2="101" stroke="#2dd4bf" stroke-width="2"/>
 
-  <!-- Beak & Pouch -->
-  <path d="M475 102 L605 115 C585 125, 550 130, 490 120 Z" fill="url(#p-gold)" stroke="#b45309" stroke-width="3"/>
-  <path d="M485 122 C520 200, 580 205, 605 115 C560 155, 515 155, 485 122 Z" fill="url(#p-pouch)" stroke="#d97706" stroke-width="3" filter="url(#p-glow)" opacity="0.95"/>
+  <!-- Giant Throat Pouch (纳藏万物代码沙箱) -->
+  <!-- Upper Beak -->
+  <path d="M475 102 L605 115 C585 125, 550 130, 490 120 Z" fill="url(#hero-gold)" stroke="#b45309" stroke-width="3"/>
 
-  <!-- Sandbox Block inside Pouch -->
+  <!-- The Legendary Elastic Deep Pouch -->
+  <path d="M485 122 C520 200, 580 205, 605 115 C560 155, 515 155, 485 122 Z" fill="url(#hero-pouch)" stroke="#d97706" stroke-width="3" filter="url(#hero-glow)" opacity="0.95"/>
+
+  <!-- Floating gVisor Sandbox HUD Block inside the Pouch -->
   <g transform="translate(515, 140)">
     <rect x="0" y="0" width="62" height="38" rx="8" fill="rgba(11,15,25,0.92)" stroke="#2dd4bf" stroke-width="2"/>
     <circle cx="12" cy="10" r="3" fill="#f43f5e"/>
@@ -78,6 +106,21 @@
     <text x="8" y="27" fill="#2dd4bf" font-size="11" font-family="monospace" font-weight="bold">&lt;tihu/&gt;</text>
   </g>
 
-  <!-- Legs -->
+  <!-- Legs & Feet pushing pedals -->
   <path d="M315 240 L330 320 M345 240 L330 358" stroke="#d97706" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Bento Floating Capability Badges -->
+  <g transform="translate(40, 40)">
+    <rect width="180" height="36" rx="18" fill="rgba(15,23,42,0.85)" stroke="rgba(45,212,191,0.5)" stroke-width="1.5"/>
+    <circle cx="22" cy="18" r="5" fill="#10b981">
+      <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="36" y="23" fill="#f8fafc" font-size="13" font-family="sans-serif" font-weight="600">gVisor 毫秒安全沙箱</text>
+  </g>
+
+  <g transform="translate(480, 40)">
+    <rect width="180" height="36" rx="18" fill="rgba(15,23,42,0.85)" stroke="rgba(245,158,11,0.5)" stroke-width="1.5"/>
+    <circle cx="22" cy="18" r="5" fill="#f59e0b"/>
+    <text x="36" y="23" fill="#f8fafc" font-size="13" font-family="sans-serif" font-weight="600">BYOK 官方多模型对决</text>
+  </g>
 </svg>

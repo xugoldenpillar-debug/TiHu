@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="gem-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#311042"/>
+    </linearGradient>
+    <linearGradient id="gem-rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="500" height="360" rx="16" fill="url(#gem-bg)"/>
+
+  <!-- Glowing neon starburst particles -->
+  <g opacity="0.6">
+    <path d="M420 50 L425 60 L435 65 L425 70 L420 80 L415 70 L405 65 L415 60 Z" fill="#ec4899"/>
+    <path d="M80 80 L83 87 L90 90 L83 93 L80 100 L77 93 L70 90 L77 87 Z" fill="#38bdf8"/>
+    <path d="M440 280 L443 287 L450 290 L443 293 L440 300 L437 293 L430 290 L437 287 Z" fill="#a855f7"/>
+  </g>
+
+  <!-- Bicycle Wheels with neon halos -->
+  <circle cx="140" cy="250" r="56" fill="none" stroke="url(#gem-rainbow)" stroke-width="6"/>
+  <circle cx="140" cy="250" r="10" fill="#ffffff"/>
+  <path d="M140 194 L140 306 M84 250 L196 250 M100 210 L180 290" stroke="#c084fc" stroke-width="1.5" opacity="0.6"/>
+
+  <circle cx="350" cy="250" r="56" fill="none" stroke="url(#gem-rainbow)" stroke-width="6"/>
+  <circle cx="350" cy="250" r="10" fill="#ffffff"/>
+  <path d="M350 194 L350 306 M294 250 L406 250 M310 210 L390 290" stroke="#c084fc" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- Futuristic frame -->
+  <g stroke="url(#gem-rainbow)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M225 250 L140 250 L210 160 L315 150 L225 250"/>
+    <path d="M315 150 L350 250"/>
+    <path d="M315 150 L330 120 L355 125"/>
+  </g>
+
+  <!-- Cyber Pelican -->
+  <path d="M190 180 C180 150, 195 120, 230 115 C260 110, 280 140, 265 180 C245 200, 205 195, 190 180 Z" fill="#fdf4ff" stroke="#f0abfc" stroke-width="2"/>
+  <path d="M215 135 C190 120, 185 80, 235 85 C270 90, 275 135, 245 155 Z" fill="#e879f9" opacity="0.5"/>
+
+  <!-- Neck & Visor -->
+  <path d="M255 120 C270 100, 285 75, 310 70 C330 65, 340 80, 325 100 C305 125, 280 135, 255 120 Z" fill="#fdf4ff"/>
+  <!-- Cyber Visor -->
+  <rect x="305" y="72" width="22" height="10" rx="4" fill="#38bdf8"/>
+
+  <!-- Beak & Rainbow Pouch -->
+  <path d="M325 74 L420 84 C405 92, 380 94, 335 88 Z" fill="#fbbf24"/>
+  <path d="M335 88 C360 145, 400 150, 420 84 C385 115, 355 115, 335 88 Z" fill="url(#gem-rainbow)" opacity="0.9"/>
+
+  <!-- Legs -->
+  <path d="M215 180 L225 235 M235 180 L225 265" stroke="#fbbf24" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Benchmark Badge -->
+  <rect x="20" y="20" width="165" height="28" rx="14" fill="rgba(30,27,75,0.85)" stroke="#a855f7" stroke-width="1"/>
+  <circle cx="34" cy="34" r="5" fill="#ec4899"/>
+  <text x="46" y="38" fill="#fdf4ff" font-size="12" font-family="sans-serif" font-weight="600">Gemini 1.5 Pro</text>
+</svg>
