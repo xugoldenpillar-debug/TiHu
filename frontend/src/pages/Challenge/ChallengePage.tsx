@@ -20,10 +20,9 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 
-export function ChallengePage() {
-  const { path, navigate, showToast, user } = useApp();
-  const challengeId = path.split("/")[2];
-
+export function ChallengePage({ id }: { id?: string }) {
+  const { activePath, navigate, showToast, user } = useApp();
+  const challengeId = id || (activePath ? activePath.split("/")[2] : "") || "";
   const [challenge, setChallenge] = useState<ChallengeDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedVersionNum, setSelectedVersionNum] = useState<number | null>(null);

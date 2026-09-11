@@ -15,6 +15,7 @@ interface AppContextType {
   voteEligibleAt: number | null;
   loading: boolean;
   activePath: string;
+  path: string;
   navigate: (path: string) => void;
   refreshSession: () => Promise<void>;
   showToast: (message: string, type?: "info" | "success" | "warning" | "error") => void;
@@ -107,6 +108,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         voteEligibleAt,
         loading,
         activePath,
+        path: activePath,
         navigate,
         refreshSession,
         showToast,
