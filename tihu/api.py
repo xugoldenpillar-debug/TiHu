@@ -21,7 +21,7 @@ from .security import DUMMY_HASH, canonical_base, digest, discover, parse_skill,
 from .runner import validate_artifacts
 
 app = FastAPI(title='TiHu', version='0.1.0', docs_url=None, redoc_url=None)
-MAX_BODY = 512 * 1024
+MAX_BODY = 4 * 1024 * 1024  # Keep the request ceiling above the 2.5 MB art field limit.
 
 
 class Input(BaseModel):

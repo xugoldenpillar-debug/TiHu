@@ -22,6 +22,51 @@ const ART_PRESETS = [
   { label: "出人意料的时钟 (Clock)", value: "/art/challenge-clock.svg" },
 ];
 
+const MAX_ART_DATA_URL_CHARS = 360_000;
+
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("image_read_failed"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function optimizeArt(file: File): Promise<string> {
+  const source = await readAsDataUrl(file);
+  const image = new Image();
+  image.src = source;
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error("image_decode_failed"));
+  });
+
+  const longestSide = Math.max(image.naturalWidth || 1, image.naturalHeight || 1);
+  const baseScale = Math.min(1, 1200 / longestSide);
+  const scales = [baseScale, baseScale * 0.82, baseScale * 0.66, baseScale * 0.52];
+  const qualities = [0.82, 0.72, 0.62, 0.52];
+
+  for (const scale of scales) {
+    const width = Math.max(1, Math.round((image.naturalWidth || 1) * scale));
+    const height = Math.max(1, Math.round((image.naturalHeight || 1) * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("image_canvas_failed");
+    context.drawImage(image, 0, 0, width, height);
+    for (const quality of qualities) {
+      const result = canvas.toDataURL("image/webp", quality);
+      if (result.length <= MAX_ART_DATA_URL_CHARS || (scale === scales.at(-1) && quality === qualities.at(-1))) {
+        return result;
+      }
+    }
+  }
+
+  return source;
+}
+
 export function NewChallengePage() {
   const { navigate, showToast, config } = useApp();
   const [title, setTitle] = useState("");
@@ -38,7 +83,7 @@ export function NewChallengePage() {
     ? config.categories
     : ["代码动效", "前端工程", "数据可视化", "游戏与交互", "AI与算法"];
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -47,16 +92,18 @@ export function NewChallengePage() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (result) {
-        setArt(result);
-        setIsCustomUploaded(true);
-        showToast("自定义插画已成功载入！", "success");
+    try {
+      const result = await optimizeArt(file);
+      if (result.length > MAX_ART_DATA_URL_CHARS) {
+        showToast("插画压缩后仍然过大，请换一张更简单的图片", "warning");
+        return;
       }
-    };
-    reader.readAsDataURL(file);
+      setArt(result);
+      setIsCustomUploaded(true);
+      showToast("自定义插画已压缩并载入！", "success");
+    } catch {
+      showToast("插画读取失败，请换一张图片重试", "error");
+    }
   };
 
   const handlePresetSelect = (val: string) => {
@@ -117,6 +164,8 @@ export function NewChallengePage() {
               label="题目名称"
               required
               placeholder="如：绘制生动的 SVG 粒子时钟"
+              minLength={3}
+              maxLength={100}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -228,6 +277,8 @@ export function NewChallengePage() {
             required
             rows={3}
             placeholder="描述此题目的评测目标、核心交互或者想要检验的视觉特征..."
+            minLength={10}
+            maxLength={1500}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
@@ -237,6 +288,8 @@ export function NewChallengePage() {
             required
             rows={6}
             placeholder="输入注入给智能体编码环境的初始提示词..."
+            minLength={10}
+            maxLength={6000}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
@@ -246,6 +299,8 @@ export function NewChallengePage() {
             required
             rows={4}
             placeholder="如：1. 必须完全使用标准 SVG 格式；2. 动画必须流畅..."
+            minLength={3}
+            maxLength={3000}
             value={rubric}
             onChange={(e) => setRubric(e.target.value)}
           />
