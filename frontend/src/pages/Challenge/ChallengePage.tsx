@@ -86,7 +86,7 @@ export function ChallengePage({ id }: { id?: string }) {
     const title = c.title.toLowerCase();
     if (title.includes("pelican") || title.includes("鹈鹕")) return "/art/challenge-pelican.svg";
     if (title.includes("polar") || title.includes("熊") || title.includes("秦始皇"))
-      return "/art/challenge-polar-bear.svg";
+      return "/challenge-qinshihuang.png";
     if (title.includes("clock") || title.includes("时钟") || title.includes("闹钟"))
       return "/art/challenge-clock.svg";
     if (title.includes("world") || title.includes("生态") || title.includes("世界"))

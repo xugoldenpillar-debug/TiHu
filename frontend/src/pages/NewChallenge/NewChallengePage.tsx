@@ -17,7 +17,7 @@ import {
 
 const ART_PRESETS = [
   { label: "戴头盔的鹈鹕 (Pelican)", value: "/art/challenge-pelican.svg" },
-  { label: "秦始皇骑北极熊 (Polar Bear)", value: "/art/challenge-polar-bear.svg" },
+  { label: "秦始皇骑北极熊 (Qin Shi Huang)", value: "/challenge-qinshihuang.png" },
   { label: "掌心里的小世界 (Ecosystem)", value: "/art/challenge-ecosystem.svg" },
   { label: "出人意料的时钟 (Clock)", value: "/art/challenge-clock.svg" },
 ];
