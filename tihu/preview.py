@@ -1,5 +1,6 @@
 """Separate-origin artifact preview. It never receives credential decryption keys."""
 import base64
+from collections import OrderedDict
 import mimetypes
 from urllib.parse import quote
 from fastapi import FastAPI, HTTPException
@@ -8,6 +9,21 @@ from sqlalchemy import select
 from . import db
 from .config import settings
 from .security import sign, safe_path
+
+_CACHE_MAX = 256
+_ARTIFACT_CACHE: OrderedDict[str, dict[str, bytes]] = OrderedDict()
+
+def get_cached_files(sha: str) -> dict[str, bytes] | None:
+    if sha in _ARTIFACT_CACHE:
+        _ARTIFACT_CACHE.move_to_end(sha)
+        return _ARTIFACT_CACHE[sha]
+    return None
+
+def put_cached_files(sha: str, files: dict[str, bytes]):
+    _ARTIFACT_CACHE[sha] = files
+    _ARTIFACT_CACHE.move_to_end(sha)
+    if len(_ARTIFACT_CACHE) > _CACHE_MAX:
+        _ARTIFACT_CACHE.popitem(last=False)
 
 app=FastAPI(title='TiHu Preview',docs_url=None,redoc_url=None)
 
@@ -34,13 +50,24 @@ def serve(run_id,sha,expires,token,path):
     artifact=load(run_id,sha,expires,token)
     if not path:
         return RedirectResponse('index.html',status_code=307,headers={'Cache-Control':'no-store, max-age=0','Referrer-Policy':'no-referrer'})
-    if not safe_path(path) or path not in artifact['files']:raise HTTPException(404,'not_found')
-    try:data=base64.b64decode(artifact['files'][path],validate=True)
-    except Exception:raise HTTPException(404,'not_found') from None
+    if not safe_path(path) or path not in artifact['files']:
+        raise HTTPException(404,'not_found')
+
+    cached_files = get_cached_files(sha)
+    if cached_files is None:
+        cached_files = {}
+        for p, enc in artifact['files'].items():
+            try:
+                cached_files[p] = base64.b64decode(enc, validate=True)
+            except Exception:
+                pass
+        put_cached_files(sha, cached_files)
+
+    data = cached_files.get(path)
+    if data is None:
+        raise HTTPException(404, 'not_found')
+
     content_type=mimetypes.guess_type(path)[0] or 'application/octet-stream'
-    # A sandboxed document has an opaque origin: 'self' and same-origin CORP
-    # reject its own CSS/modules/images. Authorize only this signed bundle,
-    # with noncredentialed CORS for modules, rather than the whole preview host.
     capability=f'{settings.preview_origin}/p/{quote(run_id,safe="")}/{quote(sha,safe="")}/{expires}/{quote(token,safe="")}/'
     headers={
         'Cache-Control':'no-store, max-age=0',

@@ -147,3 +147,85 @@ def parse_skill(filename: str, data: bytes) -> dict:
         if len(decoded['SKILL.md'].strip()) < 10: raise ValueError('empty skill')
         return decoded
     except (ValueError, UnicodeError): raise HTTPException(422, 'skill_text_files_only') from None
+
+ALLOWED_ARTIFACT_SUFFIXES = {'.html', '.css', '.js', '.mjs', '.json', '.txt', '.svg', '.png', '.jpg', '.jpeg', '.webp'}
+UNSAFE_PATTERNS = [
+    (re.compile(r'(?:window\s*\.\s*)?(?:top|parent)\s*(?:\.\s*location|\[\s*[\'"`]location[\'"`]\s*\])', re.IGNORECASE),
+     '尝试操作顶级窗口或父级容器 (Frame-busting)'),
+    (re.compile(r'location\s*\.\s*(?:replace|assign|href)\s*\(?.*(?:parent|top)', re.IGNORECASE),
+     '尝试对上层窗口执行重定向跳转'),
+    (re.compile(r'document\s*\.\s*cookie', re.IGNORECASE),
+     '尝试读取或窃取浏览器 Cookie 凭据'),
+]
+
+def parse_uploaded_artifact(filename: str, data: bytes) -> dict[str, str]:
+    if not data:
+        raise HTTPException(422, 'empty_artifact_payload')
+    if len(data) > 2 * 1024 * 1024:
+        raise HTTPException(413, 'artifact_bundle_too_large')
+    result: dict[str, bytes] = {}
+    lower_fn = filename.lower()
+    if lower_fn.endswith('.html'):
+        if len(data) > 512 * 1024:
+            raise HTTPException(413, 'artifact_file_too_large')
+        result = {'index.html': data}
+    elif lower_fn.endswith('.zip'):
+        try:
+            with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                infos = archive.infolist()
+                if len(infos) > 50:
+                    raise ValueError('too many entries')
+                total = 0
+                for info in infos:
+                    name = info.filename.rstrip('/')
+                    if not safe_path(name):
+                        raise ValueError('unsafe path')
+                    mode = (info.external_attr >> 16) & 0xFFFF
+                    if mode and stat.S_IFMT(mode) not in (0, stat.S_IFREG, stat.S_IFDIR):
+                        raise ValueError('special file')
+                    if info.is_dir():
+                        continue
+                    if name in result or info.flag_bits & 1 or info.file_size > 512 * 1024 or info.file_size > max(info.compress_size * 100, 4096):
+                        raise ValueError('unsafe archive entry')
+                    total += info.file_size
+                    if total > 2 * 1024 * 1024:
+                        raise ValueError('expanded archive too large')
+                    result[name] = archive.read(info)
+        except (ValueError, zipfile.BadZipFile, RuntimeError, NotImplementedError):
+            raise HTTPException(422, 'unsafe_artifact_archive') from None
+        if 'index.html' not in result and result:
+            roots = {x.split('/')[0] for x in result}
+            if len(roots) == 1 and all('/' in x for x in result):
+                result = {x.split('/', 1)[1]: value for x, value in result.items()}
+    else:
+        raise HTTPException(422, 'upload_html_or_zip')
+
+    if 'index.html' not in result:
+        raise HTTPException(422, 'index_html_required')
+    if not (1 <= len(result) <= 50):
+        raise HTTPException(422, 'artifact_file_limit')
+
+    encoded: dict[str, str] = {}
+    for path, body in result.items():
+        if not safe_path(path):
+            raise HTTPException(422, 'unsafe_artifact_path')
+        if PurePosixPath(path).suffix.lower() not in ALLOWED_ARTIFACT_SUFFIXES:
+            raise HTTPException(422, 'artifact_type_denied')
+        if len(body) > 512 * 1024:
+            raise HTTPException(413, 'artifact_file_too_large')
+        encoded[path] = base64.b64encode(body).decode()
+    return encoded
+
+def inspect_artifact_safety(files: dict[str, str]) -> tuple[bool, str]:
+    for path, enc in files.items():
+        ext = PurePosixPath(path).suffix.lower()
+        if ext in {'.html', '.js', '.mjs', '.svg'}:
+            try:
+                raw = base64.b64decode(enc, validate=True)
+                text = raw.decode('utf-8', errors='ignore')
+            except Exception:
+                return False, f'文件 {path} 编码异常'
+            for pat, desc in UNSAFE_PATTERNS:
+                if pat.search(text):
+                    return False, f'文件 {path} 检测到潜在恶意代码：{desc}'
+    return True, ''

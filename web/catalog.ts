@@ -15,6 +15,7 @@ import {
   go,
   query,
   toast,
+  errorText,
   formError,
   clearFormError,
   showDialog,
@@ -344,6 +345,7 @@ const icons = {
   flame: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"/></svg>`,
   table: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>`,
   tag: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><circle cx="7" cy="7" r=".5" fill="currentColor"/></svg>`,
+  upload: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`,
 };
 
 function ensureCatalogStyles(): void {
@@ -1076,6 +1078,7 @@ export async function challengePage(id: string): Promise<Page> {
           <p class="challenge-hero-desc">${esc(visual.description)}</p>
           <div class="challenge-hero-actions">
             <a class="btn primary btn-glow" href="#/studio?challenge=${esc(id)}&version=${esc(version.id)}">${icons.play} 挑战这道题</a>
+            <button class="btn outline" id="upload-work-btn">${icons.upload} 上传自制作品</button>
             ${challenge.can_edit ? '<button class="btn outline" id="new-version">发布新版本</button>' : ""}
             <a class="btn ghost" href="#/explore">返回探索</a>
           </div>
@@ -1110,6 +1113,61 @@ export async function challengePage(id: string): Promise<Page> {
       bindFilter(root, "/challenge/" + id);
       const disposeFeed = mountFeed(root, url, page, (item) => workCard(item));
       const disposeComparison = bindComparison(root);
+      root.querySelector("#upload-work-btn")?.addEventListener("click", () => {
+        if (!state.user) {
+          toast("请先登录账号后再上传作品。");
+          go("/login");
+          return;
+        }
+        if (!state.user.verified) {
+          toast("请先完成邮箱验证后再上传作品。");
+          return;
+        }
+        showDialog(
+          "上传自制作品",
+          `<form id="upload-work-form" class="stack">
+            <p class="help">上传本地自制网页或动画（支持单文件 <code>index.html</code> 或包含 <code>index.html</code> 的 ZIP 压缩包）。系统将异步进行沙箱安全审计与隔离预检，安全通过后将自动极速生成实时预览。</p>
+            ${field("uw-title", "作品标题", `<input id="uw-title" name="title" maxlength="100" placeholder="留空默认使用题目名称 (${esc(visual.title)})">`)}
+            ${field("uw-file", "作品文件", `<input id="uw-file" name="file" type="file" accept=".html,.zip" required>`, "单文件不超过 512 KB，ZIP 总大小不超过 2 MB。必须包含可渲染的 index.html。")}
+            <div class="actions">
+              <button class="btn outline" type="button" data-dialog-cancel>取消</button>
+              <button class="btn primary" type="submit">提交并进行安全审计</button>
+            </div>
+          </form>`,
+          (d) => {
+            d.querySelector("[data-dialog-cancel]")?.addEventListener("click", () => closeDialog());
+            const form = d.querySelector<HTMLFormElement>("form")!;
+            form.addEventListener("submit", async (e) => {
+              e.preventDefault();
+              const fileInput = form.querySelector<HTMLInputElement>("#uw-file");
+              const file = fileInput?.files?.[0];
+              if (!file) return;
+              const titleVal = form.querySelector<HTMLInputElement>("#uw-title")?.value.trim() || "";
+              const submitBtn = form.querySelector<HTMLButtonElement>("button[type=submit]")!;
+              submitBtn.disabled = true;
+              submitBtn.textContent = "正在上传…";
+              try {
+                const fd = new FormData();
+                fd.append("challenge_id", id);
+                fd.append("version_id", version.id);
+                if (titleVal) fd.append("title", titleVal);
+                fd.append("file", file);
+                const res = await api<{ id: string; status: string; message: string }>("/runs/upload", {
+                  method: "POST",
+                  body: fd,
+                });
+                closeDialog();
+                toast("作品已成功提交，正在进行后台异步安全审计与沙箱隔离…");
+                go("/runs/" + res.id);
+              } catch (err) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "提交并进行安全审计";
+                toast(errorText(err) || "上传失败，请检查文件格式与大小。");
+              }
+            });
+          }
+        );
+      });
       root.querySelector("#new-version")?.addEventListener("click", () => {
         const dialog = showDialog(
           "发布题目新版本",

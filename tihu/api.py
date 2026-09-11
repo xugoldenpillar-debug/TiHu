@@ -8,7 +8,7 @@ from email.message import EmailMessage
 from typing import Literal
 from urllib.parse import unquote
 
-from fastapi import Body, Cookie, Depends, FastAPI, Header, HTTPException, Query, Request, Response
+from fastapi import Body, Cookie, Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, Response, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -17,7 +17,8 @@ from sqlalchemy import and_, delete, func, insert, or_, select, update
 
 from . import db, domain
 from .config import settings
-from .security import DUMMY_HASH, canonical_base, digest, discover, parse_skill, password_hasher, seal, stable_hash, throttle, unseal, verify_password, sign
+from .security import DUMMY_HASH, canonical_base, digest, discover, parse_skill, parse_uploaded_artifact, inspect_artifact_safety, password_hasher, seal, stable_hash, throttle, unseal, verify_password, sign
+from .runner import validate_artifacts
 
 app = FastAPI(title='TiHu', version='0.1.0', docs_url=None, redoc_url=None)
 MAX_BODY = 512 * 1024
@@ -436,6 +437,116 @@ def stats():
 def submit_run(body:RunInput,idempotency_key:str=Header('',alias='Idempotency-Key'),who=Depends(verified_user)):
     if not body.consent:raise HTTPException(422,'billing_consent_required')
     return domain.enqueue(who['id'],body.model_dump(exclude={'consent'}),idempotency_key)
+
+async def process_artifact_safety(ident: str, owner_id: str, files: dict[str, str]):
+    await asyncio.sleep(0.05)
+    try:
+        safe, reason = inspect_artifact_safety(files)
+        if not safe:
+            with db.engine.begin() as c:
+                c.execute(update(db.runs).where(db.runs.c.id == ident).values(status='failed', finished=db.now(), error='unsafe_artifact'))
+                db.log(c, ident, 'failed', f'安全审计未通过：{reason}')
+            return
+        size = validate_artifacts(files)
+        sha = stable_hash(files)
+        with db.engine.begin() as c:
+            c.execute(db.artifacts.insert().values(run_id=ident, files=files, sha256=sha, size=size))
+            c.execute(update(db.runs).where(db.runs.c.id == ident).values(status='succeeded', finished=db.now()))
+            db.log(c, ident, 'succeeded', '安全审计通过，作品产物已私密保存。')
+            expires = int(db.now() + 300)
+            scope = 'private:' + owner_id
+            token = sign(f'{ident}:{sha}:{expires}:{scope}')
+            preview_url = f'{settings.preview_origin}/p/{ident}/{sha}/{expires}/{token}/index.html'
+            db.log(c, ident, 'preview_ready', preview_url)
+        try:
+            from . import thumbnails
+            await thumbnails.capture(ident, files)
+        except Exception:
+            pass
+    except Exception:
+        with db.engine.begin() as c:
+            c.execute(update(db.runs).where(db.runs.c.id == ident).values(status='failed', finished=db.now(), error='safety_check_failed'))
+            db.log(c, ident, 'failed', '处理作品时发生系统异常。')
+
+@app.post('/api/runs/upload', status_code=201)
+async def upload_run(
+    request: Request,
+    challenge_id: str = Form(None),
+    version_id: str | None = Form(None),
+    title: str | None = Form(None),
+    file: UploadFile | None = File(None),
+    x_challenge_id: str | None = Header(None, alias='X-Challenge-Id'),
+    x_version_id: str | None = Header(None, alias='X-Version-Id'),
+    x_file_name: str | None = Header(None, alias='X-File-Name'),
+    x_run_title: str | None = Header(None, alias='X-Run-Title'),
+    who = Depends(verified_user),
+):
+    cid = challenge_id or x_challenge_id
+    if not cid:
+        raise HTTPException(422, 'challenge_id_required')
+    vid = version_id or x_version_id
+    raw_title = title or x_run_title
+
+    if file is not None:
+        content = await file.read()
+        filename = file.filename or 'index.html'
+    else:
+        content = await request.body()
+        filename = unquote(x_file_name or 'index.html')
+
+    files = parse_uploaded_artifact(filename, content)
+
+    with db.engine.begin() as c:
+        domain.admission_lock(c)
+        ch = db.row(c, select(db.challenges).where(db.challenges.c.id == cid, db.challenges.c.archived.is_(False)))
+        if not ch:
+            raise HTTPException(404, 'challenge_not_found')
+        if vid:
+            ver = db.row(c, select(db.versions).where(db.versions.c.id == vid, db.versions.c.challenge_id == ch['id']))
+            if not ver:
+                raise HTTPException(404, 'version_not_found')
+        else:
+            ver = db.row(c, select(db.versions).where(db.versions.c.challenge_id == ch['id'], db.versions.c.number == ch['current_version']))
+            if not ver:
+                raise HTTPException(404, 'version_not_found')
+
+        ident = db.uid()
+        run_title = (raw_title or ch['title']).strip()[:100]
+        snapshot = {
+            'challenge_prompt': ver['prompt'],
+            'rubric': ver['rubric'],
+            'version_hash': ver['sha256'],
+            'source': 'upload',
+            'filename': filename,
+            'title': run_title,
+            'harness': domain.harness(),
+        }
+        environment = stable_hash(snapshot['harness'])
+        c.execute(insert(db.runs).values(
+            id=ident,
+            owner_id=who['id'],
+            challenge_id=ch['id'],
+            version_id=ver['id'],
+            model='用户自制作品',
+            provider='user:upload',
+            track='custom',
+            environment=environment,
+            status='running',
+            snapshot=snapshot,
+            fingerprint=stable_hash({'upload': ident, 'owner': who['id']}),
+            idempotency=ident,
+            created=db.now(),
+            started=db.now(),
+        ))
+        db.log(c, ident, 'queued', '作品已接收，正在提交后台异步安全审计与沙箱隔离预检…')
+        db.audit_log(c, who['id'], 'run.uploaded', ident)
+
+    asyncio.create_task(process_artifact_safety(ident, who['id'], files))
+    return {
+        'id': ident,
+        'status': 'running',
+        'message': '作品已接收，正在异步进行安全审计与隔离检查',
+    }
 
 @app.get('/api/runs')
 def list_runs(challenge:str|None=None,version:str|None=None,mine:bool=False,track:Literal['all','standard','open']='all',status:Literal['all','queued','running','succeeded','failed','canceled']='all',published:Literal['all','public','private']='all',q:str=Query('',max_length=200),cursor:str|None=Query(None,max_length=512),limit:int=Query(24,ge=1,le=100),who=Depends(optional_user)):

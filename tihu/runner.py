@@ -15,7 +15,7 @@ from sqlalchemy import select, update
 
 from . import db, domain
 from .config import settings
-from .security import auth_headers, outbound_session, safe_path, unseal, stable_hash
+from .security import auth_headers, outbound_session, safe_path, unseal, stable_hash, inspect_artifact_safety, sign
 
 logger=logging.getLogger('tihu.runner')
 TERMINAL=('succeeded','failed','canceled')
@@ -410,11 +410,19 @@ async def execute(run):
         if process.returncode:raise ValueError('sandbox_failed')
         broker.persist('validating','Validating sandbox artifact files.')
         files=packet.get('files');size=validate_artifacts(files)
+        safe, reason = inspect_artifact_safety(files)
+        if not safe: raise ValueError('unsafe_artifact')
         with db.engine.begin() as c:
             changed=c.execute(update(db.runs).where(db.runs.c.id==run['id'],db.runs.c.status=='running',db.runs.c.lease==run['lease']).values(status='succeeded',finished=db.now(),heartbeat=db.now(),metrics=broker.metrics())).rowcount
             if not changed:return
-            c.execute(db.artifacts.insert().values(run_id=run['id'],files=files,sha256=stable_hash(files),size=size))
+            sha = stable_hash(files)
+            c.execute(db.artifacts.insert().values(run_id=run['id'],files=files,sha256=sha,size=size))
             db.log(c,run['id'],'succeeded','Artifact saved privately. Preview it before choosing to publish.')
+            expires = int(db.now() + 300)
+            scope = 'private:' + run['owner_id']
+            token = sign(f"{run['id']}:{sha}:{expires}:{scope}")
+            preview_url = f"{settings.preview_origin}/p/{run['id']}/{sha}/{expires}/{token}/index.html"
+            db.log(c,run['id'],'preview_ready',preview_url)
         succeeded=True
     except asyncio.TimeoutError:
         fail_run(run,'sandbox_timeout')
