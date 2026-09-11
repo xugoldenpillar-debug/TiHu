@@ -418,11 +418,6 @@ async def execute(run):
             sha = stable_hash(files)
             c.execute(db.artifacts.insert().values(run_id=run['id'],files=files,sha256=sha,size=size))
             db.log(c,run['id'],'succeeded','Artifact saved privately. Preview it before choosing to publish.')
-            expires = int(db.now() + 300)
-            scope = 'private:' + run['owner_id']
-            token = sign(f"{run['id']}:{sha}:{expires}:{scope}")
-            preview_url = f"{settings.preview_origin}/p/{run['id']}/{sha}/{expires}/{token}/index.html"
-            db.log(c,run['id'],'preview_ready',preview_url)
         succeeded=True
     except asyncio.TimeoutError:
         fail_run(run,'sandbox_timeout')

@@ -38,9 +38,8 @@ def test_upload_artifact_success(client):
     assert art is not None
     assert 'index.html' in art['files']
     kinds = [e['kind'] for e in events]
-    assert 'preview_ready' in kinds
-    preview_event = next(e for e in events if e['kind'] == 'preview_ready')
-    assert f'/p/{run_id}/' in preview_event['message']
+    assert 'succeeded' in kinds
+    assert any('安全审计通过' in e['message'] for e in events)
 
 def test_upload_artifact_unsafe_script_blocked(client):
     user = account(client)

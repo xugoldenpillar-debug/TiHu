@@ -453,11 +453,7 @@ async def process_artifact_safety(ident: str, owner_id: str, files: dict[str, st
             c.execute(db.artifacts.insert().values(run_id=ident, files=files, sha256=sha, size=size))
             c.execute(update(db.runs).where(db.runs.c.id == ident).values(status='succeeded', finished=db.now()))
             db.log(c, ident, 'succeeded', '安全审计通过，作品产物已私密保存。')
-            expires = int(db.now() + 300)
-            scope = 'private:' + owner_id
-            token = sign(f'{ident}:{sha}:{expires}:{scope}')
-            preview_url = f'{settings.preview_origin}/p/{ident}/{sha}/{expires}/{token}/index.html'
-            db.log(c, ident, 'preview_ready', preview_url)
+            # Artifact and run successfully validated and saved
         try:
             from . import thumbnails
             await thumbnails.capture(ident, files)

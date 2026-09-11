@@ -1318,16 +1318,6 @@ export async function runPage(id: string): Promise<Page> {
             message.textContent = String(row.message || "");
             item.append(stamp, document.createTextNode(" · "), kind, message);
             list.append(item);
-            if (row.kind === "preview_ready") {
-              const url = row.message;
-              if (url && (url.startsWith("http://") || url.startsWith("https://"))) {
-                const frame = root.querySelector<HTMLIFrameElement>('[data-preview="run"] iframe');
-                if (frame && (!frame.src || frame.src === "about:blank")) {
-                  frame.src = url;
-                }
-              }
-              void refresh();
-            }
           } catch {
             status.textContent =
               "一条日志格式异常，已跳过；实验仍由服务器继续执行。";

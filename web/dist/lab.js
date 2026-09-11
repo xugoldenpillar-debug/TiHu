@@ -1091,16 +1091,6 @@ export async function runPage(id) {
                         message.textContent = String(row.message || "");
                         item.append(stamp, document.createTextNode(" · "), kind, message);
                         list.append(item);
-                        if (row.kind === "preview_ready") {
-                            const url = row.message;
-                            if (url && (url.startsWith("http://") || url.startsWith("https://"))) {
-                                const frame = root.querySelector('[data-preview="run"] iframe');
-                                if (frame && (!frame.src || frame.src === "about:blank")) {
-                                    frame.src = url;
-                                }
-                            }
-                            void refresh();
-                        }
                     }
                     catch {
                         status.textContent =
