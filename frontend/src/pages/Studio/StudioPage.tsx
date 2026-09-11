@@ -64,7 +64,7 @@ export function StudioPage() {
         setLoading(true);
         const [cRes, connRes, pRes, sRes] = await Promise.all([
           api<PageResult<Challenge>>("/challenges?limit=50"),
-          api<ConnectionItem[]>("/connections"),
+          api<ConnectionItem[]>("/keys"),
           api<PromptItem[]>("/prompts"),
           api<SkillItem[]>("/skills"),
         ]);
@@ -161,16 +161,20 @@ export function StudioPage() {
     setSubmitting(true);
     try {
       const payload: Record<string, unknown> = {
-        challenge_id: selectedChallengeId,
         version_id: selectedVersionId,
-        connection_id: selectedConnectionId,
+        key_id: selectedConnectionId,
         model: selectedModel,
+        prompt: prompts.find((p) => p.id === selectedPromptId)?.body || "",
         skill_ids: selectedSkillIds,
+        consent,
       };
-      if (selectedPromptId) payload.prompt_id = selectedPromptId;
 
+      const idempotencyKey =
+        globalThis.crypto?.randomUUID?.() ??
+        `run-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const res = await api<{ id: string }>("/runs", {
         method: "POST",
+        headers: { "Idempotency-Key": idempotencyKey },
         body: JSON.stringify(payload),
       });
 
@@ -320,7 +324,7 @@ export function StudioPage() {
                 onChange={(e) => setSelectedConnectionId(e.target.value)}
                 options={connections.map((c) => ({
                   value: c.id,
-                  label: `${c.provider.toUpperCase()} (${c.base_url || "默认官方地址"})`,
+                  label: `${c.label} (${c.base_url})`,
                 }))}
               />
 
@@ -420,7 +424,7 @@ export function StudioPage() {
                         <span className="text-xs font-medium">{s.name}</span>
                       </div>
                       <span className={`text-[10px] font-mono ${selected ? "text-slate-300" : "text-slate-400"}`}>
-                        v{s.current_revision}
+                        v{s.current_version}
                       </span>
                     </div>
                   );

@@ -162,10 +162,13 @@ export interface ModelScore {
 
 export interface ConnectionItem {
   id: string;
-  provider: string;
+  label: string;
   base_url: string;
-  created: number;
+  protocol: "openai" | "responses" | "anthropic";
+  last4: string;
   models: string[];
+  created: number;
+  is_official?: boolean;
 }
 
 export interface PromptItem {
@@ -178,14 +181,10 @@ export interface PromptItem {
 export interface SkillItem {
   id: string;
   name: string;
+  sha256: string;
   created: number;
-  current_revision: number;
-  revisions: Array<{
-    number: number;
-    sha256: string;
-    created: number;
-    files: Array<{ path: string; size: number }>;
-  }>;
+  current_version: number;
+  file_count: number;
 }
 
 export interface RunDetail extends RunSummary {
