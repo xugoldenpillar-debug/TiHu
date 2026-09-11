@@ -680,6 +680,7 @@ export async function runPage(id) {
                         next.my_votes = run.my_votes;
                     }
                     run = next;
+                    actionError.textContent = "";
                     root.querySelector("#run-status").innerHTML = statusHTML();
                     root.querySelector("#run-actions").innerHTML = actionHTML();
                     root.querySelector("#run-metrics").innerHTML = metricsHTML(run);
