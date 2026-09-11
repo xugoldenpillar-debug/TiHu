@@ -1618,7 +1618,7 @@ body {
 .live-preview-drawer {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 99999;
   pointer-events: none;
   visibility: hidden;
   opacity: 0;
@@ -1634,7 +1634,7 @@ body {
 .drawer-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   opacity: 0;
@@ -1650,14 +1650,17 @@ body {
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(880px, 92vw);
-  background: var(--paper);
-  box-shadow: -8px 0 36px rgba(0, 0, 0, 0.16);
+  width: min(960px, 92vw);
+  height: 100vh;
+  background: #0f172a;
+  box-shadow: -12px 0 48px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
-  transition: transform 0.32s var(--ease-spring);
-  border-left: 1px solid var(--line);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  z-index: 2;
 }
 
 .live-preview-drawer.is-open .drawer-panel {
@@ -1666,58 +1669,159 @@ body {
 
 .drawer-header {
   height: 64px;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--line);
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg);
-}
-
-.drawer-title-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  background: #1e293b;
+  color: #f8fafc;
+  flex-shrink: 0;
+  z-index: 5;
 }
 
 .drawer-title {
-  font-size: 16.5px;
-  font-weight: 750;
-  color: var(--ink);
-  margin: 0;
-}
-
-.drawer-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 650;
+  color: #f8fafc;
+}
+
+.drawer-title-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  flex-shrink: 0;
+}
+
+.drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.drawer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.drawer-link:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.drawer-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.drawer-close:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #f87171;
 }
 
 .drawer-stage {
   flex: 1;
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   position: relative;
+  width: 100%;
+  height: calc(100vh - 64px);
+  background: #0b0f19;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 .drawer-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  display: block !important;
+  background: transparent !important;
+  transition: opacity 0.25s ease;
 }
 
 .drawer-loading {
   position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  color: var(--muted);
+  justify-content: center;
+  gap: 14px;
+  color: #94a3b8;
   font-size: 13px;
+  background: #0f172a;
+  z-index: 10;
+  transition: opacity 0.25s ease;
 }
 
+.drawer-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid rgba(16, 185, 129, 0.2);
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: drawerSpin 0.8s linear infinite;
+}
+
+@keyframes drawerSpin {
+  to { transform: rotate(360deg); }
+}
+
+.drawer-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: #f87171;
+  font-size: 14px;
+  padding: 24px;
+  text-align: center;
+  background: #0f172a;
+  z-index: 11;
+}
+
+.drawer-loading[hidden],
+.drawer-error[hidden] {
+  display: none !important;
+}
 /* ==========================================================================
    徽章体系与微标签 (Prestige Badges)
    ========================================================================== */

@@ -1260,7 +1260,7 @@ function bindLivePreviewDrawer(root: HTMLElement): () => void {
             <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${esc(modelName)}</span>
           </div>
           <div class="drawer-actions">
-            <a class="drawer-link" href="#/run/${esc(runId)}" target="_blank" rel="noopener">查看完整详情 ↗</a>
+            <a class="drawer-link" href="#/run/${esc(runId)}" target="_blank" rel="noopener">查看详情 ↗</a>
             <button type="button" class="drawer-close" aria-label="关闭预览" title="关闭预览 (Esc)">✕</button>
           </div>
         </header>
@@ -1268,19 +1268,20 @@ function bindLivePreviewDrawer(root: HTMLElement): () => void {
           <div class="drawer-loading">
             <div class="drawer-spinner" aria-hidden="true"></div>
             <p>正在启动独立沙箱并加载动画…</p>
-            <small style="color: var(--muted); font-size: 12px;">${esc(title)}</small>
+            <small style="color: #94a3b8; font-size: 12px;">${esc(title)}</small>
           </div>
           <div class="drawer-error" hidden></div>
           <iframe
-            sandbox="allow-scripts allow-forms allow-modals"
+            class="drawer-iframe"
+            sandbox="allow-scripts"
             title="${esc(title)} 实时动画沙箱"
-            hidden
+            style="opacity: 0;"
           ></iframe>
         </div>
       </div>
     `;
 
-    root.appendChild(drawer);
+    document.body.appendChild(drawer);
     activeDrawer = drawer;
 
     requestAnimationFrame(() => {
@@ -1311,12 +1312,14 @@ function bindLivePreviewDrawer(root: HTMLElement): () => void {
       ) {
         throw new Error("预览地址没有满足独立来源隔离要求，已阻止加载。");
       }
-      iframe.src = url.href;
-      iframe.onload = () => {
+      const finishLoading = () => {
         if (abort.signal.aborted) return;
         loadingEl.hidden = true;
-        iframe.hidden = false;
+        iframe.style.opacity = "1";
       };
+      iframe.onload = finishLoading;
+      iframe.src = url.href;
+      window.setTimeout(finishLoading, 1200);
     } catch (err) {
       if (abort.signal.aborted) return;
       loadingEl.hidden = true;
