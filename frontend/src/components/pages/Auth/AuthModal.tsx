@@ -12,7 +12,6 @@ export function AuthModal() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form fields
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -63,9 +62,9 @@ export function AuthModal() {
 
   return (
     <Dialog open={Boolean(authModalMode)} onClose={closeAuthModal} maxWidth="max-w-md">
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4">
         {/* Tab Switcher */}
-        <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800">
+        <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
           <button
             type="button"
             onClick={() => {
@@ -73,7 +72,7 @@ export function AuthModal() {
               setError(null);
             }}
             className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              currentTab === "login" ? "bg-slate-800 text-sky-300 shadow" : "text-slate-400 hover:text-slate-200"
+              currentTab === "login" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
             登录账号
@@ -85,7 +84,7 @@ export function AuthModal() {
               setError(null);
             }}
             className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              currentTab === "register" ? "bg-slate-800 text-sky-300 shadow" : "text-slate-400 hover:text-slate-200"
+              currentTab === "register" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
             注册新用户
@@ -97,14 +96,14 @@ export function AuthModal() {
               setError(null);
             }}
             className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              currentTab === "forgot" ? "bg-slate-800 text-sky-300 shadow" : "text-slate-400 hover:text-slate-200"
+              currentTab === "forgot" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
           >
             找回密码
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
           <Input
             label="电子邮箱"
             type="email"
@@ -119,7 +118,7 @@ export function AuthModal() {
               label="创作者昵称 (用户名)"
               type="text"
               required
-              placeholder="letters, digits, 3-24 chars"
+              placeholder="3-24 位字符"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
@@ -130,14 +129,14 @@ export function AuthModal() {
               label="登录密码"
               type="password"
               required
-              placeholder="至少 8 位强密码"
+              placeholder="至少 8 位密码"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           )}
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium">
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
               {error}
             </div>
           )}

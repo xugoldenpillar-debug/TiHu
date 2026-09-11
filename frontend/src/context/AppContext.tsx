@@ -121,17 +121,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => {
           const borderClass =
             toast.type === "error"
-              ? "border-rose-500/50 text-rose-200 bg-rose-950/80"
+              ? "border-rose-200 text-rose-800 bg-rose-50"
               : toast.type === "success"
-                ? "border-emerald-500/50 text-emerald-200 bg-emerald-950/80"
+                ? "border-emerald-200 text-emerald-800 bg-emerald-50"
                 : toast.type === "warning"
-                  ? "border-amber-500/50 text-amber-200 bg-amber-950/80"
-                  : "border-sky-500/50 text-sky-200 bg-slate-900/90";
+                  ? "border-amber-200 text-amber-800 bg-amber-50"
+                  : "border-slate-200 text-slate-800 bg-white";
 
           return (
             <div
               key={toast.id}
-              className={`pointer-events-auto px-4 py-3 rounded-xl border shadow-2xl backdrop-blur-md text-sm font-medium transition-all duration-300 transform translate-y-0 ${borderClass}`}
+              className={`pointer-events-auto px-4 py-2.5 rounded-xl border shadow-lg text-xs font-medium transition-all duration-200 ${borderClass}`}
             >
               {toast.message}
             </div>
@@ -141,7 +141,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     </AppContext.Provider>
   );
 }
-
 export function useApp() {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error("useApp must be used within AppProvider");

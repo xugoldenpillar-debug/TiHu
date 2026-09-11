@@ -21,22 +21,21 @@ export function detectVendor(modelOrProvider: string): string {
 }
 
 export const VENDOR_THEMES: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  openai: { label: "OpenAI", color: "#10a37f", bg: "rgba(16,163,127,0.12)", border: "rgba(16,163,127,0.3)" },
-  anthropic: { label: "Anthropic", color: "#d97757", bg: "rgba(217,119,87,0.12)", border: "rgba(217,119,87,0.3)" },
-  gemini: { label: "Google Gemini", color: "#4285f4", bg: "rgba(66,133,244,0.12)", border: "rgba(66,133,244,0.3)" },
-  deepseek: { label: "DeepSeek", color: "#4d6bfe", bg: "rgba(77,107,254,0.12)", border: "rgba(77,107,254,0.3)" },
-  qwen: { label: "Qwen", color: "#615ced", bg: "rgba(97,92,237,0.12)", border: "rgba(97,92,237,0.3)" },
-  groq: { label: "Groq", color: "#f55036", bg: "rgba(245,80,54,0.12)", border: "rgba(245,80,54,0.3)" },
-  mistral: { label: "Mistral", color: "#fd6f00", bg: "rgba(253,111,0,0.12)", border: "rgba(253,111,0,0.3)" },
-  ollama: { label: "Ollama", color: "#ffffff", bg: "rgba(255,255,255,0.1)", border: "rgba(255,255,255,0.25)" },
-  meta: { label: "Meta LLaMA", color: "#0081fb", bg: "rgba(0,129,251,0.12)", border: "rgba(0,129,251,0.3)" },
-  generic: { label: "Model", color: "#38bdf8", bg: "rgba(56,189,248,0.12)", border: "rgba(56,189,248,0.3)" },
+  openai: { label: "OpenAI", color: "#059669", bg: "#ecfdf5", border: "#a7f3d0" },
+  anthropic: { label: "Anthropic", color: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
+  gemini: { label: "Google Gemini", color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe" },
+  deepseek: { label: "DeepSeek", color: "#4338ca", bg: "#eef2ff", border: "#c7d2fe" },
+  qwen: { label: "Qwen", color: "#4f46e5", bg: "#eef2ff", border: "#c7d2fe" },
+  groq: { label: "Groq", color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
+  mistral: { label: "Mistral", color: "#ea580c", bg: "#fff7ed", border: "#fed7aa" },
+  ollama: { label: "Ollama", color: "#334155", bg: "#f1f5f9", border: "#cbd5e1" },
+  meta: { label: "Meta LLaMA", color: "#0284c7", bg: "#f0f9ff", border: "#bae6fd" },
+  generic: { label: "Model", color: "#475569", bg: "#f8fafc", border: "#e2e8f0" },
 };
 
 export function VendorIcon({ name, className = "", size = 20 }: VendorIconProps) {
   const vendor = detectVendor(name);
 
-  // Use local curated SVG art if available
   const svgMap: Record<string, string> = {
     openai: "/art/vendors/openai.svg",
     anthropic: "/art/vendors/anthropic.svg",
@@ -61,7 +60,6 @@ export function VendorIcon({ name, className = "", size = 20 }: VendorIconProps)
     );
   }
 
-  // Fallback elegant monogram
   const theme = VENDOR_THEMES[vendor] ?? VENDOR_THEMES.generic;
   return (
     <div
@@ -85,14 +83,14 @@ export function VendorBadge({ name, label }: { name: string; label?: string }) {
   const theme = VENDOR_THEMES[vendor] ?? VENDOR_THEMES.generic;
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium backdrop-blur-sm transition-colors"
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium transition-colors select-none"
       style={{
         backgroundColor: theme.bg,
         color: theme.color,
         border: `1px solid ${theme.border}`,
       }}
     >
-      <VendorIcon name={name} size={14} />
+      <VendorIcon name={name} size={13} />
       <span>{label ?? name}</span>
     </span>
   );

@@ -5,7 +5,7 @@
   handle @api {
     reverse_proxy api:8000
   }
-  @nocache path /assets/* /dist/* /style.css /index.html /
+  @nocache path /dist/* /style.css /index.html /
   header @nocache Cache-Control "no-cache, must-revalidate"
   handle {
     try_files {path} /index.html
@@ -15,6 +15,6 @@
     X-Content-Type-Options nosniff
     Referrer-Policy no-referrer
     Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
-    Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; frame-src {$PREVIEW_ORIGIN:http://127.0.0.1:8001}"
+    Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; frame-src {$PREVIEW_ORIGIN:http://127.0.0.1:8001}"
   }
 }

@@ -3,20 +3,16 @@ import { useApp } from "../../context/AppContext";
 import { api, errorText } from "../../api/client";
 import type { ConnectionItem } from "../../types";
 import { Card } from "../../components/ui/Card";
-import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Input, Select } from "../../components/ui/Input";
 import { Dialog } from "../../components/ui/Dialog";
-import { VendorIcon, VendorBadge } from "../../components/common/VendorIcon";
+import { VendorIcon } from "../../components/common/VendorIcon";
 import {
   Key,
   Plus,
   Trash2,
   RefreshCw,
   ShieldCheck,
-  ExternalLink,
-  Cpu,
-  Lock,
 } from "lucide-react";
 
 export function ConnectionsPage() {
@@ -25,7 +21,6 @@ export function ConnectionsPage() {
   const [loading, setLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  // Form fields
   const [provider, setProvider] = useState("openai");
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -94,7 +89,7 @@ export function ConnectionsPage() {
       const res = await api<{ models: string[] }>(`/connections/${id}/models`, {
         method: "POST",
       });
-      showToast(`已成功同步并发现 ${res.models?.length || 0} 个可用模型`, "success");
+      showToast(`已成功同步发现 ${res.models?.length || 0} 个可用模型`, "success");
       setConnections((prev) =>
         prev.map((c) => (c.id === id ? { ...c, models: res.models } : c))
       );
@@ -107,72 +102,69 @@ export function ConnectionsPage() {
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center p-16 max-w-md mx-auto text-center gap-4">
-        <Key className="w-12 h-12 text-slate-600" />
-        <h2 className="text-xl font-bold text-slate-100">请先登录创作者账号</h2>
+      <div className="flex flex-col items-center justify-center p-16 max-w-md mx-auto text-center gap-3">
+        <Key className="w-10 h-10 text-slate-400" />
+        <h2 className="text-xl font-bold text-slate-900">请先登录创作者账号</h2>
         <Button onClick={() => openAuthModal("login")}>立即登录</Button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full pb-16 animate-in fade-in duration-300">
-      {/* Header */}
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full pb-16 animate-in fade-in duration-200">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-extrabold text-slate-100 flex items-center gap-2">
-            <Key className="w-6 h-6 text-sky-400" />
+          <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+            <Key className="w-6 h-6 text-slate-700" />
             <span>API 连接管理 (BYOK Vault)</span>
           </h1>
-          <p className="text-xs text-slate-400">
-            绑定你自己的大模型 Provider 凭据。私钥全程经 AES-256-GCM 加密，仅在受信任 Worker 执行时解密。
+          <p className="text-xs text-slate-500">
+            绑定自己的大模型服务商凭据。全程经 AES-256-GCM 加密，仅在受信任 Worker 执行时解密。
           </p>
         </div>
 
         <Button
-          variant="glow"
+          variant="primary"
+          size="sm"
           onClick={() => setAddModalOpen(true)}
-          icon={<Plus className="w-4 h-4" />}
+          icon={<Plus className="w-3.5 h-3.5" />}
         >
           添加新连接
         </Button>
       </div>
 
-      {/* Security notice card */}
-      <Card className="p-4 bg-sky-950/20 border-sky-500/30 flex items-center gap-3 text-xs text-sky-200">
-        <ShieldCheck className="w-5 h-5 text-sky-400 shrink-0" />
+      <Card className="p-3.5 bg-sky-50 border-sky-200/80 flex items-center gap-3 text-xs text-sky-900">
+        <ShieldCheck className="w-4 h-4 text-sky-600 shrink-0" />
         <span>
-          <strong>零明文持久化保障：</strong> 你的 API Key 永远不会暴露给网页端或执行沙箱环境中的 Agent。
-          沙箱仅使用单次临时分配的 Unix-socket Broker Token 与受信网关通讯。
+          <strong>零明文暴露保障：</strong> 你的 API Key 永远不会传递至浏览器前端或隔离沙箱内部。沙箱仅使用临时分配的 Unix-socket Broker Token 通讯。
         </span>
       </Card>
 
-      {/* Connections List */}
       {loading ? (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           {[1, 2].map((i) => (
-            <div key={i} className="h-32 rounded-2xl bg-slate-900/40 border border-slate-800 animate-shimmer" />
+            <div key={i} className="h-28 rounded-2xl bg-white border border-slate-200 animate-pulse" />
           ))}
         </div>
       ) : connections.length === 0 ? (
-        <div className="p-12 rounded-2xl bg-slate-900/40 border border-slate-800 text-center flex flex-col items-center gap-3">
-          <p className="text-sm text-slate-400">暂未添加任何模型连接</p>
+        <div className="p-12 rounded-2xl bg-white border border-slate-200 text-center flex flex-col items-center gap-3 shadow-xs">
+          <p className="text-xs text-slate-500">暂未添加任何模型连接</p>
           <Button variant="primary" size="sm" onClick={() => setAddModalOpen(true)}>
-            立即添加第一个连接
+            添加第一个连接
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-3.5">
           {connections.map((c) => (
-            <Card key={c.id} className="p-6 flex flex-col gap-4 bg-slate-900/80">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+            <Card key={c.id} className="p-5 flex flex-col gap-3 bg-white border-slate-200">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2.5 border-b border-slate-100">
                 <div className="flex items-center gap-3">
-                  <VendorIcon name={c.provider} size={28} />
+                  <VendorIcon name={c.provider} size={24} />
                   <div className="flex flex-col">
-                    <span className="text-base font-bold text-slate-100 uppercase tracking-wide">
+                    <span className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                       {c.provider}
                     </span>
-                    <span className="text-xs font-mono text-slate-500">
+                    <span className="text-xs font-mono text-slate-400">
                       端点: {c.base_url || "官方默认 Base URL"}
                     </span>
                   </div>
@@ -186,11 +178,11 @@ export function ConnectionsPage() {
                     onClick={() => handleRefreshModels(c.id)}
                     icon={<RefreshCw className="w-3.5 h-3.5" />}
                   >
-                    刷新模型列表
+                    刷新模型
                   </Button>
                   <button
                     onClick={() => handleDeleteConnection(c.id)}
-                    className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                     title="解绑并删除"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -198,24 +190,23 @@ export function ConnectionsPage() {
                 </div>
               </div>
 
-              {/* Models list */}
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-semibold text-slate-400">
-                  已发现的可用模型 ({c.models?.length || 0}):
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-slate-500">
+                  可用模型 ({c.models?.length || 0}):
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {c.models?.length ? (
                     c.models.map((m) => (
                       <span
                         key={m}
-                        className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-xs font-mono"
+                        className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-700 text-xs font-mono"
                       >
                         {m}
                       </span>
                     ))
                   ) : (
-                    <span className="text-xs text-slate-500 italic">
-                      未探测到模型，请点击右上角“刷新模型列表”探测。
+                    <span className="text-xs text-slate-400 italic">
+                      未探测到模型，请点击右上角刷新。
                     </span>
                   )}
                 </div>
@@ -232,7 +223,7 @@ export function ConnectionsPage() {
         title="绑定新的 Provider 连接"
         maxWidth="max-w-lg"
       >
-        <form onSubmit={handleAddConnection} className="flex flex-col gap-4 mt-2">
+        <form onSubmit={handleAddConnection} className="flex flex-col gap-3.5 mt-1">
           <Select
             label="服务商 (Provider)"
             value={provider}
@@ -244,14 +235,14 @@ export function ConnectionsPage() {
           />
 
           <Input
-            label="自定义 Base URL (可选，保留空则使用官方地址)"
+            label="自定义 Base URL (可选，留空则使用官方默认端点)"
             placeholder="如：https://api.openai.com/v1"
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
           />
 
           <Input
-            label="API Key (凭据私钥)"
+            label="API Key (密钥)"
             type="password"
             required
             placeholder="sk-..."
@@ -259,16 +250,17 @@ export function ConnectionsPage() {
             onChange={(e) => setApiKey(e.target.value)}
           />
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
             <Button
               type="button"
               variant="outline"
+              size="sm"
               onClick={() => setAddModalOpen(false)}
             >
               取消
             </Button>
-            <Button type="submit" loading={submitting} variant="glow">
-              加密存储并创建
+            <Button type="submit" loading={submitting} variant="primary" size="sm">
+              加密保存
             </Button>
           </div>
         </form>

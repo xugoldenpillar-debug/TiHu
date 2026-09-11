@@ -15,7 +15,6 @@ import {
   Menu,
   X,
   LogOut,
-  User,
   Sparkles,
   Zap,
 } from "lucide-react";
@@ -86,13 +85,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#080b11] text-slate-100 selection:bg-sky-500/30">
+    <div className="min-h-screen flex flex-col bg-[#f8fafc] text-slate-900 selection:bg-sky-100 selection:text-sky-900">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 w-full h-16 border-b border-slate-800/80 bg-[#0c101a]/85 backdrop-blur-xl px-4 lg:px-6 flex items-center justify-between">
+      <header className="sticky top-0 z-40 w-full h-14 border-b border-slate-200/90 bg-white/90 backdrop-blur-md px-4 lg:px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+            className="lg:hidden p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -100,40 +99,35 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             onClick={() => navigate("/explore")}
             className="flex items-center gap-2.5 cursor-pointer group select-none"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 p-[1px] shadow-lg shadow-sky-500/20 group-hover:shadow-sky-500/40 transition-all">
-              <div className="w-full h-full bg-slate-950 rounded-[11px] flex items-center justify-center overflow-hidden">
-                <img src="/art/pelican.svg" alt="TiHu" className="w-6 h-6 object-contain" />
-              </div>
+            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden p-0.5">
+              <img src="/art/pelican.svg" alt="TiHu" className="w-full h-full object-contain" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold tracking-tight text-lg text-gradient-brand">TiHu</span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                  Arena
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 font-medium hidden sm:block">BYOK 模型实验场</p>
+            <div className="flex items-center gap-2">
+              <span className="font-bold tracking-tight text-base text-slate-900">TiHu</span>
+              <span className="text-[10px] font-semibold tracking-wide px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                Arena
+              </span>
             </div>
           </div>
         </div>
 
         {/* Right Action & User Profile */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {user ? (
             <>
               {quota && (
                 <div
                   onClick={() => navigate("/my-runs")}
-                  className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 text-xs text-slate-300 cursor-pointer transition-all"
-                  title={`并发中: ${quota.active}/${quota.active_limit} | 24h剩余额度: ${quota.daily_remaining}/${quota.daily_limit}`}
+                  className="hidden md:flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 hover:border-slate-300 cursor-pointer transition-all"
+                  title={`并发: ${quota.active}/${quota.active_limit} | 24h额度: ${quota.daily_remaining}/${quota.daily_limit}`}
                 >
-                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  <Zap className="w-3.5 h-3.5 text-amber-500" />
                   <span>
-                    额度: <strong className="text-slate-100">{quota.daily_remaining}</strong> / {quota.daily_limit}
+                    额度: <strong className="text-slate-800">{quota.daily_remaining}</strong> / {quota.daily_limit}
                   </span>
                   {quota.active > 0 && (
-                    <span className="flex items-center gap-1 text-sky-400">
-                      <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
+                    <span className="flex items-center gap-1 text-sky-600 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-ping" />
                       {quota.active} 运行中
                     </span>
                   )}
@@ -142,21 +136,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
               <button
                 onClick={() => navigate("/studio")}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white text-xs font-semibold shadow-md shadow-sky-500/20 transition-all cursor-pointer"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium transition-all cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>进入实验室</span>
               </button>
 
-              <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
+              <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
                 <div className="flex flex-col items-end text-right">
-                  <span className="text-xs font-semibold text-slate-200">{user.username}</span>
-                  <span className="text-[10px] text-slate-400">{user.role === "admin" ? "管理员" : "创作者"}</span>
+                  <span className="text-xs font-semibold text-slate-800">{user.username}</span>
+                  <span className="text-[10px] text-slate-500">{user.role === "admin" ? "管理员" : "创作者"}</span>
                 </div>
                 <button
                   onClick={handleLogout}
                   title="退出登录"
-                  className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800/60 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -166,13 +160,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => openAuthModal("login")}
-                className="px-3.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-xl transition-all cursor-pointer"
+                className="px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all cursor-pointer"
               >
                 登录
               </button>
               <button
                 onClick={() => openAuthModal("register")}
-                className="px-4 py-1.5 text-xs font-semibold text-white bg-sky-500 hover:bg-sky-400 rounded-xl shadow-lg shadow-sky-500/25 transition-all cursor-pointer"
+                className="px-3 py-1 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-all cursor-pointer"
               >
                 注册体验
               </button>
@@ -182,33 +176,32 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Body with Sidebar */}
-      <div className="flex-1 flex w-full max-w-[1720px] mx-auto">
+      <div className="flex-1 flex w-full max-w-[1600px] mx-auto">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-slate-800/80 bg-[#090d16]/60 p-4 gap-6 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
+        <aside className="hidden lg:flex flex-col w-56 shrink-0 border-r border-slate-200/80 bg-slate-50/50 p-3.5 gap-6 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
           {groups.map((group) => (
-            <div key={group.title} className="flex flex-col gap-1">
-              <div className="flex items-center justify-between px-3 py-1">
-                <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{group.title}</span>
-                <span className="text-[9px] font-mono text-slate-500">{group.enTitle}</span>
-              </div>
+            <div key={group.title} className="flex flex-col gap-0.5">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2.5 py-1">
+                {group.title}
+              </span>
               {group.items.map((item) => {
                 const active = activePath === item.path;
                 return (
                   <button
                     key={item.path}
                     onClick={() => navigate(item.path)}
-                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 cursor-pointer ${
+                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
                       active
-                        ? "bg-gradient-to-r from-sky-500/15 to-indigo-500/15 text-sky-300 border border-sky-500/30 shadow-sm"
-                        : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/50"
+                        ? "bg-white text-slate-900 border border-slate-200/90 shadow-xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className={active ? "text-sky-400" : "text-slate-500"}>{item.icon}</span>
+                    <div className="flex items-center gap-2.5">
+                      <span className={active ? "text-slate-900" : "text-slate-400"}>{item.icon}</span>
                       <span>{item.label}</span>
                     </div>
                     {item.badge && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-50 text-sky-700 border border-sky-200">
                         {item.badge}
                       </span>
                     )}
@@ -218,13 +211,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           ))}
 
-          <div className="mt-auto p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-indigo-950/40 border border-slate-800/80 text-xs text-slate-400 flex flex-col gap-2">
-            <div className="flex items-center gap-1.5 text-sky-400 font-semibold">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>pi 0.85.1 编码智能体</span>
+          <div className="mt-auto p-3 rounded-xl bg-white border border-slate-200/80 text-xs text-slate-500 flex flex-col gap-1.5 shadow-xs">
+            <div className="flex items-center gap-1.5 text-slate-800 font-medium">
+              <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+              <span>pi 0.85.1 智能体</span>
             </div>
-            <p className="text-[11px] leading-relaxed text-slate-400">
-              gVisor 独立沙箱隔离执行，严格加密的 BYOK 凭据代理，生成真实前端交互作品。
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              gVisor 独立沙箱隔离执行，严格加密的 BYOK 凭据代理。
             </p>
           </div>
         </aside>
@@ -232,17 +225,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Mobile Drawer */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
-            <div className="fixed inset-y-0 left-0 w-72 bg-slate-950 border-r border-slate-800 p-4 flex flex-col gap-6 overflow-y-auto">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span className="font-bold text-slate-200">导航菜单</span>
-                <button onClick={() => setMobileMenuOpen(false)} className="p-1 text-slate-400 hover:text-white">
+            <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs" onClick={() => setMobileMenuOpen(false)} />
+            <div className="fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 p-4 flex flex-col gap-6 overflow-y-auto shadow-xl">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <span className="font-semibold text-slate-900 text-sm">导航菜单</span>
+                <button onClick={() => setMobileMenuOpen(false)} className="p-1 text-slate-400 hover:text-slate-700">
                   <X className="w-5 h-5" />
                 </button>
               </div>
               {groups.map((group) => (
                 <div key={group.title} className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold text-slate-400 px-3">{group.title}</span>
+                  <span className="text-xs font-semibold text-slate-400 px-2.5">{group.title}</span>
                   {group.items.map((item) => (
                     <button
                       key={item.path}
@@ -250,10 +243,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         navigate(item.path);
                         setMobileMenuOpen(false);
                       }}
-                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium ${
+                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium ${
                         activePath === item.path
-                          ? "bg-sky-500/20 text-sky-300 border border-sky-500/30"
-                          : "text-slate-400 hover:text-white hover:bg-slate-900"
+                          ? "bg-slate-100 text-slate-900 font-semibold"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                       }`}
                     >
                       {item.icon}

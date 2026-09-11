@@ -11,11 +11,6 @@ import {
   GitCompare,
   ArrowLeft,
   RotateCw,
-  ThumbsUp,
-  Smile,
-  Cpu,
-  Clock,
-  Zap,
 } from "lucide-react";
 
 export function ComparePage() {
@@ -29,7 +24,6 @@ export function ComparePage() {
   const [previewB, setPreviewB] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  // Parse initial query params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const a = params.get("a");
@@ -38,7 +32,6 @@ export function ComparePage() {
     if (b) setRunBId(b);
   }, []);
 
-  // Fetch published runs for selection
   useEffect(() => {
     let mounted = true;
     async function loadPublished() {
@@ -61,7 +54,6 @@ export function ComparePage() {
     };
   }, [showToast]);
 
-  // Load details and previews for A & B
   useEffect(() => {
     if (!runAId) return;
     let mounted = true;
@@ -107,23 +99,23 @@ export function ComparePage() {
   }, [runBId]);
 
   return (
-    <div className="flex flex-col gap-6 max-w-[1720px] mx-auto w-full pb-16 animate-in fade-in duration-300">
+    <div className="flex flex-col gap-6 max-w-[1720px] mx-auto w-full pb-16 animate-in fade-in duration-200">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate("/gallery")}
-            className="p-2 text-slate-400 hover:text-slate-200 rounded-xl hover:bg-slate-800"
+            className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-100 flex items-center gap-2">
-              <GitCompare className="w-6 h-6 text-sky-400" />
-              <span>左右双屏盲测与作品对比 (Compare Arena)</span>
+            <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <GitCompare className="w-5 h-5 text-sky-600" />
+              <span>左右双屏对比 (Compare Arena)</span>
             </h1>
-            <p className="text-xs text-slate-400">
-              同台竞技：观察不同大模型在同一或不同任务下的生成逻辑、交互流畅度与 Token 成本。
+            <p className="text-xs text-slate-500">
+              同台竞技：观察不同大模型在同一或不同任务下的生成逻辑、动效节奏与 Token 成本。
             </p>
           </div>
         </div>
@@ -132,18 +124,17 @@ export function ComparePage() {
           variant="secondary"
           size="sm"
           onClick={() => setReloadKey((k) => k + 1)}
-          icon={<RotateCw className="w-4 h-4" />}
+          icon={<RotateCw className="w-3.5 h-3.5" />}
         >
-          同时刷新两侧画布
+          刷新两侧画布
         </Button>
       </div>
 
       {/* Selectors Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left selector */}
-        <Card className="p-4 bg-slate-900/90 border-sky-500/30">
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4 bg-white border-slate-200 shadow-xs">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold text-slate-700">
               参选作品 A (左侧)
             </span>
             <Select
@@ -157,10 +148,9 @@ export function ComparePage() {
           </div>
         </Card>
 
-        {/* Right selector */}
-        <Card className="p-4 bg-slate-900/90 border-indigo-500/30">
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
+        <Card className="p-4 bg-white border-slate-200 shadow-xs">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold text-slate-700">
               参选作品 B (右侧)
             </span>
             <Select
@@ -176,65 +166,65 @@ export function ComparePage() {
       </div>
 
       {/* Side-by-side Metrics Comparison Table */}
-      <Card className="p-6 bg-slate-950/80 border border-slate-800">
-        <div className="grid grid-cols-3 gap-4 text-xs font-mono">
-          <div className="text-slate-500 font-sans font-semibold">对比维度</div>
-          <div className="font-bold text-sky-300">{runA?.model || "作品 A"}</div>
-          <div className="font-bold text-indigo-300">{runB?.model || "作品 B"}</div>
+      <Card className="p-5 bg-white border border-slate-200 shadow-xs">
+        <div className="grid grid-cols-3 gap-3 text-xs font-mono">
+          <div className="text-slate-400 font-sans font-medium">对比指标</div>
+          <div className="font-bold text-slate-900">{runA?.model || "作品 A"}</div>
+          <div className="font-bold text-slate-900">{runB?.model || "作品 B"}</div>
 
           {/* Row: Challenge */}
-          <div className="text-slate-400 py-1.5 border-t border-slate-900">题目名称</div>
-          <div className="text-slate-200 py-1.5 border-t border-slate-900 font-sans font-medium truncate">
+          <div className="text-slate-500 py-1.5 border-t border-slate-100">题目名称</div>
+          <div className="text-slate-800 py-1.5 border-t border-slate-100 font-sans truncate">
             {runA?.title || "—"}
           </div>
-          <div className="text-slate-200 py-1.5 border-t border-slate-900 font-sans font-medium truncate">
+          <div className="text-slate-800 py-1.5 border-t border-slate-100 font-sans truncate">
             {runB?.title || "—"}
           </div>
 
           {/* Row: Model Badge */}
-          <div className="text-slate-400 py-1.5 border-t border-slate-900">驱动大模型</div>
-          <div className="py-1.5 border-t border-slate-900">
+          <div className="text-slate-500 py-1.5 border-t border-slate-100">驱动模型</div>
+          <div className="py-1.5 border-t border-slate-100">
             {runA ? <VendorBadge name={runA.model} label={runA.model} /> : "—"}
           </div>
-          <div className="py-1.5 border-t border-slate-900">
+          <div className="py-1.5 border-t border-slate-100">
             {runB ? <VendorBadge name={runB.model} label={runB.model} /> : "—"}
           </div>
 
           {/* Row: Elapsed */}
-          <div className="text-slate-400 py-1.5 border-t border-slate-900">执行耗时</div>
-          <div className="text-slate-200 py-1.5 border-t border-slate-900">
+          <div className="text-slate-500 py-1.5 border-t border-slate-100">耗时</div>
+          <div className="text-slate-800 py-1.5 border-t border-slate-100">
             {runA?.metrics?.elapsed_ms ? `${(runA.metrics.elapsed_ms / 1000).toFixed(1)}s` : "—"}
           </div>
-          <div className="text-slate-200 py-1.5 border-t border-slate-900">
+          <div className="text-slate-800 py-1.5 border-t border-slate-100">
             {runB?.metrics?.elapsed_ms ? `${(runB.metrics.elapsed_ms / 1000).toFixed(1)}s` : "—"}
           </div>
 
           {/* Row: Token total */}
-          <div className="text-slate-400 py-1.5 border-t border-slate-900">消耗 Token</div>
-          <div className="text-sky-400 py-1.5 border-t border-slate-900 font-bold">
+          <div className="text-slate-500 py-1.5 border-t border-slate-100">消耗 Token</div>
+          <div className="text-slate-900 py-1.5 border-t border-slate-100 font-bold">
             {runA?.metrics?.tokens?.total ? runA.metrics.tokens.total.toLocaleString() : "—"}
           </div>
-          <div className="text-indigo-400 py-1.5 border-t border-slate-900 font-bold">
+          <div className="text-slate-900 py-1.5 border-t border-slate-100 font-bold">
             {runB?.metrics?.tokens?.total ? runB.metrics.tokens.total.toLocaleString() : "—"}
           </div>
 
           {/* Row: Votes */}
-          <div className="text-slate-400 py-1.5 border-t border-slate-900">社区能力 / 趣味分</div>
-          <div className="text-slate-200 py-1.5 border-t border-slate-900 flex items-center gap-3">
-            <span className="text-sky-400">👍 {runA?.capability ?? 0}</span>
-            <span className="text-amber-400">😄 {runA?.funny ?? 0}</span>
+          <div className="text-slate-500 py-1.5 border-t border-slate-100">能力 / 趣味评分</div>
+          <div className="text-slate-800 py-1.5 border-t border-slate-100 flex items-center gap-3">
+            <span className="text-sky-700 font-semibold">👍 {runA?.capability ?? 0}</span>
+            <span className="text-amber-700 font-semibold">😄 {runA?.funny ?? 0}</span>
           </div>
-          <div className="text-slate-200 py-1.5 border-t border-slate-900 flex items-center gap-3">
-            <span className="text-sky-400">👍 {runB?.capability ?? 0}</span>
-            <span className="text-amber-400">😄 {runB?.funny ?? 0}</span>
+          <div className="text-slate-800 py-1.5 border-t border-slate-100 flex items-center gap-3">
+            <span className="text-sky-700 font-semibold">👍 {runB?.capability ?? 0}</span>
+            <span className="text-amber-700 font-semibold">😄 {runB?.funny ?? 0}</span>
           </div>
         </div>
       </Card>
 
       {/* Side-by-side Live Iframes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[600px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[580px]">
         {/* Iframe A */}
-        <div className="relative w-full h-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl flex items-center justify-center">
+        <div className="relative w-full h-full rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-xs flex items-center justify-center">
           {previewA ? (
             <iframe
               key={`a-${reloadKey}`}
@@ -244,7 +234,7 @@ export function ComparePage() {
               className="w-full h-full border-0 bg-white"
             />
           ) : (
-            <span className="text-xs text-slate-500">作品 A 未生成沙箱预览</span>
+            <span className="text-xs text-slate-400">作品 A 未生成沙箱预览</span>
           )}
           <div className="absolute top-3 left-3 pointer-events-none">
             <Badge variant="brand">作品 A</Badge>
@@ -252,7 +242,7 @@ export function ComparePage() {
         </div>
 
         {/* Iframe B */}
-        <div className="relative w-full h-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl flex items-center justify-center">
+        <div className="relative w-full h-full rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-xs flex items-center justify-center">
           {previewB ? (
             <iframe
               key={`b-${reloadKey}`}
@@ -262,7 +252,7 @@ export function ComparePage() {
               className="w-full h-full border-0 bg-white"
             />
           ) : (
-            <span className="text-xs text-slate-500">作品 B 未生成沙箱预览</span>
+            <span className="text-xs text-slate-400">作品 B 未生成沙箱预览</span>
           )}
           <div className="absolute top-3 left-3 pointer-events-none">
             <Badge variant="purple">作品 B</Badge>

@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "vite build frontend --config frontend/vite.config.ts && rm -rf web/assets && cp -r frontend/dist/assets web/assets && cp frontend/dist/index.html web/index.html",
-    "dev": "vite frontend --config frontend/vite.config.ts"
+    "build": "vite build frontend --config frontend/vite.config.ts",
+    "preview": "vite preview frontend --config frontend/vite.config.ts --port 5173 --host 0.0.0.0"
   },
   "keywords": [],
   "author": "",

@@ -12,9 +12,6 @@ import {
   Plus,
   Trash2,
   Upload,
-  FileCode,
-  Layers,
-  FileArchive,
 } from "lucide-react";
 
 export function SkillsPage() {
@@ -23,7 +20,6 @@ export function SkillsPage() {
   const [loading, setLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  // Upload fields
   const [name, setName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -94,63 +90,64 @@ export function SkillsPage() {
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center p-16 max-w-md mx-auto text-center gap-4">
-        <Puzzle className="w-12 h-12 text-slate-600" />
-        <h2 className="text-xl font-bold text-slate-100">请先登录创作者账号</h2>
+      <div className="flex flex-col items-center justify-center p-16 max-w-md mx-auto text-center gap-3">
+        <Puzzle className="w-10 h-10 text-slate-400" />
+        <h2 className="text-xl font-bold text-slate-900">请先登录创作者账号</h2>
         <Button onClick={() => openAuthModal("login")}>立即登录</Button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full pb-16 animate-in fade-in duration-300">
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full pb-16 animate-in fade-in duration-200">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-extrabold text-slate-100 flex items-center gap-2">
-            <Puzzle className="w-6 h-6 text-sky-400" />
+          <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+            <Puzzle className="w-6 h-6 text-slate-700" />
             <span>Skill 扩展库 (Agent Extensions)</span>
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             上传专有工具定义与指导文档 (SKILL.md 或 ZIP 包)。智能体将在沙箱构建前挂载并阅读。
           </p>
         </div>
 
         <Button
-          variant="glow"
+          variant="primary"
+          size="sm"
           onClick={() => setAddModalOpen(true)}
-          icon={<Plus className="w-4 h-4" />}
+          icon={<Plus className="w-3.5 h-3.5" />}
         >
           上传新 Skill
         </Button>
       </div>
 
       {loading ? (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           {[1, 2].map((i) => (
-            <div key={i} className="h-28 rounded-2xl bg-slate-900/40 border border-slate-800 animate-shimmer" />
+            <div key={i} className="h-20 rounded-2xl bg-white border border-slate-200 animate-pulse" />
           ))}
         </div>
       ) : skills.length === 0 ? (
-        <div className="p-12 rounded-2xl bg-slate-900/40 border border-slate-800 text-center flex flex-col items-center gap-3">
-          <p className="text-sm text-slate-400">暂无 Skill 扩展</p>
+        <div className="p-12 rounded-2xl bg-white border border-slate-200 text-center flex flex-col items-center gap-3 shadow-xs">
+          <p className="text-xs text-slate-500">暂无 Skill 扩展</p>
           <Button variant="primary" size="sm" onClick={() => setAddModalOpen(true)}>
             上传第一个 Skill
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-3">
           {skills.map((s) => (
-            <Card key={s.id} className="p-6 flex items-center justify-between bg-slate-900/80">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
-                  <Puzzle className="w-5 h-5" />
+            <Card key={s.id} className="p-4 flex items-center justify-between bg-white border-slate-200">
+              <div className="flex items-center gap-3.5">
+                <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700">
+                  <Puzzle className="w-4 h-4" />
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-base font-bold text-slate-100">{s.name}</span>
-                    <Badge variant="brand" size="sm">v{s.current_revision}</Badge>
+                    <span className="text-sm font-bold text-slate-900">{s.name}</span>
+                    <Badge variant="neutral" size="sm">v{s.current_revision}</Badge>
                   </div>
-                  <span className="text-xs text-slate-500 font-mono">
+                  <span className="text-xs text-slate-400 font-mono">
                     上传时间: {new Date(s.created * 1000).toLocaleDateString()} · 包含 {s.revisions?.length || 1} 个历史版本
                   </span>
                 </div>
@@ -158,7 +155,7 @@ export function SkillsPage() {
 
               <button
                 onClick={() => handleDelete(s.id)}
-                className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                 title="删除 Skill"
               >
                 <Trash2 className="w-4 h-4" />
@@ -175,7 +172,7 @@ export function SkillsPage() {
         title="上传新 Skill 扩展包"
         maxWidth="max-w-lg"
       >
-        <form onSubmit={handleUpload} className="flex flex-col gap-4 mt-2">
+        <form onSubmit={handleUpload} className="flex flex-col gap-3.5 mt-1">
           <Input
             label="Skill 标识名称"
             required
@@ -185,16 +182,16 @@ export function SkillsPage() {
           />
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-slate-300">选择文件 (支持 .md 或 .zip，最大 256KB)</label>
+            <label className="text-xs font-medium text-slate-700">选择文件 (支持 .md 或 .zip，最大 256KB)</label>
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="p-6 border-2 border-dashed border-slate-700 hover:border-sky-500/60 rounded-xl bg-slate-950 flex flex-col items-center gap-2 cursor-pointer transition-colors"
+              className="p-6 border-2 border-dashed border-slate-200 hover:border-slate-400 rounded-xl bg-slate-50 flex flex-col items-center gap-2 cursor-pointer transition-colors"
             >
-              <Upload className="w-6 h-6 text-slate-400" />
-              <span className="text-xs text-slate-300">
+              <Upload className="w-5 h-5 text-slate-400" />
+              <span className="text-xs text-slate-700 font-medium">
                 {file ? file.name : "点击选择 SKILL.md 或 ZIP 归档"}
               </span>
-              <span className="text-[10px] text-slate-500">根目录必须包含 SKILL.md</span>
+              <span className="text-[10px] text-slate-400">根目录必须包含 SKILL.md</span>
             </div>
             <input
               ref={fileInputRef}
@@ -205,15 +202,16 @@ export function SkillsPage() {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
             <Button
               type="button"
               variant="outline"
+              size="sm"
               onClick={() => setAddModalOpen(false)}
             >
               取消
             </Button>
-            <Button type="submit" loading={submitting} variant="glow">
+            <Button type="submit" loading={submitting} variant="primary" size="sm">
               确认上传
             </Button>
           </div>

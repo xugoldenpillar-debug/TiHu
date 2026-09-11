@@ -12,19 +12,14 @@ import type {
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
-import { Select, Textarea } from "../../components/ui/Input";
-import { VendorIcon, VendorBadge } from "../../components/common/VendorIcon";
+import { Select } from "../../components/ui/Input";
+import { VendorIcon } from "../../components/common/VendorIcon";
 import {
   Sparkles,
   Zap,
-  Key,
   Puzzle,
-  FileText,
   AlertTriangle,
-  ArrowRight,
   Plus,
-  ShieldAlert,
-  Cpu,
 } from "lucide-react";
 
 export function StudioPage() {
@@ -49,7 +44,6 @@ export function StudioPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Initialize from URL query params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const qChallenge = params.get("challenge_id");
@@ -58,7 +52,6 @@ export function StudioPage() {
     if (qVersion) setSelectedVersionId(qVersion);
   }, []);
 
-  // Fetch initial data
   useEffect(() => {
     if (!user) {
       setLoading(false);
@@ -82,7 +75,6 @@ export function StudioPage() {
         setPrompts(pRes || []);
         setSkills(sRes || []);
 
-        // Defaults
         if (!selectedChallengeId && cRes.items?.length) {
           setSelectedChallengeId(cRes.items[0].id);
         }
@@ -105,7 +97,6 @@ export function StudioPage() {
     };
   }, [user, showToast]);
 
-  // Load challenge detail when challenge changed
   useEffect(() => {
     if (!selectedChallengeId) return;
     let mounted = true;
@@ -127,7 +118,6 @@ export function StudioPage() {
     };
   }, [selectedChallengeId]);
 
-  // Update models when connection changed
   const currentConn = connections.find((c) => c.id === selectedConnectionId);
   useEffect(() => {
     if (currentConn && currentConn.models?.length) {
@@ -196,15 +186,15 @@ export function StudioPage() {
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center p-16 max-w-lg mx-auto text-center gap-4 animate-in fade-in duration-300">
-        <div className="w-16 h-16 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
-          <Sparkles className="w-8 h-8" />
+      <div className="flex flex-col items-center justify-center p-16 max-w-md mx-auto text-center gap-3">
+        <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-800">
+          <Sparkles className="w-6 h-6 text-sky-600" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-100">请先登录创作者账号</h2>
-        <p className="text-sm text-slate-400">
-          TiHu 采用 BYOK (Bring Your Own Key) 模式，所有代码由智能体在隔离的 gVisor 沙箱中运行。
+        <h2 className="text-xl font-bold text-slate-900">请先登录创作者账号</h2>
+        <p className="text-xs text-slate-500">
+          TiHu 采用 BYOK (Bring Your Own Key) 模式，所有代码由智能体在隔离沙箱中运行。
         </p>
-        <Button variant="glow" onClick={() => openAuthModal("login")} className="mt-2">
+        <Button variant="primary" size="sm" onClick={() => openAuthModal("login")} className="mt-2">
           立即登录 / 注册
         </Button>
       </div>
@@ -212,44 +202,42 @@ export function StudioPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-5xl mx-auto w-full pb-16 animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full pb-16 animate-in fade-in duration-200">
+      <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             模型实验室 (Studio)
           </h1>
-          <Badge variant="brand">BYOK 编码智能体</Badge>
+          <Badge variant="brand">BYOK 模式</Badge>
         </div>
-        <p className="text-slate-400 text-sm">
-          配置运行参数，挂载前沿 Prompt 模板与 Skill 插件，启动专属于你的 pi 0.85.1 编码实验。
+        <p className="text-slate-500 text-xs">
+          选择题目、连接你自己的模型，挂载提示词或 Skill，启动独立沙箱实验。
         </p>
       </div>
 
-      {/* Quota Notice Banner */}
       {quota && (
-        <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs">
-          <div className="flex items-center gap-3">
-            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="text-slate-300">
-              当前运行并发: <strong className="text-slate-100">{quota.active}</strong> / {quota.active_limit} ·
-              24小时剩余额度: <strong className="text-slate-100">{quota.daily_remaining}</strong> / {quota.daily_limit}
+        <div className="flex flex-wrap items-center justify-between gap-4 p-3.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-600 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+            <span>
+              并发数: <strong className="text-slate-900">{quota.active}</strong> / {quota.active_limit} ·
+              24小时剩余额度: <strong className="text-slate-900">{quota.daily_remaining}</strong> / {quota.daily_limit}
             </span>
           </div>
           {quota.daily_remaining <= 0 && (
-            <span className="text-rose-400 font-semibold">今日额度已满，请等待恢复</span>
+            <span className="text-rose-600 font-medium">今日额度已满，请等待恢复</span>
           )}
         </div>
       )}
 
-      <form onSubmit={handleStartRun} className="flex flex-col gap-8">
-        {/* Step 1: Challenge selection */}
-        <Card className="p-6 sm:p-8 flex flex-col gap-5">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-            <span className="w-6 h-6 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center font-bold text-xs">
+      <form onSubmit={handleStartRun} className="flex flex-col gap-6">
+        {/* Step 1 */}
+        <Card className="p-6 flex flex-col gap-4">
+          <div className="flex items-center gap-2 pb-2.5 border-b border-slate-100">
+            <span className="w-5 h-5 rounded-md bg-slate-900 text-white flex items-center justify-center font-bold text-[11px]">
               1
             </span>
-            <h2 className="text-base font-bold text-slate-100">选择挑战题目与版本</h2>
+            <h2 className="text-sm font-bold text-slate-900">选择挑战题目与版本</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -280,9 +268,9 @@ export function StudioPage() {
           </div>
 
           {selectedChallengeDetail && (
-            <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-xs flex flex-col gap-2">
-              <span className="font-semibold text-slate-300">任务提示词预览:</span>
-              <p className="font-mono text-slate-400 line-clamp-3 leading-relaxed">
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs flex flex-col gap-1.5">
+              <span className="font-semibold text-slate-700">任务提示词预览:</span>
+              <p className="font-mono text-slate-600 line-clamp-3 leading-relaxed">
                 {selectedChallengeDetail.versions.find((v) => v.id === selectedVersionId)?.prompt ||
                   selectedChallengeDetail.description}
               </p>
@@ -290,19 +278,19 @@ export function StudioPage() {
           )}
         </Card>
 
-        {/* Step 2: Model & Connection */}
-        <Card className="p-6 sm:p-8 flex flex-col gap-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        {/* Step 2 */}
+        <Card className="p-6 flex flex-col gap-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center font-bold text-xs">
+              <span className="w-5 h-5 rounded-md bg-slate-900 text-white flex items-center justify-center font-bold text-[11px]">
                 2
               </span>
-              <h2 className="text-base font-bold text-slate-100">连接配置与模型选择</h2>
+              <h2 className="text-sm font-bold text-slate-900">连接配置与模型选择</h2>
             </div>
             <button
               type="button"
               onClick={() => navigate("/connections")}
-              className="text-xs text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 cursor-pointer"
+              className="text-xs text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>管理/添加连接</span>
@@ -310,10 +298,10 @@ export function StudioPage() {
           </div>
 
           {connections.length === 0 ? (
-            <div className="p-6 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col items-center gap-3 text-center">
-              <AlertTriangle className="w-8 h-8 text-amber-400" />
-              <p className="text-xs text-amber-200">
-                尚未配置任何 API 连接。TiHu 不存储你的明文 Key，由受信任 Worker 仅在内存中解密代理。
+            <div className="p-6 rounded-xl bg-amber-50 border border-amber-200 flex flex-col items-center gap-2 text-center">
+              <AlertTriangle className="w-6 h-6 text-amber-500" />
+              <p className="text-xs text-amber-800">
+                尚未配置任何 API 连接。TiHu 不存储你的明文 Key，由受信 Worker 仅在内存中临时代理。
               </p>
               <Button
                 type="button"
@@ -321,7 +309,7 @@ export function StudioPage() {
                 size="sm"
                 onClick={() => navigate("/connections")}
               >
-                前往添加 API Key 连接
+                前往添加连接
               </Button>
             </div>
           ) : (
@@ -332,13 +320,13 @@ export function StudioPage() {
                 onChange={(e) => setSelectedConnectionId(e.target.value)}
                 options={connections.map((c) => ({
                   value: c.id,
-                  label: `${c.provider.toUpperCase()} (${c.base_url || "默认端点"})`,
+                  label: `${c.provider.toUpperCase()} (${c.base_url || "默认官方地址"})`,
                 }))}
               />
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-300 tracking-wide">
-                  选择大模型 (已同步列表)
+                <label className="text-xs font-medium text-slate-700">
+                  选择大模型
                 </label>
                 {currentConn?.models?.length ? (
                   <div className="flex items-center gap-2">
@@ -349,12 +337,12 @@ export function StudioPage() {
                         options={currentConn.models.map((m) => ({ value: m, label: m }))}
                       />
                     </div>
-                    <div className="shrink-0 p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center">
-                      <VendorIcon name={selectedModel} size={20} />
+                    <div className="shrink-0 p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center">
+                      <VendorIcon name={selectedModel} size={18} />
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xs text-slate-500 py-2.5">
+                  <div className="text-xs text-slate-400 py-2">
                     该连接未检测到可用模型，请在 API 连接页刷新模型列表。
                   </div>
                 )}
@@ -363,27 +351,26 @@ export function StudioPage() {
           )}
         </Card>
 
-        {/* Step 3: Optional Skill and Prompt templates */}
-        <Card className="p-6 sm:p-8 flex flex-col gap-5">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-            <span className="w-6 h-6 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center font-bold text-xs">
+        {/* Step 3 */}
+        <Card className="p-6 flex flex-col gap-4">
+          <div className="flex items-center gap-2 pb-2.5 border-b border-slate-100">
+            <span className="w-5 h-5 rounded-md bg-slate-900 text-white flex items-center justify-center font-bold text-[11px]">
               3
             </span>
-            <h2 className="text-base font-bold text-slate-100">
+            <h2 className="text-sm font-bold text-slate-900">
               增强插件与自定义 Prompt (可选)
             </h2>
           </div>
 
-          {/* Prompt template */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-300">
+              <label className="text-xs font-medium text-slate-700">
                 注入自定义前置提示词 (Prompt Template)
               </label>
               <button
                 type="button"
                 onClick={() => navigate("/prompts")}
-                className="text-xs text-slate-400 hover:text-slate-200"
+                className="text-xs text-slate-500 hover:text-slate-800"
               >
                 管理模板
               </button>
@@ -398,42 +385,43 @@ export function StudioPage() {
             />
           </div>
 
-          {/* Skill Bundles */}
-          <div className="flex flex-col gap-2 mt-2">
+          <div className="flex flex-col gap-2 mt-1">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-300">
-                挂载 Skill 扩展包 (最多选择 4 个)
+              <label className="text-xs font-medium text-slate-700">
+                挂载 Skill 扩展包 (最多选 4 个)
               </label>
               <button
                 type="button"
                 onClick={() => navigate("/skills")}
-                className="text-xs text-slate-400 hover:text-slate-200"
+                className="text-xs text-slate-500 hover:text-slate-800"
               >
                 上传新 Skill
               </button>
             </div>
 
             {skills.length === 0 ? (
-              <p className="text-xs text-slate-500">暂无可挂载的 Skill 扩展。</p>
+              <p className="text-xs text-slate-400">暂无可挂载的 Skill 扩展。</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {skills.map((s) => {
                   const selected = selectedSkillIds.includes(s.id);
                   return (
                     <div
                       key={s.id}
                       onClick={() => handleToggleSkill(s.id)}
-                      className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                      className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
                         selected
-                          ? "bg-sky-500/15 border-sky-500/60 text-sky-200"
-                          : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                          ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                          : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <Puzzle className={`w-4 h-4 ${selected ? "text-sky-400" : "text-slate-500"}`} />
-                        <span className="text-xs font-semibold text-slate-200">{s.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Puzzle className={`w-3.5 h-3.5 ${selected ? "text-white" : "text-slate-400"}`} />
+                        <span className="text-xs font-medium">{s.name}</span>
                       </div>
-                      <span className="text-[10px] font-mono text-slate-500">v{s.current_revision}</span>
+                      <span className={`text-[10px] font-mono ${selected ? "text-slate-300" : "text-slate-400"}`}>
+                        v{s.current_revision}
+                      </span>
                     </div>
                   );
                 })}
@@ -443,19 +431,19 @@ export function StudioPage() {
         </Card>
 
         {/* Consent & Submit */}
-        <Card className="p-6 sm:p-8 bg-gradient-to-br from-slate-900 to-indigo-950/40 border border-slate-800 flex flex-col gap-4">
-          <label className="flex items-start gap-3 cursor-pointer select-none">
+        <Card className="p-6 bg-white border-slate-200 flex flex-col gap-4">
+          <label className="flex items-start gap-2.5 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
-              className="mt-1 w-4 h-4 rounded text-sky-500 focus:ring-sky-500/40 bg-slate-950 border-slate-800"
+              className="mt-0.5 w-4 h-4 rounded text-slate-900 focus:ring-slate-900 border-slate-300"
             />
             <div className="flex flex-col text-xs leading-relaxed">
-              <span className="font-semibold text-slate-200">
-                我理解本次实验将在真实大模型服务商上发起 API 请求并可能产生费用
+              <span className="font-semibold text-slate-800">
+                我理解本次实验将在真实服务商上发起 API 请求并可能产生费用
               </span>
-              <span className="text-slate-400">
+              <span className="text-slate-500">
                 运行采用零重试策略，遇错不会自动重复计费。生成的交互产物归创作者所有。
               </span>
             </div>
@@ -465,7 +453,7 @@ export function StudioPage() {
             <Button
               type="submit"
               size="lg"
-              variant="glow"
+              variant="primary"
               loading={submitting}
               disabled={!consent || !connections.length}
               icon={<Sparkles className="w-4 h-4" />}
