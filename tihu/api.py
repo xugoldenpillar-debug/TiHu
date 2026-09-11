@@ -57,7 +57,11 @@ class Challenge(Input):
     category: str = Field(default='Creative', min_length=2, max_length=30)
     prompt: str = Field(min_length=10, max_length=6000)
     rubric: str = Field(min_length=3, max_length=3000)
+    art: str | None = Field(default=None, max_length=2500000)
 
+
+class ArtUpdate(Input):
+    art: str = Field(min_length=10, max_length=2500000)
 
 class VersionInput(Input):
     prompt: str = Field(min_length=10, max_length=6000)
@@ -87,7 +91,7 @@ class AdminChallengeUpdate(Input):
     title: str = Field(min_length=1, max_length=100)
     description: str = Field(min_length=1, max_length=1500)
     category: str = Field(min_length=1, max_length=30)
-    art: str | None = Field(default=None, max_length=500)
+    art: str | None = Field(default=None, max_length=2500000)
     prompt: str | None = Field(default=None, min_length=1, max_length=6000)
     rubric: str | None = Field(default=None, min_length=1, max_length=3000)
 class AdminPromptUpdate(Input):
@@ -410,9 +414,18 @@ def challenge_detail(ident:str,who=Depends(optional_user)):
 def create_challenge(body:Challenge,who=Depends(verified_user)):
     ident=db.uid();vid=db.uid();prompt=body.prompt.strip();rubric=body.rubric.strip()
     with db.engine.begin() as c:
-        c.execute(insert(db.challenges).values(id=ident,owner_id=who['id'],title=body.title,description=body.description,category=body.category,current_version=1,archived=False,created=db.now()))
+        c.execute(insert(db.challenges).values(id=ident,owner_id=who['id'],title=body.title,description=body.description,category=body.category,current_version=1,archived=False,art=body.art,created=db.now()))
         c.execute(insert(db.versions).values(id=vid,challenge_id=ident,number=1,prompt=prompt,rubric=rubric,sha256=stable_hash({'prompt':prompt,'rubric':rubric}),created=db.now()))
     return {'id':ident,'version_id':vid}
+
+@app.put('/api/challenges/{ident}/art')
+def update_challenge_art(ident:str,body:ArtUpdate,who=Depends(verified_user)):
+    with db.engine.begin() as c:
+        domain.admission_lock(c)
+        task=domain.require_row(c,db.challenges,ident)
+        if task['owner_id']!=who['id'] and who['role']!='admin':raise HTTPException(403,'owner_required')
+        c.execute(update(db.challenges).where(db.challenges.c.id==ident).values(art=body.art))
+    return {'ok':True,'art':body.art}
 
 @app.post('/api/challenges/{ident}/versions',status_code=201)
 def create_version(ident:str,body:VersionInput,who=Depends(verified_user)):
