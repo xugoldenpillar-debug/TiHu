@@ -21,6 +21,35 @@ export interface Harness {
   tools: string[];
   system_prompt_version: string;
 }
+export interface AdminUser {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  verified: boolean;
+  suspended: boolean;
+  created: number;
+}
+export interface AdminChallenge {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  current_version: number;
+  archived: boolean;
+  created: number;
+  author: string;
+  prompt: string;
+  rubric: string;
+}
+export interface AdminPrompt {
+  id: string;
+  owner_id: string;
+  name: string;
+  body: string;
+  created: number;
+  author: string;
+}
 export interface Quota {
   active: number;
   active_limit: number;
@@ -315,6 +344,27 @@ export function validResponse(
       Array.isArray(value) &&
       value.every((row) =>
         has(row, { id: "string", run_id: "string", reason: "string" }),
+      )
+    );
+  if (pathname === "/admin/users")
+    return (
+      Array.isArray(value) &&
+      value.every((row) =>
+        has(row, { id: "string", username: "string", email: "string" }),
+      )
+    );
+  if (pathname === "/admin/challenges")
+    return (
+      Array.isArray(value) &&
+      value.every((row) =>
+        has(row, { id: "string", title: "string", category: "string" }),
+      )
+    );
+  if (pathname === "/admin/prompts")
+    return (
+      Array.isArray(value) &&
+      value.every((row) =>
+        has(row, { id: "string", name: "string", body: "string" }),
       )
     );
   if (pathname === "/admin/metrics")

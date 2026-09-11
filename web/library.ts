@@ -14,9 +14,12 @@ import {
   formError,
   clearFormError,
   confirmDialog,
+  showDialog,
+  closeDialog,
   errorText,
   type Page,
 } from "./core.js";
+import type { AdminUser, AdminChallenge, AdminPrompt } from "./types.js";
 
 type Scope = { live: () => boolean; signal: AbortSignal };
 type Connection = {
@@ -871,113 +874,545 @@ export async function adminPage(): Promise<Page> {
   if (!state.user) return authGate();
   if (state.user.role !== "admin")
     return {
-      html: `${head("管理", "此区域仅向管理员开放。")}${empty("没有管理权限", "你仍可在公开作品的详情页提交举报。", '<a class="btn outline" href="#/gallery">浏览作品</a>')}${footer()}`,
+      html: `${head("管理中心", "此区域仅向管理员开放。")}${empty("没有管理权限", "你仍可在公开作品的详情页提交举报。", '<a class="btn outline" href="#/gallery">浏览作品</a>')}${footer()}`,
     };
-  let [reports, metrics] = await Promise.all([
-    api<Report[]>("/admin/reports"),
-    api<AdminMetrics>("/admin/metrics"),
-  ]);
-  const reportsHtml = () =>
-    reports.length
-      ? reports
-          .map(
-            (report) =>
-              `<article class="panel" data-report="${esc(report.id)}"><p class="meta">举报时间 ${esc(date(report.created))} · 举报人 <span class="mono">${esc(report.owner_id)}</span></p><p>${esc(report.reason)}</p><p class="help">作品 <a class="mono" href="#/run/${idPath(report.run_id)}">${esc(report.run_id)}</a></p><div class="actions"><button class="btn danger small" data-action="hide">隐藏作品</button><button class="btn outline small" data-action="resolve">标记已解决</button></div>${statusBox()}</article>`,
-          )
-          .join("")
-      : empty("没有待处理举报", "新的举报会出现在这里。");
-  const auditHtml = () =>
-    metrics.audit.length
-      ? `<div class="table-wrap" tabindex="0" role="region" aria-label="审计记录，可横向滚动"><table class="table"><caption>最近 ${metrics.audit.length} 条审计记录（最多 100 条）</caption><thead><tr><th scope="col">时间</th><th scope="col">操作者</th><th scope="col">操作</th><th scope="col">目标</th></tr></thead><tbody>${metrics.audit.map((entry) => `<tr><td>${esc(date(entry.created))}</td><td class="mono">${esc(entry.actor || "系统")}</td><td class="mono">${esc(entry.action)}</td><td class="mono">${esc(entry.target || "—")}</td></tr>`).join("")}</tbody></table></div>`
-      : empty("暂无审计记录", "管理操作会记录在这里，不包含 API Key。");
-  const queueHtml = () =>
-    metrics.queue.length
-      ? metrics.queue
-          .map(
-            (item) =>
-              `<div class="metric"><span>${esc(({ queued: "排队中", running: "运行中", succeeded: "已完成", failed: "失败", canceled: "已取消" } as Record<string, string>)[item.status] || item.status)}</span><strong>${esc(item.count)}</strong></div>`,
-          )
-          .join("")
-      : '<p class="muted">当前还没有实验。</p>';
+
+  let activeTab = "challenges";
+  let reports: Report[] = [];
+  let metrics: AdminMetrics = { queue: [], audit: [] };
+  let challenges: AdminChallenge[] = [];
+  let prompts: AdminPrompt[] = [];
+  let users: AdminUser[] = [];
+
+  let challengeQ = "";
+  let promptQ = "";
+  let userQ = "";
+
+  const tabsHtml = () => `
+    <nav class="tabs" data-admin-tabs>
+      <button class="btn outline small ${activeTab === "challenges" ? "active" : ""}" data-tab="challenges">题目管控</button>
+      <button class="btn outline small ${activeTab === "prompts" ? "active" : ""}" data-tab="prompts">提示词审查</button>
+      <button class="btn outline small ${activeTab === "users" ? "active" : ""}" data-tab="users">用户管理</button>
+      <button class="btn outline small ${activeTab === "reports" ? "active" : ""}" data-tab="reports">待办举报 (${reports.length})</button>
+      <button class="btn outline small ${activeTab === "metrics" ? "active" : ""}" data-tab="metrics">全站与审计</button>
+    </nav>
+  `;
+
+  const challengesHtml = () => `
+    <section class="panel stack" data-tab-panel="challenges">
+      <div class="row between">
+        <div class="row" style="gap:8px;">
+          <input class="input" style="min-width:260px;" type="search" data-q="challenges" placeholder="搜索题目名称…" value="${esc(challengeQ)}">
+          <button class="btn outline small" data-action="search-challenges">搜索</button>
+        </div>
+        <button class="btn outline small" data-action="refresh-challenges">刷新题目</button>
+      </div>
+      ${challenges.length ? `
+        <div class="table-wrap" tabindex="0" role="region" aria-label="题目列表">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>标题</th>
+                <th>分类</th>
+                <th>版本</th>
+                <th>作者</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${challenges.map((c) => `
+                <tr data-challenge-row="${esc(c.id)}">
+                  <td><strong>${esc(c.title)}</strong></td>
+                  <td><span class="mono">${esc(c.category)}</span></td>
+                  <td>v${esc(c.current_version)}</td>
+                  <td>${esc(c.author)}</td>
+                  <td>${c.archived ? '<span class="muted">已下架</span>' : '<span style="color:var(--green,#2e7d32);">正常</span>'}</td>
+                  <td class="row" style="gap:6px;">
+                    <button class="btn outline small" data-action="edit-challenge" data-id="${esc(c.id)}">编辑/改Prompt</button>
+                    <button class="btn outline small" data-action="toggle-archive" data-id="${esc(c.id)}" data-archived="${c.archived}">${c.archived ? "恢复" : "下架"}</button>
+                    <button class="btn danger small" data-action="delete-challenge" data-id="${esc(c.id)}" data-title="${esc(c.title)}">彻底删除</button>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      ` : empty("没有符合条件的题目", "可尝试更换关键词或刷新。")}
+    </section>
+  `;
+
+  const promptsHtml = () => `
+    <section class="panel stack" data-tab-panel="prompts">
+      <div class="row between">
+        <div class="row" style="gap:8px;">
+          <input class="input" style="min-width:260px;" type="search" data-q="prompts" placeholder="搜索提示词名称或敏感词…" value="${esc(promptQ)}">
+          <button class="btn outline small" data-action="search-prompts">搜索</button>
+        </div>
+        <button class="btn outline small" data-action="refresh-prompts">刷新提示词</button>
+      </div>
+      ${prompts.length ? `
+        <div class="table-wrap" tabindex="0" role="region" aria-label="全站提示词列表">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>模板名称</th>
+                <th>创建者</th>
+                <th>内容预览</th>
+                <th>创建时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${prompts.map((p) => `
+                <tr data-prompt-row="${esc(p.id)}">
+                  <td><strong>${esc(p.name)}</strong></td>
+                  <td>${esc(p.author)}</td>
+                  <td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.body)}">${esc(p.body)}</td>
+                  <td>${esc(date(p.created))}</td>
+                  <td class="row" style="gap:6px;">
+                    <button class="btn outline small" data-action="edit-prompt" data-id="${esc(p.id)}">编辑内容</button>
+                    <button class="btn danger small" data-action="delete-prompt" data-id="${esc(p.id)}" data-name="${esc(p.name)}">删除</button>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      ` : empty("没有提示词模板", "未检索到匹配的提示词模板。")}
+    </section>
+  `;
+
+  const usersHtml = () => `
+    <section class="panel stack" data-tab-panel="users">
+      <div class="row between">
+        <div class="row" style="gap:8px;">
+          <input class="input" style="min-width:260px;" type="search" data-q="users" placeholder="按用户名或邮箱搜索…" value="${esc(userQ)}">
+          <button class="btn outline small" data-action="search-users">搜索</button>
+        </div>
+        <button class="btn outline small" data-action="refresh-users">刷新用户</button>
+      </div>
+      ${users.length ? `
+        <div class="table-wrap" tabindex="0" role="region" aria-label="用户列表">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>用户名</th>
+                <th>邮箱</th>
+                <th>角色</th>
+                <th>状态</th>
+                <th>注册时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${users.map((u) => `
+                <tr data-user-row="${esc(u.id)}">
+                  <td><strong>${esc(u.username)}</strong></td>
+                  <td class="mono">${esc(u.email)}</td>
+                  <td><span class="mono">${esc(u.role)}</span></td>
+                  <td>${u.suspended ? '<span class="danger" style="color:var(--danger,#c62828);">已封禁</span>' : '<span style="color:var(--green,#2e7d32);">正常</span>'}</td>
+                  <td>${esc(date(u.created))}</td>
+                  <td>
+                    ${u.id === state.user?.id
+                      ? '<span class="muted">当前账号</span>'
+                      : `<button class="btn ${u.suspended ? "outline" : "danger"} small" data-action="toggle-suspend" data-id="${esc(u.id)}" data-name="${esc(u.username)}" data-suspended="${u.suspended}">${u.suspended ? "解封" : "封禁"}</button>`}
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      ` : empty("未找到用户", "换个关键词搜索试试。")}
+    </section>
+  `;
+
+  const reportsHtml = () => `
+    <section class="stack" data-tab-panel="reports">
+      <div class="section-head">
+        <h2>待处理举报</h2>
+        <span class="muted">${reports.length} 条待处理</span>
+      </div>
+      <p class="notice">隐藏会立即取消公开展示并隐身该作品。确认处理完成后，请另行“标记已解决”。</p>
+      ${reports.length ? reports.map((report) => `
+        <article class="panel" data-report="${esc(report.id)}">
+          <p class="meta">举报时间 ${esc(date(report.created))} · 举报人 <span class="mono">${esc(report.owner_id)}</span></p>
+          <p>${esc(report.reason)}</p>
+          <p class="help">作品 <a class="mono" href="#/run/${idPath(report.run_id)}">${esc(report.run_id)}</a></p>
+          <div class="actions">
+            <button class="btn danger small" data-action="hide">隐藏作品</button>
+            <button class="btn outline small" data-action="resolve">标记已解决</button>
+          </div>
+          ${statusBox()}
+        </article>
+      `).join("") : empty("没有待处理举报", "社区秩序良好，新的举报会出现在这里。")}
+    </section>
+  `;
+
+  const metricsHtml = () => `
+    <section class="stack" data-tab-panel="metrics">
+      <section class="panel stack">
+        <div class="section-head">
+          <h2>全站实验状态</h2>
+          <button class="btn outline small" data-action="refresh-metrics">刷新状态</button>
+        </div>
+        <div class="metric-grid">
+          ${metrics.queue.length ? metrics.queue.map((item) => `
+            <div class="metric">
+              <span>${esc(({ queued: "排队中", running: "运行中", succeeded: "已完成", failed: "失败", canceled: "已取消" } as Record<string, string>)[item.status] || item.status)}</span>
+              <strong>${esc(item.count)}</strong>
+            </div>
+          `).join("") : '<p class="muted">当前还没有实验。</p>'}
+        </div>
+      </section>
+      <section class="panel stack">
+        <h2>审计记录</h2>
+        ${metrics.audit.length ? `
+          <div class="table-wrap" tabindex="0" role="region" aria-label="审计记录">
+            <table class="table">
+              <caption>最近 ${metrics.audit.length} 条审计记录（最多 100 条）</caption>
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>操作者</th>
+                  <th>操作</th>
+                  <th>目标</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${metrics.audit.map((entry) => `
+                  <tr>
+                    <td>${esc(date(entry.created))}</td>
+                    <td class="mono">${esc(entry.actor || "系统")}</td>
+                    <td class="mono">${esc(entry.action)}</td>
+                    <td class="mono">${esc(entry.target || "—")}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        ` : empty("暂无审计记录", "管理操作会记录在这里，不包含 API Key。")}
+      </section>
+    </section>
+  `;
+
+  const contentHtml = () => {
+    switch (activeTab) {
+      case "challenges": return challengesHtml();
+      case "prompts": return promptsHtml();
+      case "users": return usersHtml();
+      case "reports": return reportsHtml();
+      case "metrics": return metricsHtml();
+      default: return challengesHtml();
+    }
+  };
+
+  // 初始化首屏数据
+  try {
+    const [resChallenges, resReports] = await Promise.all([
+      api<AdminChallenge[]>("/admin/challenges"),
+      api<Report[]>("/admin/reports"),
+    ]);
+    challenges = resChallenges;
+    reports = resReports;
+  } catch (err) {
+    // 错误处理由 core.ts 统一负责
+  }
+
   return {
-    html: `${head("管理", "先检查举报上下文，再隐藏作品或结束处理。审计记录保留每次管理操作。")}<section class="panel stack" data-admin-summary><div class="section-head"><h2>全站实验状态</h2><button class="btn outline small" data-action="refresh">刷新管理数据</button></div>${statusBox()}<div class="metric-grid" data-queue>${queueHtml()}</div></section><div class="section-head"><h2>待处理举报</h2><span class="muted" data-report-count>${reports.length} 条</span></div><p class="notice">隐藏会立即取消公开展示，但不会自动解决举报。确认处理完成后，请另行“标记已解决”；仅解决举报不会改变作品可见性。</p><section class="stack" data-reports>${reportsHtml()}</section><section class="panel stack"><h2>审计记录</h2><div data-audit>${auditHtml()}</div></section>${footer()}`,
+    html: `
+      ${head("管理中心", "管理题目库、审查提示词、管控用户并处理违规举报。")}
+      <div class="stack" data-admin-root>
+        ${tabsHtml()}
+        <div data-tab-content>${contentHtml()}</div>
+      </div>
+      ${footer()}
+    `,
     mount(root) {
       return mountScope(root, (scope) => {
-        const list = root.querySelector<HTMLElement>("[data-reports]")!;
-        const summary = root.querySelector<HTMLElement>(
-          "[data-admin-summary]",
-        )!;
-        const reload = async () => {
-          const [freshReports, freshMetrics] = await Promise.all([
-            api<Report[]>("/admin/reports"),
-            api<AdminMetrics>("/admin/metrics"),
-          ]);
-          if (!scope.live()) return;
-          reports = freshReports;
-          metrics = freshMetrics;
-          list.innerHTML = reportsHtml();
-          root.querySelector("[data-report-count]")!.textContent =
-            `${reports.length} 条`;
-          root.querySelector("[data-audit]")!.innerHTML = auditHtml();
-          root.querySelector("[data-queue]")!.innerHTML = queueHtml();
+        const tabContent = root.querySelector<HTMLElement>("[data-tab-content]")!;
+        const tabsContainer = root.querySelector<HTMLElement>("[data-admin-tabs]")!;
+
+        const renderTab = () => {
+          tabContent.innerHTML = contentHtml();
+          tabsContainer.querySelectorAll("[data-tab]").forEach((btn) => {
+            btn.classList.toggle("active", btn.getAttribute("data-tab") === activeTab);
+          });
         };
-        root.addEventListener(
-          "click",
-          (event) => {
-            const button = actionButton(event);
-            if (!button) return;
-            if (button.dataset.action === "refresh") {
-              void act(button, summary, scope, "正在刷新…", async () => {
-                await reload();
-                if (scope.live()) status(summary, "管理数据已刷新。");
+
+        const loadChallenges = async () => {
+          const q = challengeQ.trim() ? `?q=${encodeURIComponent(challengeQ.trim())}` : "";
+          challenges = await api<AdminChallenge[]>(`/admin/challenges${q}`);
+          if (activeTab === "challenges" && scope.live()) renderTab();
+        };
+
+        const loadPrompts = async () => {
+          const q = promptQ.trim() ? `?q=${encodeURIComponent(promptQ.trim())}` : "";
+          prompts = await api<AdminPrompt[]>(`/admin/prompts${q}`);
+          if (activeTab === "prompts" && scope.live()) renderTab();
+        };
+
+        const loadUsers = async () => {
+          const q = userQ.trim() ? `?q=${encodeURIComponent(userQ.trim())}` : "";
+          users = await api<AdminUser[]>(`/admin/users${q}`);
+          if (activeTab === "users" && scope.live()) renderTab();
+        };
+
+        const loadReports = async () => {
+          reports = await api<Report[]>("/admin/reports");
+          if (activeTab === "reports" && scope.live()) renderTab();
+        };
+
+        const loadMetrics = async () => {
+          metrics = await api<AdminMetrics>("/admin/metrics");
+          if (activeTab === "metrics" && scope.live()) renderTab();
+        };
+
+        // Tab 切换监听
+        tabsContainer.addEventListener("click", async (e) => {
+          const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-tab]");
+          if (!btn) return;
+          const tab = btn.getAttribute("data-tab")!;
+          if (tab === activeTab) return;
+          activeTab = tab;
+          renderTab();
+          if (activeTab === "challenges" && !challenges.length) await loadChallenges();
+          else if (activeTab === "prompts" && !prompts.length) await loadPrompts();
+          else if (activeTab === "users" && !users.length) await loadUsers();
+          else if (activeTab === "reports" && !reports.length) await loadReports();
+          else if (activeTab === "metrics" && !metrics.queue.length) await loadMetrics();
+        });
+
+        // 全局操作代理监听
+        root.addEventListener("click", async (event) => {
+          const button = actionButton(event);
+          if (!button) return;
+          const actName = button.dataset.action;
+          if (!actName) return;
+
+          // 1. 题目操作
+          if (actName === "search-challenges") {
+            const input = root.querySelector<HTMLInputElement>('input[data-q="challenges"]');
+            challengeQ = input ? input.value : "";
+            await loadChallenges();
+            return;
+          }
+          if (actName === "refresh-challenges") {
+            await loadChallenges();
+            toast("题目列表已刷新");
+            return;
+          }
+          if (actName === "toggle-archive") {
+            const id = button.dataset.id!;
+            const isArchived = button.dataset.archived === "true";
+            await mutate("/admin/moderate", "POST", {
+              action: isArchived ? "restore_challenge" : "archive_challenge",
+              target: id,
+            });
+            toast(isArchived ? "题目已恢复上架" : "题目已下架归档");
+            await loadChallenges();
+            return;
+          }
+          if (actName === "delete-challenge") {
+            const id = button.dataset.id!;
+            const title = button.dataset.title || "";
+            const ok = await confirmDialog({
+              title: `彻底删除题目《${title}》？`,
+              body: `<p>此操作将<strong>永久物理清除</strong>该题目、所有历代版本以及该题目下生成的<strong>所有历史实验作品与评测记录</strong>！</p><p class="danger" style="color:var(--danger,#c62828);">此操作不可撤销，请慎重决定！</p>`,
+              confirm: "彻底删除",
+              danger: true,
+            });
+            if (!ok || !scope.live()) return;
+            await mutate(`/admin/challenges/${id}`, "DELETE");
+            toast("题目已彻底删除");
+            await loadChallenges();
+            return;
+          }
+          if (actName === "edit-challenge") {
+            const id = button.dataset.id!;
+            const ch = challenges.find((x) => x.id === id);
+            if (!ch) return;
+            showDialog(
+              "编辑题目与 Prompt",
+              `<form id="edit-ch-form" class="stack">
+                ${field("ec-title", "题目名称", `<input id="ec-title" name="title" required minlength="1" maxlength="100" value="${esc(ch.title)}">`)}
+                ${field("ec-category", "分类", `<input id="ec-category" name="category" required minlength="1" maxlength="30" value="${esc(ch.category)}">`)}
+                ${field("ec-desc", "题目描述", `<textarea id="ec-desc" name="description" rows="3" required minlength="1" maxlength="1500">${esc(ch.description)}</textarea>`)}
+                ${field("ec-prompt", "当前引导语 (Prompt)", `<textarea id="ec-prompt" name="prompt" rows="6" required minlength="1" maxlength="6000">${esc(ch.prompt || "")}</textarea>`, "可直接在此微调 Prompt，保存后立即对新评测生效。")}
+                ${field("ec-rubric", "评判标准 (Rubric)", `<textarea id="ec-rubric" name="rubric" rows="4" required minlength="1" maxlength="3000">${esc(ch.rubric || "")}</textarea>`)}
+                <div class="actions">
+                  <button class="btn outline" type="button" data-dialog-cancel>取消</button>
+                  <button class="btn primary" type="submit">保存修改</button>
+                </div>
+              </form>`,
+              (dialog) => {
+                dialog.querySelector("[data-dialog-cancel]")?.addEventListener("click", closeDialog);
+                const form = dialog.querySelector<HTMLFormElement>("form")!;
+                form.addEventListener("submit", async (e) => {
+                  e.preventDefault();
+                  const fd = new FormData(form);
+                  await mutate(`/admin/challenges/${id}`, "PUT", {
+                    title: String(fd.get("title") || "").trim(),
+                    category: String(fd.get("category") || "").trim(),
+                    description: String(fd.get("description") || "").trim(),
+                    prompt: String(fd.get("prompt") || "").trim(),
+                    rubric: String(fd.get("rubric") || "").trim(),
+                  });
+                  closeDialog();
+                  toast("题目已成功更新");
+                  await loadChallenges();
+                });
+              }
+            );
+            return;
+          }
+
+          // 2. 提示词操作
+          if (actName === "search-prompts") {
+            const input = root.querySelector<HTMLInputElement>('input[data-q="prompts"]');
+            promptQ = input ? input.value : "";
+            await loadPrompts();
+            return;
+          }
+          if (actName === "refresh-prompts") {
+            await loadPrompts();
+            toast("提示词列表已刷新");
+            return;
+          }
+          if (actName === "edit-prompt") {
+            const id = button.dataset.id!;
+            const pr = prompts.find((x) => x.id === id);
+            if (!pr) return;
+            showDialog(
+              "编辑提示词模板",
+              `<form id="edit-pr-form" class="stack">
+                ${field("ep-name", "模板名称", `<input id="ep-name" name="name" required minlength="1" maxlength="80" value="${esc(pr.name)}">`)}
+                ${field("ep-body", "提示词内容 (Body)", `<textarea id="ep-body" name="body" rows="8" required minlength="1" maxlength="5000">${esc(pr.body)}</textarea>`)}
+                <div class="actions">
+                  <button class="btn outline" type="button" data-dialog-cancel>取消</button>
+                  <button class="btn primary" type="submit">保存修改</button>
+                </div>
+              </form>`,
+              (dialog) => {
+                dialog.querySelector("[data-dialog-cancel]")?.addEventListener("click", closeDialog);
+                const form = dialog.querySelector<HTMLFormElement>("form")!;
+                form.addEventListener("submit", async (e) => {
+                  e.preventDefault();
+                  const fd = new FormData(form);
+                  await mutate(`/admin/prompts/${id}`, "PUT", {
+                    name: String(fd.get("name") || "").trim(),
+                    body: String(fd.get("body") || "").trim(),
+                  });
+                  closeDialog();
+                  toast("提示词模板已更新");
+                  await loadPrompts();
+                });
+              }
+            );
+            return;
+          }
+          if (actName === "delete-prompt") {
+            const id = button.dataset.id!;
+            const name = button.dataset.name || "";
+            const ok = await confirmDialog({
+              title: `删除提示词《${name}》？`,
+              body: "<p>此提示词模板将被永久删除。</p>",
+              confirm: "删除模板",
+              danger: true,
+            });
+            if (!ok || !scope.live()) return;
+            await mutate(`/admin/prompts/${id}`, "DELETE");
+            toast("提示词已删除");
+            await loadPrompts();
+            return;
+          }
+
+          // 3. 用户操作
+          if (actName === "search-users") {
+            const input = root.querySelector<HTMLInputElement>('input[data-q="users"]');
+            userQ = input ? input.value : "";
+            await loadUsers();
+            return;
+          }
+          if (actName === "refresh-users") {
+            await loadUsers();
+            toast("用户列表已刷新");
+            return;
+          }
+          if (actName === "toggle-suspend") {
+            const id = button.dataset.id!;
+            const name = button.dataset.name || "";
+            const isSuspended = button.dataset.suspended === "true";
+            if (!isSuspended) {
+              const ok = await confirmDialog({
+                title: `封禁用户 @${name}？`,
+                body: `<p>封禁将<strong>立即注销其所有登录会话</strong>，清除投票，撤回所有公开作品并隐藏其全部评论！</p>`,
+                confirm: "确认封禁",
+                danger: true,
               });
-              return;
+              if (!ok || !scope.live()) return;
             }
+            await mutate("/admin/moderate", "POST", {
+              action: isSuspended ? "reinstate_user" : "suspend_user",
+              target: id,
+            });
+            toast(isSuspended ? `已解封用户 @${name}` : `已封禁用户 @${name}`);
+            await loadUsers();
+            return;
+          }
+
+          // 4. 举报处理
+          if (actName === "hide" || actName === "resolve") {
             const card = button.closest<HTMLElement>("[data-report]");
             if (!card) return;
-            const report = reports.find(
-              (report) => report.id === card.dataset.report,
-            )!;
-            const hide = button.dataset.action === "hide";
-            void act(button, card, scope, "处理中…", async () => {
-              const confirmed = await confirmDialog({
-                title: hide ? "隐藏这件作品？" : "将举报标记为已解决？",
-                body: hide
-                  ? `<p>作品 ${esc(report.run_id)} 将从公开页面移除并取消发布。举报仍保持待处理，请在完成调查后另行解决。</p>`
-                  : "<p>此举报将离开待处理列表，作品的公开状态不会改变。请确认已完成检查与必要处置。</p>",
-                confirm: hide ? "隐藏作品" : "标记已解决",
-                danger: hide,
-              });
-              if (!confirmed || !scope.live()) {
-                if (scope.live()) status(card, "");
-                return;
-              }
-              await mutate("/admin/moderate", "POST", {
-                action: hide ? "hide_run" : "resolve_report",
-                target: hide ? report.run_id : report.id,
-              });
-              if (!scope.live()) return;
-              toast(hide ? "作品已隐藏，举报仍待处理" : "举报已解决");
-              status(
-                summary,
-                hide
-                  ? "作品已隐藏。完成调查后，请将举报标记为已解决。"
-                  : "举报已解决，作品公开状态未改变。",
-              );
-              try {
-                await reload();
-              } catch (error) {
-                if (scope.live())
-                  status(
-                    summary,
-                    `管理操作已成功，但列表刷新失败：${errorText(error)}。请点击“刷新管理数据”，不要重复处理。`,
-                    "warn",
-                  );
-              }
+            const report = reports.find((r) => r.id === card.dataset.report);
+            if (!report) return;
+            const hide = actName === "hide";
+            const confirmed = await confirmDialog({
+              title: hide ? "隐藏这件作品？" : "将举报标记为已解决？",
+              body: hide
+                ? `<p>作品 ${esc(report.run_id)} 将从公开页面移除并取消发布。举报仍保持待处理，完成调查后请标记已解决。</p>`
+                : "<p>此举报将离开待处理列表，作品公开状态不会改变。请确认已完成处置。</p>",
+              confirm: hide ? "隐藏作品" : "标记已解决",
+              danger: hide,
             });
-          },
-          { signal: scope.signal },
-        );
+            if (!confirmed || !scope.live()) return;
+            await mutate("/admin/moderate", "POST", {
+              action: hide ? "hide_run" : "resolve_report",
+              target: hide ? report.run_id : report.id,
+            });
+            toast(hide ? "作品已隐藏" : "举报已标记解决");
+            await loadReports();
+            return;
+          }
+
+          // 5. 状态与审计
+          if (actName === "refresh-metrics") {
+            await loadMetrics();
+            toast("实验状态与审计日志已刷新");
+            return;
+          }
+        });
+
+        // 支持在各搜索框按 Enter 回车触发搜索
+        root.addEventListener("keydown", async (event) => {
+          if (event.key !== "Enter") return;
+          const input = event.target as HTMLElement;
+          if (input instanceof HTMLInputElement && input.dataset.q) {
+            event.preventDefault();
+            const qType = input.dataset.q;
+            if (qType === "challenges") {
+              challengeQ = input.value;
+              await loadChallenges();
+            } else if (qType === "prompts") {
+              promptQ = input.value;
+              await loadPrompts();
+            } else if (qType === "users") {
+              userQ = input.value;
+              await loadUsers();
+            }
+          }
+        });
       });
     },
   };
