@@ -99,8 +99,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             onClick={() => navigate("/explore")}
             className="flex items-center gap-2.5 cursor-pointer group select-none"
           >
-            <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden p-0.5">
-              <img src="/art/pelican.svg" alt="TiHu" className="w-full h-full object-contain" />
+            <div className="w-8 h-8 rounded-xl bg-white border border-slate-200/90 shadow-xs flex items-center justify-center overflow-hidden p-0.5 transition-transform group-hover:scale-105">
+              <img src="/logo.png" alt="TiHu Logo" className="w-full h-full object-contain" />
             </div>
             <div className="flex items-center gap-2">
               <span className="font-bold tracking-tight text-base text-slate-900">TiHu</span>

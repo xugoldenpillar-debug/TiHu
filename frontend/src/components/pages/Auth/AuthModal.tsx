@@ -63,7 +63,12 @@ export function AuthModal() {
   return (
     <Dialog open={Boolean(authModalMode)} onClose={closeAuthModal} maxWidth="max-w-md">
       <div className="flex flex-col gap-4">
-        {/* Tab Switcher */}
+        <div className="flex flex-col items-center justify-center text-center gap-1 pt-1">
+          <div className="w-11 h-11 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex items-center justify-center p-1">
+            <img src="/logo.png" alt="TiHu Logo" className="w-full h-full object-contain" />
+          </div>
+          <h2 className="text-base font-black text-slate-900 tracking-tight">TiHu · 模型实验场</h2>
+        </div>
         <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
           <button
             type="button"
