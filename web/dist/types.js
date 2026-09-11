@@ -150,6 +150,15 @@ export function validResponse(path, method, value) {
     if (pathname === "/admin/reports")
         return (Array.isArray(value) &&
             value.every((row) => has(row, { id: "string", run_id: "string", reason: "string" })));
+    if (pathname === "/admin/users")
+        return (Array.isArray(value) &&
+            value.every((row) => has(row, { id: "string", username: "string", email: "string" })));
+    if (pathname === "/admin/challenges")
+        return (Array.isArray(value) &&
+            value.every((row) => has(row, { id: "string", title: "string", category: "string" })));
+    if (pathname === "/admin/prompts")
+        return (Array.isArray(value) &&
+            value.every((row) => has(row, { id: "string", name: "string", body: "string" })));
     if (pathname === "/admin/metrics")
         return (record(value) && Array.isArray(value.queue) && Array.isArray(value.audit));
     return record(value) || Array.isArray(value);

@@ -80,8 +80,17 @@ class Vote(Input):
 class Comment(Input): body: str = Field(min_length=1, max_length=2000)
 class Report(Input): reason: str = Field(min_length=5, max_length=500)
 class Moderate(Input):
-    action: Literal['suspend_user','reinstate_user','archive_challenge','hide_run','unhide_run','resolve_report']
+    action: Literal['suspend_user','reinstate_user','archive_challenge','restore_challenge','hide_run','unhide_run','resolve_report','delete_prompt']
     target: str = Field(min_length=1, max_length=100)
+class AdminChallengeUpdate(Input):
+    title: str = Field(min_length=1, max_length=100)
+    description: str = Field(min_length=1, max_length=1500)
+    category: str = Field(min_length=1, max_length=30)
+    prompt: str | None = Field(default=None, min_length=1, max_length=6000)
+    rubric: str | None = Field(default=None, min_length=1, max_length=3000)
+class AdminPromptUpdate(Input):
+    name: str = Field(min_length=1, max_length=80)
+    body: str = Field(min_length=1, max_length=5000)
 class TokenBody(Input): token: str = Field(min_length=20, max_length=200)
 class ResetBody(TokenBody): password: str = Field(min_length=12, max_length=200)
 class EmailBody(Input): email: str = Field(min_length=3, max_length=254)
@@ -571,15 +580,102 @@ def moderate(body:Moderate,who=Depends(admin)):
         domain.admission_lock(c)
         if body.action in ('hide_run','unhide_run'):
             domain.require_row(c,db.runs,body.target);c.execute(update(db.runs).where(db.runs.c.id==body.target).values(hidden=body.action=='hide_run',published=False if body.action=='hide_run' else db.runs.c.published))
-        elif body.action=='archive_challenge':domain.require_row(c,db.challenges,body.target);c.execute(update(db.challenges).where(db.challenges.c.id==body.target).values(archived=True))
+        elif body.action in ('archive_challenge','restore_challenge'):
+            domain.require_row(c,db.challenges,body.target);c.execute(update(db.challenges).where(db.challenges.c.id==body.target).values(archived=body.action=='archive_challenge'))
         elif body.action in ('suspend_user','reinstate_user'):
+            if body.action=='suspend_user' and body.target==who['id']:raise HTTPException(400,'cannot_suspend_self')
             target=domain.require_row(c,db.users,body.target);suspended=body.action=='suspend_user';c.execute(update(db.users).where(db.users.c.id==target['id']).values(suspended=suspended))
             if suspended:
                 c.execute(delete(db.sessions).where(db.sessions.c.owner_id==target['id']));c.execute(delete(db.votes).where(db.votes.c.user_id==target['id']));c.execute(update(db.runs).where(db.runs.c.owner_id==target['id']).values(published=False,hidden=True))
+                c.execute(update(db.comments).where(db.comments.c.owner_id==target['id']).values(hidden=True))
                 canceled=c.execute(update(db.runs).where(db.runs.c.owner_id==target['id'],db.runs.c.status.in_(domain.ACTIVE)).values(status='canceled',finished=db.now(),error='account_suspended').returning(db.runs.c.id)).scalars().all()
                 for run_id in canceled:db.log(c,run_id,'canceled','Canceled because the account was suspended.')
         elif body.action=='resolve_report':domain.require_row(c,db.reports,body.target);c.execute(update(db.reports).where(db.reports.c.id==body.target).values(resolved=True))
+        elif body.action=='delete_prompt':
+            domain.require_row(c,db.prompt_templates,body.target);c.execute(delete(db.prompt_templates).where(db.prompt_templates.c.id==body.target))
         db.audit_log(c,who['id'],'moderation.'+body.action,body.target)
+    return {'ok':True}
+
+@app.get('/api/admin/users')
+def admin_users(q:str=Query('',max_length=200),suspended:bool|None=None,limit:int=Query(50,ge=1,le=100),_=Depends(admin)):
+    with db.engine.connect() as c:
+        stmt=select(db.users.c.id,db.users.c.username,db.users.c.email,db.users.c.role,db.users.c.verified,db.users.c.suspended,db.users.c.created)
+        if q.strip():
+            term=f"%{q.strip()}%"
+            stmt=stmt.where(or_(db.users.c.username.ilike(term),db.users.c.email.ilike(term)))
+        if suspended is not None:stmt=stmt.where(db.users.c.suspended==suspended)
+        return db.rows(c,stmt.order_by(db.users.c.created.desc()).limit(limit))
+
+@app.get('/api/admin/challenges')
+def admin_challenges(q:str=Query('',max_length=200),archived:bool|None=None,limit:int=Query(50,ge=1,le=100),_=Depends(admin)):
+    with db.engine.connect() as c:
+        stmt=select(
+            db.challenges.c.id,db.challenges.c.title,db.challenges.c.description,db.challenges.c.category,
+            db.challenges.c.current_version,db.challenges.c.archived,db.challenges.c.created,
+            db.users.c.username.label('author'),db.versions.c.prompt,db.versions.c.rubric
+        ).join(db.users,db.challenges.c.owner_id==db.users.c.id).join(
+            db.versions,and_(db.versions.c.challenge_id==db.challenges.c.id,db.versions.c.number==db.challenges.c.current_version)
+        )
+        if q.strip():stmt=stmt.where(db.challenges.c.title.ilike(f"%{q.strip()}%"))
+        if archived is not None:stmt=stmt.where(db.challenges.c.archived==archived)
+        return db.rows(c,stmt.order_by(db.challenges.c.created.desc()).limit(limit))
+
+@app.put('/api/admin/challenges/{ident}')
+def admin_update_challenge(ident:str,body:AdminChallengeUpdate,who=Depends(admin)):
+    with db.engine.begin() as c:
+        domain.admission_lock(c)
+        task=domain.require_row(c,db.challenges,ident)
+        c.execute(update(db.challenges).where(db.challenges.c.id==ident).values(title=body.title.strip(),description=body.description.strip(),category=body.category.strip()))
+        if body.prompt is not None and body.rubric is not None:
+            p=body.prompt.strip();r=body.rubric.strip()
+            c.execute(update(db.versions).where(db.versions.c.challenge_id==ident,db.versions.c.number==task['current_version']).values(prompt=p,rubric=r,sha256=stable_hash({'prompt':p,'rubric':r})))
+        db.audit_log(c,who['id'],'challenge.updated',ident)
+    return {'ok':True}
+
+@app.delete('/api/admin/challenges/{ident}')
+def admin_delete_challenge(ident:str,who=Depends(admin)):
+    with db.engine.begin() as c:
+        domain.admission_lock(c)
+        domain.require_row(c,db.challenges,ident)
+        run_ids=list(c.execute(select(db.runs.c.id).where(db.runs.c.challenge_id==ident)).scalars().all())
+        if run_ids:
+            c.execute(delete(db.artifacts).where(db.artifacts.c.run_id.in_(run_ids)))
+            c.execute(delete(db.thumbnails).where(db.thumbnails.c.run_id.in_(run_ids)))
+            c.execute(delete(db.events).where(db.events.c.run_id.in_(run_ids)))
+            c.execute(delete(db.votes).where(db.votes.c.run_id.in_(run_ids)))
+            c.execute(delete(db.comments).where(db.comments.c.run_id.in_(run_ids)))
+            c.execute(delete(db.reports).where(db.reports.c.run_id.in_(run_ids)))
+            c.execute(delete(db.runs).where(db.runs.c.challenge_id==ident))
+        c.execute(delete(db.versions).where(db.versions.c.challenge_id==ident))
+        c.execute(delete(db.challenges).where(db.challenges.c.id==ident))
+        db.audit_log(c,who['id'],'challenge.deleted',ident)
+    return {'ok':True}
+
+@app.get('/api/admin/prompts')
+def admin_prompts(q:str=Query('',max_length=200),limit:int=Query(50,ge=1,le=100),_=Depends(admin)):
+    with db.engine.connect() as c:
+        stmt=select(db.prompt_templates.c.id,db.prompt_templates.c.owner_id,db.prompt_templates.c.name,db.prompt_templates.c.body,db.prompt_templates.c.created,db.users.c.username.label('author')).join(db.users,db.prompt_templates.c.owner_id==db.users.c.id)
+        if q.strip():
+            term=f"%{q.strip()}%"
+            stmt=stmt.where(or_(db.prompt_templates.c.name.ilike(term),db.prompt_templates.c.body.ilike(term)))
+        return db.rows(c,stmt.order_by(db.prompt_templates.c.created.desc()).limit(limit))
+
+@app.put('/api/admin/prompts/{ident}')
+def admin_update_prompt(ident:str,body:AdminPromptUpdate,who=Depends(admin)):
+    with db.engine.begin() as c:
+        domain.admission_lock(c)
+        domain.require_row(c,db.prompt_templates,ident)
+        c.execute(update(db.prompt_templates).where(db.prompt_templates.c.id==ident).values(name=body.name.strip(),body=body.body.strip()))
+        db.audit_log(c,who['id'],'prompt.updated',ident)
+    return {'ok':True}
+
+@app.delete('/api/admin/prompts/{ident}')
+def admin_delete_prompt(ident:str,who=Depends(admin)):
+    with db.engine.begin() as c:
+        domain.admission_lock(c)
+        domain.require_row(c,db.prompt_templates,ident)
+        c.execute(delete(db.prompt_templates).where(db.prompt_templates.c.id==ident))
+        db.audit_log(c,who['id'],'prompt.deleted',ident)
     return {'ok':True}
 
 @app.get('/api/runs/{ident}/events')

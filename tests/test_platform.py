@@ -303,3 +303,77 @@ def test_resend_reports_delivery_failure_and_rate_limit(client,monkeypatch):
     assert 'Internal mail fixture detail' not in response.text
     assert response.headers['Retry-After']=='60'
     assert client.post('/api/auth/resend-verification').status_code==429
+
+def test_admin_management_apis_and_rbac(client):
+    admin_user = account(client, 'admin_super')
+    with db.engine.begin() as c:
+        c.execute(update(db.users).where(db.users.c.id == admin_user['id']).values(role='admin'))
+    
+    with TestClient(api.app, base_url=settings.app_origin, headers={'Origin': settings.app_origin}) as normal:
+        normal_user = account(normal, 'normal_coder')
+        key = connection(normal)
+        # 1. 普通用户不能访问 admin 接口
+        assert normal.get('/api/admin/users').status_code == 403
+        assert normal.get('/api/admin/challenges').status_code == 403
+        assert normal.get('/api/admin/prompts').status_code == 403
+        assert normal.put('/api/admin/challenges/any', json={'title': 't', 'description': 'desc', 'category': 'c'}).status_code == 403
+        assert normal.delete('/api/admin/challenges/any').status_code == 403
+        assert normal.put('/api/admin/prompts/any', json={'name': 'n', 'body': 'b'}).status_code == 403
+        assert normal.delete('/api/admin/prompts/any').status_code == 403
+        
+        # 普通用户创建题目与提示词
+        ch = normal.post('/api/challenges', json={'title': 'Admin Test Challenge', 'description': 'Detailed challenge description', 'category': 'Algorithm', 'prompt': 'Original Prompt Body', 'rubric': 'Original Rubric'}).json()
+        ch_id = ch['id']
+        pr = normal.post('/api/prompts', json={'name': 'User Prompt', 'body': 'Initial user prompt text'}).json()
+        pr_id = pr['id']
+        
+        # 2. 管理员可查询全站用户、题目与提示词
+        users = client.get('/api/admin/users?q=normal').json()
+        assert any(u['id'] == normal_user['id'] for u in users)
+        
+        challenges = client.get('/api/admin/challenges?q=Admin+Test').json()
+        assert len(challenges) >= 1 and challenges[0]['id'] == ch_id
+        assert challenges[0]['prompt'] == 'Original Prompt Body'
+        
+        prompts = client.get('/api/admin/prompts?q=User+Prompt').json()
+        assert len(prompts) >= 1 and prompts[0]['id'] == pr_id
+        
+        # 3. 管理员在线修改题目基础信息及 Prompt 和 Rubric
+        res = client.put(f'/api/admin/challenges/{ch_id}', json={
+            'title': 'Updated Admin Test Challenge',
+            'description': 'Updated challenge description long enough',
+            'category': 'Architecture',
+            'prompt': 'Modified Prompt Text By Admin',
+            'rubric': 'Modified Rubric Criteria'
+        })
+        assert res.status_code == 200
+        detail = normal.get(f'/api/challenges/{ch_id}').json()
+        assert detail['title'] == 'Updated Admin Test Challenge'
+        assert detail['category'] == 'Architecture'
+        assert detail['versions'][0]['prompt'] == 'Modified Prompt Text By Admin'
+        
+        # 4. 管理员在线修改提示词
+        res_p = client.put(f'/api/admin/prompts/{pr_id}', json={'name': 'Sanitized Prompt', 'body': 'Cleaned prompt body text'})
+        assert res_p.status_code == 200
+        p_list = normal.get('/api/prompts').json()
+        assert any(p['id'] == pr_id and p['name'] == 'Sanitized Prompt' for p in p_list)
+        
+        # 5. 管理员删除提示词
+        assert client.delete(f'/api/admin/prompts/{pr_id}').status_code == 200
+        assert not any(p['id'] == pr_id for p in normal.get('/api/prompts').json())
+        
+        # 6. 管理员删除题目（级联物理清理）
+        # 先通过 normal 提交一个 run 并完成
+        run_resp = submit(normal, key, vid=detail['versions'][0]['id'])
+        assert run_resp.status_code == 201
+        run_id = run_resp.json()['id']
+        complete(run_id, True)
+        
+        # 管理员删除题目
+        del_res = client.delete(f'/api/admin/challenges/{ch_id}')
+        assert del_res.status_code == 200
+        assert normal.get(f'/api/challenges/{ch_id}').status_code == 404
+        assert normal.get(f'/api/runs/{run_id}').status_code == 404
+        
+        # 7. 管理员封禁自锁防护
+        assert client.post('/api/admin/moderate', json={'action': 'suspend_user', 'target': admin_user['id']}).status_code == 400
