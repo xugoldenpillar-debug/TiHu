@@ -24,6 +24,42 @@ import {
   FileText,
 } from "lucide-react";
 
+const TEXT_FILE_PATTERN = /\.(html?|css|[cm]?jsx?|[cm]?tsx?|json|md|txt|svg|xml|ya?ml|toml|py|sh|sql)$/i;
+
+function decodeArtifact(encoded: string, path: string): string {
+  if (!encoded) return "";
+
+  try {
+    const binary = atob(encoded);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    if (!TEXT_FILE_PATTERN.test(path)) {
+      return `// 二进制文件：${path}（${bytes.byteLength} 字节）`;
+    }
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return "// 无法解析该文件";
+  }
+}
+
+type LiveRunEvent = {
+  seq: number;
+  time: number;
+  kind: string;
+  text: string;
+  data?: Record<string, unknown>;
+};
+
+function normalizeLiveEvent(raw: Record<string, unknown>, lastEventId = ""): LiveRunEvent {
+  const seq = Number(lastEventId || raw.id || 0);
+  return {
+    seq,
+    time: Number(raw.created || raw.time || Date.now() / 1000),
+    kind: String(raw.kind || "progress"),
+    text: String(raw.message || raw.text || ""),
+    data: raw,
+  };
+}
+
 export function RunPage({ id }: { id: string }) {
   const { navigate, showToast, user, refreshSession } = useApp();
   const [run, setRun] = useState<RunDetail | null>(null);
@@ -38,6 +74,7 @@ export function RunPage({ id }: { id: string }) {
   const [iframeKey, setIframeKey] = useState(0);
 
   const pollTimerRef = useRef<number | null>(null);
+  const [liveEvents, setLiveEvents] = useState<LiveRunEvent[]>([]);
 
   const fetchRun = useCallback(async () => {
     try {
@@ -48,7 +85,7 @@ export function RunPage({ id }: { id: string }) {
         try {
           const [sourceRes, previewRes] = await Promise.all([
             api<{ files: Record<string, string> }>(`/runs/${id}/source`),
-            api<{ url: string }>(`/runs/${id}/preview-link`),
+            api<{ url: string }>(`/runs/${id}/preview`),
           ]);
           setArtifacts(sourceRes.files || {});
           if (!selectedFile && Object.keys(sourceRes.files || {}).length) {
@@ -91,6 +128,75 @@ export function RunPage({ id }: { id: string }) {
     };
   }, [fetchRun]);
 
+  useEffect(() => {
+    if (!run?.can_view_events) return;
+
+    let disposed = false;
+    let terminal = false;
+    let source: EventSource | null = null;
+    let reconnectTimer: number | null = null;
+    let lastEventId = "";
+
+    setLiveEvents([]);
+
+    const connect = () => {
+      if (disposed || terminal) return;
+      const query = lastEventId ? `?after=${encodeURIComponent(lastEventId)}` : "";
+      source = new EventSource(`/api/runs/${id}/events${query}`);
+
+      source.addEventListener("progress", (event) => {
+        const message = event as MessageEvent<string>;
+        try {
+          const raw = JSON.parse(message.data) as Record<string, unknown>;
+          if (message.lastEventId) lastEventId = message.lastEventId;
+          const item = normalizeLiveEvent(raw, message.lastEventId);
+          setLiveEvents((previous) => {
+            if (item.seq && previous.some((entry) => entry.seq === item.seq)) return previous;
+            return [...previous, item].slice(-200);
+          });
+        } catch {
+          // Ignore malformed events; the status poll remains the fallback.
+        }
+      });
+
+      source.addEventListener("state", (event) => {
+        const message = event as MessageEvent<string>;
+        try {
+          const payload = JSON.parse(message.data) as { status?: string };
+          if (payload.status) {
+            setRun((previous) =>
+              previous ? { ...previous, status: payload.status as RunDetail["status"] } : previous,
+            );
+          }
+        } catch {
+          // Ignore malformed terminal state events.
+        } finally {
+          terminal = true;
+          source?.close();
+        }
+      });
+
+      source.onerror = () => {
+        if (disposed || terminal) return;
+        source?.close();
+        if (reconnectTimer === null) {
+          reconnectTimer = window.setTimeout(() => {
+            reconnectTimer = null;
+            connect();
+          }, 1500);
+        }
+      };
+    };
+
+    connect();
+    return () => {
+      disposed = true;
+      terminal = true;
+      source?.close();
+      if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
+    };
+  }, [id, run?.can_view_events]);
+
   const handleCancel = async () => {
     try {
       await api(`/runs/${id}/cancel`, { method: "POST" });
@@ -104,7 +210,10 @@ export function RunPage({ id }: { id: string }) {
 
   const handlePublish = async (publish: boolean) => {
     try {
-      await api(`/runs/${id}/${publish ? "publish" : "unpublish"}`, { method: "POST" });
+      await api(`/runs/${id}/publish`, {
+        method: "PUT",
+        body: JSON.stringify({ published: publish }),
+      });
       showToast(publish ? "作品已公开发布至画廊！" : "已将作品撤下为私有", "success");
       await fetchRun();
     } catch (err) {
@@ -130,7 +239,7 @@ export function RunPage({ id }: { id: string }) {
   };
 
   const handleCopyCode = () => {
-    const code = artifacts[selectedFile] || "";
+    const code = decodeArtifact(artifacts[selectedFile] || "", selectedFile);
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -154,6 +263,8 @@ export function RunPage({ id }: { id: string }) {
 
   const isRunning = run.status === "queued" || run.status === "running";
   const isSucceeded = run.status === "succeeded" || run.status === "finished";
+  const selectedSource = decodeArtifact(artifacts[selectedFile] || "", selectedFile);
+  const displayedEvents = liveEvents.length ? liveEvents : (run.events ?? []);
 
   return (
     <div className="flex flex-col gap-6 max-w-[1600px] mx-auto w-full pb-16 animate-in fade-in duration-200">
@@ -407,10 +518,10 @@ export function RunPage({ id }: { id: string }) {
             <div className="md:col-span-3 rounded-2xl bg-white border border-slate-200 p-4 flex flex-col gap-2 overflow-hidden shadow-xs">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100 text-xs font-mono text-slate-500">
                 <span>{selectedFile}</span>
-                <span>{artifacts[selectedFile]?.length || 0} 字节</span>
+                <span>{selectedSource.length} 字符</span>
               </div>
               <pre className="flex-1 p-3 overflow-auto font-mono text-xs text-slate-800 leading-relaxed bg-slate-50 border border-slate-200/80 rounded-xl">
-                {artifacts[selectedFile] || "// 暂无内容"}
+                {selectedSource || "// 暂无内容"}
               </pre>
             </div>
           </div>
@@ -424,8 +535,8 @@ export function RunPage({ id }: { id: string }) {
               <span>智能体执行过程审计日志 (Read-only Stream)</span>
             </div>
 
-            {run.events?.length ? (
-              run.events.map((e, idx) => (
+            {displayedEvents.length ? (
+              displayedEvents.map((e, idx) => (
                 <div key={idx} className="flex flex-col gap-1 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                   <div className="flex items-center justify-between text-[11px] text-slate-500">
                     <span className="font-bold text-slate-800">[{e.kind}]</span>

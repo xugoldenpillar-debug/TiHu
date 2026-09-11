@@ -188,6 +188,7 @@ export interface SkillItem {
 }
 
 export interface RunDetail extends RunSummary {
+  can_view_events?: boolean;
   events: Array<{
     seq: number;
     time: number;

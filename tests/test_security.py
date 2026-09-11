@@ -61,4 +61,4 @@ def test_development_preview_does_not_generate_local_secrets(tmp_path,monkeypatc
     assert value.master_keys=={} and value.allowed_bases==[]
     assert not (tmp_path/'.local').exists()
 def test_body_size_limit(client):
-    r=client.post('/api/auth/login',content=b'x'*(4*1024*1024+1),headers={'Content-Type':'application/json'});assert r.status_code==413
+    r=client.post('/api/auth/login',content=b'x'*(512*1024+1),headers={'Content-Type':'application/json'});assert r.status_code==413
