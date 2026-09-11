@@ -54,8 +54,8 @@ export function SandboxPreviewDrawer({
     setVoting(type);
     try {
       await api(`/runs/${runId}/vote`, {
-        method: "POST",
-        body: JSON.stringify({ vote_type: type }),
+        method: "PUT",
+        body: JSON.stringify({ kind: type, active: true }),
       });
       showToast(`已成功为作品投票 (${type === "capability" ? "能力分 +1" : "趣味分 +1"})`, "success");
       onVoteSuccess?.();

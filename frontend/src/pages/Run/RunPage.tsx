@@ -119,8 +119,8 @@ export function RunPage({ id }: { id: string }) {
     }
     try {
       await api(`/runs/${id}/vote`, {
-        method: "POST",
-        body: JSON.stringify({ vote_type: type }),
+        method: "PUT",
+        body: JSON.stringify({ kind: type, active: true }),
       });
       showToast(`投票成功 (${type === "capability" ? "能力分" : "趣味分"})`, "success");
       await fetchRun();

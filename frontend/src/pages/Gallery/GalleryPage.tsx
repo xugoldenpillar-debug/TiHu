@@ -61,12 +61,11 @@ export function GalleryPage() {
     try {
       setLoading(true);
       const query = new URLSearchParams({
-        published: "true",
+        published: "public",
         limit: "60",
       });
       if (track !== "all") query.set("track", track);
-      if (timeWindow !== "all") query.set("time_window", timeWindow);
-      if (selectedChallengeId) query.set("challenge_id", selectedChallengeId);
+      if (selectedChallengeId) query.set("challenge", selectedChallengeId);
 
       const res = await api<PageResult<RunSummary>>(`/runs?${query.toString()}`);
       setRuns(res.items || []);
@@ -93,8 +92,8 @@ export function GalleryPage() {
     }
     try {
       const updated = await api<RunSummary>(`/runs/${run.id}/vote`, {
-        method: "POST",
-        body: JSON.stringify({ vote_type: type }),
+        method: "PUT",
+        body: JSON.stringify({ kind: type, active: true }),
       });
       setRuns((prev) => prev.map((r) => (r.id === run.id ? updated : r)));
       showToast(`已成功为作品投票 (${type === "capability" ? "能力分" : "趣味分"})`, "success");
@@ -117,8 +116,14 @@ export function GalleryPage() {
 
       // 2. Provider scope
       if (providerScope === "official" && !r.is_official) return false;
-      if (providerScope === "custom" && r.is_official) return false;
-
+      // 3. Time window filter
+      if (timeWindow === "7d") {
+        const cutoff = Date.now() / 1000 - 7 * 86400;
+        if ((r.created || 0) < cutoff) return false;
+      } else if (timeWindow === "30d") {
+        const cutoff = Date.now() / 1000 - 30 * 86400;
+        if ((r.created || 0) < cutoff) return false;
+      }
       return true;
     })
     .sort((a, b) => {
