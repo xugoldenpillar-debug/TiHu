@@ -1,7 +1,7 @@
 """Application operations. Admission, snapshots and votes are transactional."""
 import base64, binascii, json, math, re, secrets
 from fastapi import HTTPException
-from sqlalchemy import case, func, insert, or_, select, update
+from sqlalchemy import case, delete, func, insert, or_, select, update
 from . import db
 from .config import settings
 from .security import password_hasher, stable_hash
@@ -147,10 +147,10 @@ def seed():
         if not system:
             system = {'id': db.uid()}; c.execute(insert(db.users).values(id=system['id'], username='tihu-system', email='system@tihu.invalid', password=password_hasher.hash(secrets.token_urlsafe(48)), role='system', verified=True, suspended=True, created=db.now()))
         tasks = [
-            ('Pelican on a bicycle','The deceptively simple visual reasoning challenge. Anatomy, geometry, and a little personality.','SVG','创建一个自包含的 index.html，内容是用 SVG 绘制一个鹈鹕骑自行车的 2D 动画。鹈鹕必须清晰坐在自行车上，脚踩踏板，包含完整的车架、两个车轮与特征明显的鸟喙，且带有生动流畅的 2D 骑行动画。不要加载任何外部资源。\n\nCreate a self-contained index.html featuring an original SVG 2D animation of a pelican riding a bicycle. The pelican must visibly sit on the bicycle, with feet on pedals, two wheels, a coherent frame, a recognizable beak, and smooth 2D riding animation. Do not load external resources.','一眼能认出的鹈鹕；合理的车轮与车架结构；身体、脚踏板与座椅接触可信；流畅生动的 2D 骑行动画；画面细节与整体完成度。 / Recognizable pelican; coherent bicycle geometry; believable contact points; smooth 2D animation; visual craft.'),
-            ('Qin Shi Huang on a polar bear','The First Emperor of China riding a majestic polar bear. Historical majesty meets arctic beast in an animated SVG scene.','SVG','创建一个自包含的 index.html，内容是用 SVG 绘制秦始皇骑北极熊的 2D 动画。画面中秦始皇应具备鲜明的帝王特征（如冕旒、华丽黑金袍服、天子佩剑），威武地骑在强壮的北极熊背上，并包含生动流畅的 2D 运动动画。不得加载任何外部依赖与外部资源。\n\nCreate a self-contained index.html featuring an original SVG 2D animation of Emperor Qin Shi Huang riding a polar bear. The emperor should have recognizable imperial features (such as imperial crown and robes) riding atop a powerful polar bear, with smooth 2D motion animation. Do not load external resources.','辨识度高的秦始皇帝王特征；生动协调的北极熊造型；骑乘接触自然合理；流畅生动的 2D 动画；纯 SVG 与单文件自包含。 / Recognizable Qin Shi Huang imperial features; believable polar bear anatomy; natural riding contact; smooth 2D animation; self-contained single-file HTML.'),
-            ('A tiny living world','Build a beautiful interactive ecosystem inside a single HTML page.','Interactive','Build a self-contained index.html of an interactive miniature ecosystem. Use Canvas or SVG, include plants and creatures, a day/night control, and a pause button. Work without external resources.','Interaction quality; visual coherence; accessible controls; working animation.'),
-            ('The impossible clock','An unexpectedly delightful clock that still tells the correct time.','Creative','Build a self-contained index.html with a surprising, playful clock. It must show the real local time accurately and offer a reduced-motion control. No external resources.','Correct time; originality; readability; reduced-motion support.')]
+            ('鹈鹕骑行','The deceptively simple visual reasoning challenge. Anatomy, geometry, and a little personality.','SVG','创建一个自包含的 index.html，内容是用 SVG 绘制一个鹈鹕骑自行车的 2D 动画。鹈鹕必须清晰坐在自行车上，脚踩踏板，包含完整的车架、两个车轮与特征明显的鸟喙，且带有生动流畅的 2D 骑行动画。不要加载任何外部资源。\n\nCreate a self-contained index.html featuring an original SVG 2D animation of a pelican riding a bicycle. The pelican must visibly sit on the bicycle, with feet on pedals, two wheels, a coherent frame, a recognizable beak, and smooth 2D riding animation. Do not load external resources.','一眼能认出的鹈鹕；合理的车轮与车架结构；身体、脚踏板与座椅接触可信；流畅生动的 2D 骑行动画；画面细节与整体完成度。 / Recognizable pelican; coherent bicycle geometry; believable contact points; smooth 2D animation; visual craft.'),
+            ('秦始皇骑北极熊','The First Emperor of China riding a majestic polar bear. Historical majesty meets arctic beast in an animated SVG scene.','SVG','创建一个自包含的 index.html，内容是用 SVG 绘制秦始皇骑北极熊的 2D 动画。画面中秦始皇应具备鲜明的帝王特征（如冕旒、华丽黑金袍服、天子佩剑），威武地骑在强壮的北极熊背上，并包含生动流畅的 2D 运动动画。不得加载任何外部依赖与外部资源。\n\nCreate a self-contained index.html featuring an original SVG 2D animation of Emperor Qin Shi Huang riding a polar bear. The emperor should have recognizable imperial features (such as imperial crown and robes) riding atop a powerful polar bear, with smooth 2D motion animation. Do not load external resources.','辨识度高的秦始皇帝王特征；生动协调的北极熊造型；骑乘接触自然合理；流畅生动的 2D 动画；纯 SVG 与单文件自包含。 / Recognizable Qin Shi Huang imperial features; believable polar bear anatomy; natural riding contact; smooth 2D motion animation; self-contained SVG without dependencies.'),
+            ('微型生态循环','发挥创造性，使用HTML生成一个微型小世界','Interactive','Build a self-contained index.html of an interactive miniature ecosystem. Use Canvas or SVG, include plants and creatures, a day/night control, and a pause button. Work without external resources.','Interaction quality; visual coherence; accessible controls; working animation.'),
+            ('闹钟','用HTML生成一个有创造性用途的闹钟工具','Creative','Build a self-contained index.html with a surprising, playful clock. It must show the real local time accurately and offer a reduced-motion control. No external resources.','Correct time; originality; readability; reduced-motion support.')]
         for title, description, category, prompt, rubric in tasks:
             existing = db.row(c, select(db.challenges).where(db.challenges.c.title == title))
             if not existing:
@@ -160,3 +160,15 @@ def seed():
             else:
                 c.execute(update(db.challenges).where(db.challenges.c.id == existing['id']).values(description=description, category=category))
                 c.execute(update(db.versions).where(db.versions.c.challenge_id == existing['id'], db.versions.c.number == existing['current_version']).values(prompt=prompt, rubric=rubric, sha256=stable_hash({'prompt': prompt, 'rubric': rubric})))
+        # Clean up legacy English titles if any
+        legacy_titles = ['Pelican on a bicycle', 'Qin Shi Huang on a polar bear', 'A tiny living world', 'The impossible clock']
+        legacies = db.rows(c, select(db.challenges.c.id).where(db.challenges.c.title.in_(legacy_titles)))
+        if legacies:
+            leg_ids = [r['id'] for r in legacies]
+            pelican = db.row(c, select(db.challenges.c.id).where(db.challenges.c.title == '鹈鹕骑行'))
+            if pelican:
+                pel_ver = db.row(c, select(db.versions.c.id).where(db.versions.c.challenge_id == pelican['id']))
+                if pel_ver:
+                    c.execute(update(db.runs).where(db.runs.c.challenge_id.in_(leg_ids)).values(challenge_id=pelican['id'], version_id=pel_ver['id']))
+            c.execute(delete(db.versions).where(db.versions.c.challenge_id.in_(leg_ids)))
+            c.execute(delete(db.challenges).where(db.challenges.c.id.in_(leg_ids)))

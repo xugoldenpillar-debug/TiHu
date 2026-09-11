@@ -82,6 +82,19 @@ export function ChallengePage() {
     }
   };
 
+  const getChallengeArt = (c: ChallengeDetail) => {
+    if (c.art) return c.art;
+    const title = c.title.toLowerCase();
+    if (title.includes("pelican") || title.includes("鹈鹕")) return "/art/challenge-pelican.svg";
+    if (title.includes("polar") || title.includes("熊") || title.includes("秦始皇"))
+      return "/art/challenge-polar-bear.svg";
+    if (title.includes("clock") || title.includes("时钟") || title.includes("闹钟"))
+      return "/art/challenge-clock.svg";
+    if (title.includes("world") || title.includes("生态") || title.includes("世界"))
+      return "/art/challenge-ecosystem.svg";
+    return "/art/challenge-pelican.svg";
+  };
+
   const handleArtFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -89,6 +102,7 @@ export function ChallengePage() {
       showToast("插画图片大小不能超过 2MB", "warning");
       return;
     }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const result = event.target?.result as string;
@@ -210,7 +224,7 @@ export function ChallengePage() {
           {/* Art Cover Preview with Edit Hover Button */}
           <div className="group relative shrink-0 flex items-center justify-center p-3 rounded-2xl bg-slate-50/80 border border-slate-200/80 shadow-inner overflow-hidden">
             <img
-              src={challenge.art || "/art/challenge-pelican.svg"}
+              src={getChallengeArt(challenge)}
               alt={challenge.title}
               className="w-28 h-28 object-contain transition-transform duration-300 group-hover:scale-105"
             />
