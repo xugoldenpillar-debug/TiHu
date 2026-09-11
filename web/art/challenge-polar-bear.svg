@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" width="100%" height="100%">
+  <defs>
+    <linearGradient id="pb-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090d16"/>
+      <stop offset="100%" stop-color="#172133"/>
+    </linearGradient>
+    <linearGradient id="pb-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="pb-ice" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#e0f2fe"/>
+      <stop offset="100%" stop-color="#bae6fd"/>
+    </linearGradient>
+    <linearGradient id="pb-robe" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="pb-aurora" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0d9488" stop-opacity="0.3"/>
+      <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#818cf8" stop-opacity="0.2"/>
+    </linearGradient>
+    <filter id="pb-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <rect width="720" height="420" fill="url(#pb-bg)"/>
+
+  <!-- Aurora sky & grid -->
+  <path d="M0 60 Q 180 20, 360 70 T 720 40 L 720 180 L 0 180 Z" fill="url(#pb-aurora)"/>
+  <g opacity="0.08" stroke="#38bdf8" stroke-width="1">
+    <line x1="0" y1="140" x2="720" y2="140"/>
+    <line x1="0" y1="280" x2="720" y2="280"/>
+    <line x1="180" y1="0" x2="180" y2="420"/>
+    <line x1="360" y1="0" x2="360" y2="420"/>
+    <line x1="540" y1="0" x2="540" y2="420"/>
+  </g>
+
+  <!-- Ground snow drifts -->
+  <path d="M-20 380 Q 160 350, 380 375 T 740 360 L 740 420 L -20 420 Z" fill="#0f172a" opacity="0.8"/>
+  <path d="M-20 395 Q 220 375, 480 390 T 740 385 L 740 420 L -20 420 Z" fill="#1e293b"/>
+
+  <!-- Polar Bear Body -->
+  <!-- Back Legs -->
+  <path d="M190 280 C185 320, 195 360, 205 385 L235 385 C230 350, 240 320, 245 285 Z" fill="#cbd5e1"/>
+  <path d="M430 290 C440 325, 445 355, 460 385 L490 385 C480 350, 470 320, 465 280 Z" fill="#cbd5e1"/>
+
+  <!-- Bear Torso & Hindquarters -->
+  <ellipse cx="270" cy="275" rx="105" ry="75" fill="url(#pb-ice)"/>
+  <path d="M220 230 C290 210, 380 215, 450 240 C490 255, 525 285, 530 310 C510 330, 430 345, 330 345 C230 345, 170 310, 180 270 C185 245, 200 235, 220 230 Z" fill="url(#pb-ice)"/>
+
+  <!-- Front Legs -->
+  <path d="M250 285 C245 320, 250 360, 260 390 L295 390 C295 355, 300 320, 305 285 Z" fill="url(#pb-ice)"/>
+  <path d="M470 270 C480 305, 495 350, 515 390 L555 390 C540 345, 525 305, 510 265 Z" fill="url(#pb-ice)"/>
+
+  <!-- Bear Neck & Head -->
+  <path d="M430 240 C470 230, 520 245, 560 270 C575 280, 580 295, 570 305 C545 315, 500 315, 460 300 Z" fill="url(#pb-ice)"/>
+  <ellipse cx="560" cy="280" rx="28" ry="20" fill="url(#pb-ice)"/>
+  <!-- Muzzle -->
+  <path d="M570 275 Q590 280 592 288 Q585 295 568 292 Z" fill="#e2e8f0"/>
+  <circle cx="588" cy="285" r="4.5" fill="#0f172a"/>
+  <circle cx="560" cy="274" r="3.5" fill="#0f172a"/>
+  <!-- Ear -->
+  <path d="M538 260 C535 250, 550 250, 552 262 Z" fill="url(#pb-ice)" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <!-- Bear Saddle & Reins -->
+  <path d="M310 220 C340 225, 380 225, 410 228 C415 250, 410 280, 310 280 Z" fill="#991b1b" stroke="url(#pb-gold)" stroke-width="3"/>
+  <path d="M380 180 Q470 230 560 280" fill="none" stroke="url(#pb-gold)" stroke-width="2.5" stroke-dasharray="6,2"/>
+
+  <!-- Emperor Qin Shi Huang -->
+  <!-- Imperial Robe (Black & Gold Trim) -->
+  <path d="M320 240 L345 155 L400 160 L425 245 C390 255, 355 255, 320 240 Z" fill="url(#pb-robe)" stroke="url(#pb-gold)" stroke-width="2"/>
+  <!-- Robe Details / Dragons -->
+  <path d="M355 170 Q370 195 385 175 Q375 220 395 240" fill="none" stroke="url(#pb-gold)" stroke-width="2" opacity="0.9"/>
+  <!-- Sleeves -->
+  <path d="M345 165 C320 185, 315 210, 330 230 C340 220, 345 190, 350 170 Z" fill="#0f172a" stroke="url(#pb-gold)" stroke-width="1.5"/>
+  <path d="M395 165 C415 185, 420 210, 410 230 C400 220, 395 190, 390 170 Z" fill="#0f172a" stroke="url(#pb-gold)" stroke-width="1.5"/>
+  <!-- Emperor Belt -->
+  <rect x="345" y="195" width="55" height="10" rx="2" fill="url(#pb-gold)"/>
+  <rect x="366" y="193" width="14" height="14" rx="2" fill="#0284c7"/>
+
+  <!-- Emperor Head & Beard -->
+  <circle cx="372" cy="132" rx="14" ry="16" fill="#fed7aa"/>
+  <path d="M362 138 C366 160, 378 165, 382 138 Z" fill="#0f172a"/>
+  <path d="M360 134 Q372 140 384 134" fill="none" stroke="#0f172a" stroke-width="2"/>
+
+  <!-- Imperial Crown (Mian Liu 冕旒) -->
+  <rect x="340" y="112" width="65" height="7" rx="1.5" fill="#0f172a" stroke="url(#pb-gold)" stroke-width="1.5"/>
+  <!-- Beads hanging (Liù 旒) -->
+  <g stroke="url(#pb-gold)" stroke-width="1.8" stroke-linecap="round">
+    <line x1="344" y1="119" x2="344" y2="135"/>
+    <line x1="350" y1="119" x2="350" y2="137"/>
+    <line x1="356" y1="119" x2="356" y2="139"/>
+    <line x1="390" y1="119" x2="390" y2="139"/>
+    <line x1="396" y1="119" x2="396" y2="137"/>
+    <line x1="402" y1="119" x2="402" y2="135"/>
+  </g>
+  <!-- Crown Top Board (Yan 綖) -->
+  <polygon points="335,112 410,110 405,105 340,107" fill="url(#pb-gold)"/>
+
+  <!-- Imperial Sword (Tai'e 泰阿剑) -->
+  <path d="M330 185 L290 255" stroke="url(#pb-gold)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M332 182 L320 190" stroke="#f59e0b" stroke-width="6"/>
+  <circle cx="335" cy="180" r="4" fill="#0284c7"/>
+
+  <!-- Typography -->
+  <text x="30" y="50" fill="#f8fafc" font-size="20" font-family="sans-serif" font-weight="700">Emperor on a Polar Bear</text>
+  <text x="30" y="76" fill="#38bdf8" font-size="14" font-family="monospace">QIN_SHI_HUANG_ARCTIC_SVG_ANIMATION</text>
+</svg>

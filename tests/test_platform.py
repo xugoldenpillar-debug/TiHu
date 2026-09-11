@@ -7,8 +7,8 @@ from tihu.config import settings
 from conftest import account,complete,connection,submit,version,PASSWORD,MODEL,KEY
 
 def test_empty_results_are_not_fabricated(client):
-    assert client.get('/api/challenges').json()['total']==3
-    assert client.get('/api/stats').json()=={'challenges':3,'works':0,'models':0}
+    assert client.get('/api/challenges').json()['total']==4
+    assert client.get('/api/stats').json()=={'challenges':4,'works':0,'models':0}
     assert client.get('/api/leaderboard?days=0').status_code==200
     assert client.get('/api/leaderboard?days=7').json()['items']==[]
     assert client.get('/api/leaderboard?days=3').status_code==422
@@ -180,7 +180,7 @@ def test_cursor_pagination_keeps_equal_time_boundaries_and_searches_before_limit
     cursor=None;seen=[]
     while True:
         page=client.get('/api/challenges',params={'limit':1,**({'cursor':cursor} if cursor else {})}).json()
-        assert page['total']==3;seen.extend(x['id'] for x in page['items']);cursor=page['next_cursor']
+        assert page['total']==4;seen.extend(x['id'] for x in page['items']);cursor=page['next_cursor']
         if not cursor:break
     assert seen==sorted(challenge_ids)
     with db.engine.begin() as c:c.execute(update(db.challenges).where(db.challenges.c.id==seen[-1]).values(title='Only searchable 100% fixture'))

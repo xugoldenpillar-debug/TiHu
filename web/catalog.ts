@@ -43,14 +43,43 @@ const challengeCopy: Record<string, ChallengeCopy> = {
   "Pelican on a bicycle": {
     title: "鹈鹕骑自行车",
     description:
-      "鸟的身体、自行车的几何，还有一点恰到好处的个性。用 SVG 看看模型如何理解结构。",
+      "鸟的身体、自行车的几何，还有生动的骑行动画。用 SVG 2D 动画看看模型如何理解结构与运动节奏。",
     art: "/art/challenge-pelican.svg",
     alt: "戴着头盔的鹈鹕骑自行车",
     rubric: [
-      "一眼能认出的鹈鹕",
-      "合理的车轮与车架结构",
+      "一眼能认出的鹈鹕与清晰鸟喙",
+      "合理的车轮与车架几何结构",
       "身体、脚踏板与座椅接触可信",
+      "流畅生动的 2D 骑行动画",
       "画面细节与整体完成度",
+    ],
+  },
+  "Qin Shi Huang on a polar bear": {
+    title: "秦始皇骑北极熊",
+    description:
+      "千古一帝与极地巨兽的奇幻碰撞。用 SVG 考察模型对复杂人物服饰、动物骨骼与 2D 动态节奏的综合表现力。",
+    art: "/art/challenge-polar-bear.svg",
+    alt: "头戴冕旒的秦始皇骑北极熊",
+    rubric: [
+      "辨识度高的秦始皇帝王特征（冕旒、黑金袍服、佩剑等）",
+      "强壮生动的北极熊造型与姿态结构",
+      "骑乘姿势与接触关系合理自然",
+      "流畅生动的 2D 运动动画",
+      "纯 SVG 绘制与单文件自包含 HTML",
+    ],
+  },
+  "秦始皇骑北极熊": {
+    title: "秦始皇骑北极熊",
+    description:
+      "千古一帝与极地巨兽的奇幻碰撞。用 SVG 考察模型对复杂人物服饰、动物骨骼与 2D 动态节奏的综合表现力。",
+    art: "/art/challenge-polar-bear.svg",
+    alt: "头戴冕旒的秦始皇骑北极熊",
+    rubric: [
+      "辨识度高的秦始皇帝王特征（冕旒、黑金袍服、佩剑等）",
+      "强壮生动的北极熊造型与姿态结构",
+      "骑乘姿势与接触关系合理自然",
+      "流畅生动的 2D 运动动画",
+      "纯 SVG 绘制与单文件自包含 HTML",
     ],
   },
   "A tiny living world": {
@@ -785,6 +814,8 @@ export async function challengePage(id: string): Promise<Page> {
   const page = await api<PageResult<RunSummary>>(url);
   const artMap: Record<string, string> = {
     "Pelican on a bicycle": "/art/challenge-pelican.svg",
+    "Qin Shi Huang on a polar bear": "/art/challenge-polar-bear.svg",
+    "秦始皇骑北极熊": "/art/challenge-polar-bear.svg",
     "Digital Clock in Single-file HTML": "/art/challenge-clock.svg",
     "Ecosystem in HTML Canvas": "/art/challenge-ecosystem.svg",
   };
