@@ -19,6 +19,7 @@ import {
   clearFormError,
   showDialog,
   closeDialog,
+  confirmDialog,
   renderVendorBadge,
   detectVendor,
   vendorSvgs,
@@ -175,21 +176,17 @@ function workCard(item: RunSummary, mine = false): string {
     ? `<img class="work-image" src="/api/runs/${esc(item.id)}/thumbnail" alt="${esc(title)}的生成作品预览" loading="lazy" width="960" height="540">`
     : `<div class="work-placeholder">
         <span class="placeholder-icon">${icons.gallery}</span>
-        <span>${item.status === "succeeded" ? "暂无缩略图" : item.status === "queued" ? "等待开始" : item.status === "running" ? "正在构建" : "查看运行记录"}</span>
-        <small>${item.status === "succeeded" ? "打开作品查看完整效果" : "每一次实验都有自己的记录"}</small>
+        <span>${item.status === "succeeded" ? "暂无缩略图" : item.status === "queued" ? "等待开始" : item.status === "running" ? "正在构建" : item.status === "canceled" ? "实验已取消" : "实验未完成"}</span>
+        <small>${item.status === "succeeded" ? "打开作品查看完整效果" : item.status === "canceled" ? "未生成产物，点击查看详情" : item.status === "failed" ? "执行失败，点击查看详情" : "每一次实验都有自己的记录"}</small>
       </div>`;
 
   return `<article class="card run-card modern-run-card" data-run-id="${esc(item.id)}">
-    ${
-      !mine
-        ? `<a class="work-cover work-cover-aspect" data-run-id="${esc(item.id)}" href="#/run/${esc(item.id)}" title="${esc(title)}">
-            ${art}
-            <div class="work-cover-overlay">
-              <span class="btn-quick-view">${icons.play} 查看沙箱</span>
-            </div>
-          </a>`
-        : ""
-    }
+    <a class="work-cover work-cover-aspect" data-run-id="${esc(item.id)}" href="#/run/${esc(item.id)}" title="${esc(title)}">
+      ${art}
+      <div class="work-cover-overlay">
+        <span class="btn-quick-view">${icons.play} ${item.status === "succeeded" ? "查看沙箱" : "查看详情"}</span>
+      </div>
+    </a>
     <div class="card-body work-card-body">
       <div class="row between work-top-row">
         <div class="work-badges-row">
@@ -222,7 +219,15 @@ function workCard(item: RunSummary, mine = false): string {
           ? `<div class="row work-mine-metrics">${badge(item.track)}${item.metrics?.elapsed_ms != null ? `<span class="help">${duration(item.metrics.elapsed_ms)}</span>` : ""}</div>`
           : ""
       }
-      ${mine && item.error ? '<p class="notice warn">实验未完成，打开查看详情</p>' : ""}
+      ${mine && item.error ? `<p class="notice warn" style="margin:8px 0 0 0;font-size:12px;">${item.status === "canceled" ? "实验已取消" : "实验失败"}: ${esc(item.error)}</p>` : ""}
+      ${
+        mine && !["queued", "running"].includes(item.status)
+          ? `<div class="row between work-card-actions" style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line);align-items:center;">
+              <a class="btn outline small" href="#/run/${esc(item.id)}" style="padding:4px 12px;font-size:12px;">${item.status === "succeeded" ? "打开作品" : "查看详情"}</a>
+              <button type="button" class="btn danger small" data-run-action="delete" data-run-id="${esc(item.id)}" style="padding:4px 10px;font-size:12px;">删除记录</button>
+            </div>`
+          : ""
+      }
     </div>
   </article>`;
 }
@@ -780,10 +785,46 @@ export async function galleryPage(mine = false): Promise<Page> {
       );
       const disposeComparison = bindComparison(root);
       const disposeHoverLive = bindHoverLiveMotion(root);
+      let disposeDelete: (() => void) | undefined;
+      if (mine) {
+        const handleDelete = async (e: MouseEvent) => {
+          const btn = (e.target as HTMLElement).closest<HTMLButtonElement>(
+            '[data-run-action="delete"]',
+          );
+          if (!btn || btn.disabled) return;
+          const runId = btn.dataset.runId;
+          if (!runId) return;
+          const confirmed = await confirmDialog({
+            title: "删除这次实验？",
+            body: "<p>将永久删除该实验的所有记录、模型生成产物、事件日志和评价，且不可恢复。</p>",
+            confirm: "确认删除实验",
+            danger: true,
+          });
+          if (!confirmed) return;
+          btn.disabled = true;
+          try {
+            await mutate(`/runs/${encodeURIComponent(runId)}`, "DELETE");
+            toast("实验记录已成功删除");
+            const card = btn.closest<HTMLElement>(".run-card");
+            if (card) {
+              card.style.transition = "opacity 0.2s, transform 0.2s";
+              card.style.opacity = "0";
+              card.style.transform = "scale(0.95)";
+              setTimeout(() => card.remove(), 200);
+            }
+          } catch (err) {
+            btn.disabled = false;
+            toast("删除失败: " + (err instanceof Error ? err.message : String(err)));
+          }
+        };
+        root.addEventListener("click", handleDelete);
+        disposeDelete = () => root.removeEventListener("click", handleDelete);
+      }
       return () => {
         disposeFeed();
         disposeComparison();
         disposeHoverLive();
+        if (disposeDelete) disposeDelete();
       };
     },
   };

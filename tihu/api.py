@@ -510,6 +510,22 @@ def cancel(ident:str,who=Depends(user)):
             db.log(c,ident,'canceled','Canceled by the owner. In-flight provider usage may still be billed.')
             db.audit_log(c,who['id'],'run.cancel',ident)
     return {'ok':True}
+@app.delete('/api/runs/{ident}')
+def delete_run(ident:str,who=Depends(user)):
+    with db.engine.begin() as c:
+        domain.admission_lock(c)
+        run=domain.require_row(c,db.runs,ident)
+        if run['owner_id']!=who['id'] and who['role']!='admin':raise HTTPException(403,'forbidden')
+        if run['status'] in domain.ACTIVE:raise HTTPException(409,'cannot_delete_active_run')
+        c.execute(delete(db.artifacts).where(db.artifacts.c.run_id==ident))
+        c.execute(delete(db.thumbnails).where(db.thumbnails.c.run_id==ident))
+        c.execute(delete(db.events).where(db.events.c.run_id==ident))
+        c.execute(delete(db.votes).where(db.votes.c.run_id==ident))
+        c.execute(delete(db.comments).where(db.comments.c.run_id==ident))
+        c.execute(delete(db.reports).where(db.reports.c.run_id==ident))
+        c.execute(delete(db.runs).where(db.runs.c.id==ident))
+        db.audit_log(c,who['id'],'run.deleted',ident)
+    return {'ok':True}
 
 @app.put('/api/runs/{ident}/vote')
 def vote(ident:str,body:Vote,who=Depends(verified_user)):

@@ -569,10 +569,10 @@ function commentsHTML(run) {
 }
 export async function runPage(id) {
     let run = await api(pathFor(id));
-    const actionHTML = () => `<a class="btn outline" href="#/challenge/${encodeURIComponent(run.challenge_id)}?version=${encodeURIComponent(run.version_id)}">查看任务来源</a>${active(run) && state.user?.id === run.owner_id ? '<button type="button" class="btn danger" data-lab-action="cancel">取消实验</button>' : ""}${run.status === "succeeded" && !run.hidden && state.user?.id === run.owner_id ? `<button type="button" class="btn ${run.published ? "outline" : "primary"}" data-lab-action="publish">${run.published ? "撤下公开" : "发布作品"}</button>` : ""}${run.status === "succeeded" && run.published && !run.hidden && state.user?.verified ? '<button type="button" class="btn ghost" data-lab-action="report">举报作品</button>' : ""}`;
+    const actionHTML = () => `<a class="btn outline" href="#/challenge/${encodeURIComponent(run.challenge_id)}?version=${encodeURIComponent(run.version_id)}">查看任务来源</a>${active(run) && state.user?.id === run.owner_id ? '<button type="button" class="btn danger" data-lab-action="cancel">取消实验</button>' : ""}${run.status === "succeeded" && !run.hidden && state.user?.id === run.owner_id ? `<button type="button" class="btn ${run.published ? "outline" : "primary"}" data-lab-action="publish">${run.published ? "撤下公开" : "发布作品"}</button>` : ""}${run.status === "succeeded" && run.published && !run.hidden && state.user?.verified ? '<button type="button" class="btn ghost" data-lab-action="report">举报作品</button>' : ""}${!active(run) && state.user && (state.user.id === run.owner_id || state.user.role === "admin") ? '<button type="button" class="btn danger outline" data-lab-action="delete">删除实验</button>' : ""}`;
     const statusHTML = () => `<div class="status-line">${renderVendorBadge(run.model)} ${badge(run.status, statusLabels[run.status] || run.status)} ${badge(run.track, run.track === "standard" ? "标准赛道" : "开放赛道")} ${badge(run.hidden ? "hidden" : run.published ? "public" : "private", run.hidden ? "管理员已隐藏" : run.published ? "公开作品" : "私有实验")}</div>${active(run) ? `<p class="notice">${run.status === "queued" ? "等待隔离执行器。排队本身不会调用模型。" : "模型正在隔离环境中构建。"} 离开页面不会中断实验，也不会触发重试。</p>` : run.status !== "succeeded" ? runError(run.error) : '<p class="help">实验已完成。模型产物只在隔离来源中执行；社区操作不会重置预览。</p>'}`;
     return {
-        html: `${head(run.model, `${run.title} · v${run.version} · @${run.username} · ${date(run.created)}`)}<div class="run-viewport-layout"><div class="run-viewport-main"><div id="run-artifact">${run.status === "succeeded" ? previewHTML(run, "run") + sourceHTML() : `<section class="panel stack" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:min(480px,calc(100vh - 200px));text-align:center;padding:48px 24px;background:var(--paper);border:1px dashed var(--line);border-radius:16px;"><img src="/art/empty/empty-experiments.svg" alt="沙箱准备就绪" width="200" height="150" style="margin-bottom:16px;"><h3 style="margin:0 0 8px 0;color:var(--ink);">${active(run) ? "模型正在 gVisor 独立沙箱中安全构建作品…" : "实验未生成作品预览"}</h3><p class="help" style="margin:0;max-width:440px;">${active(run) ? "隔离环境正在生成代码并部署沙箱，完成后将在此处呈现真实交互预览。" : "此实验没有生成有效的独立预览产物。请检查运行错误或配置。"}</p></section>`}</div></div><aside class="panel stack run-viewport-sidebar" aria-label="实验状态与操作"><section class="stack"><h2>实验状态</h2><div id="run-status">${statusHTML()}</div><div id="run-actions" class="actions">${actionHTML()}</div><p class="form-error" id="run-action-error" role="alert" hidden></p></section>${metricsHTML(run)}<section class="stack" id="run-votes">${votesHTML(run)}</section><section class="stack" id="run-comments">${commentsHTML(run)}</section></aside></div>${footer()}`,
+        html: `${head(run.model, `${run.title} · v${run.version} · @${run.username} · ${date(run.created)}`)}<div class="run-viewport-layout"><div class="run-viewport-main"><div id="run-artifact">${run.status === "succeeded" ? previewHTML(run, "run") + sourceHTML() : `<section class="panel stack" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:min(480px,calc(100vh - 200px));text-align:center;padding:48px 24px;background:var(--paper);border:1px dashed var(--line);border-radius:16px;"><img src="/art/empty/empty-experiments.svg" alt="沙箱准备就绪" width="200" height="150" style="margin-bottom:16px;"><h3 style="margin:0 0 8px 0;color:var(--ink);">${active(run) ? "模型正在 gVisor 独立沙箱中安全构建作品…" : run.status === "canceled" ? "实验已取消（未生成可预览作品）" : run.status === "failed" ? "实验未成功完成（未生成作品）" : "实验未生成作品预览"}</h3><p class="help" style="margin:0;max-width:480px;line-height:1.6;">${active(run) ? "隔离环境正在生成代码并部署沙箱，完成后将在此处呈现真实交互预览。" : run.status === "canceled" ? "该实验已被手动取消，未生成可交互的作品产物。你可以查看下方执行日志，或删除此记录重新开始。" : run.status === "failed" ? (runError(run.error) || "执行过程中发生异常，未能生成有效作品。") : "此实验没有生成有效的独立预览产物。请检查运行错误或配置。"}</p>${!active(run) && state.user && (state.user.id === run.owner_id || state.user.role === "admin") ? `<div style="margin-top:20px;display:flex;gap:12px;"><a class="btn primary" href="#/challenge/${encodeURIComponent(run.challenge_id)}?model=${encodeURIComponent(run.model)}">重新实验</a><button type="button" class="btn danger outline" data-lab-action="delete">删除此实验</button></div>` : ""}</section>`}</div></div><aside class="panel stack run-viewport-sidebar" aria-label="实验状态与操作"><section class="stack"><h2>实验状态</h2><div id="run-status">${statusHTML()}</div><div id="run-actions" class="actions">${actionHTML()}</div><p class="form-error" id="run-action-error" role="alert" hidden></p></section>${metricsHTML(run)}<section class="stack" id="run-votes">${votesHTML(run)}</section><section class="stack" id="run-comments">${commentsHTML(run)}</section></aside></div>${footer()}`,
         mount(root) {
             const abort = new AbortController();
             let disposed = false;
@@ -938,6 +938,21 @@ export async function runPage(id) {
                                 toast("已请求取消实验");
                                 await refresh();
                             }
+                        }
+                    }
+                    else if (action === "delete") {
+                        if (await confirmDialog({
+                            title: "删除这次实验？",
+                            body: "<p>将永久删除该实验的所有记录、模型生成产物、事件日志和评价，且不可恢复。</p>",
+                            confirm: "确认删除实验",
+                            danger: true,
+                        })) {
+                            if (disposed)
+                                return;
+                            await mutate(pathFor(id), "DELETE");
+                            toast("实验已成功删除");
+                            window.location.hash = "#/my-runs";
+                            return;
                         }
                     }
                     else if (action === "publish") {

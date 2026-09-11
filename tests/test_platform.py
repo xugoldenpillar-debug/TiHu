@@ -292,6 +292,21 @@ def test_cancel_logs_once_and_does_not_cancel_completed_work(client):
     assert client.post('/api/runs/'+finished+'/cancel').status_code==200
     assert client.get('/api/runs/'+finished).json()['status']=='succeeded'
 
+def test_delete_run_lifecycle_and_permissions(client):
+    user1 = account(client, 'user_del_one')
+    key1 = connection(client)
+    run1 = submit(client, key1).json()['id']
+    assert client.delete('/api/runs/' + run1).status_code == 409
+    assert client.post('/api/runs/' + run1 + '/cancel').status_code == 200
+    user2 = account(client, 'user_del_two')
+    r = client.post('/api/auth/login', json={'email': user1['email'], 'password': PASSWORD})
+    assert r.status_code == 200
+    client.headers['x-csrf-token'] = r.json()['csrf']
+    assert client.delete('/api/runs/' + run1).status_code == 200
+    assert client.get('/api/runs/' + run1).status_code == 404
+    with db.engine.connect() as c:
+        assert c.execute(select(func.count()).select_from(db.events).where(db.events.c.run_id == run1)).scalar_one() == 0
+
 def test_resend_reports_delivery_failure_and_rate_limit(client,monkeypatch):
     who=account(client)
     with db.engine.begin() as c:c.execute(update(db.users).where(db.users.c.id==who['id']).values(verified=False))
